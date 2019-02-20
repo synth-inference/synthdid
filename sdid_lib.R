@@ -51,9 +51,9 @@ sc_weight_FE = function(M, target, zeta = 1) {
     return(gamma)
 }
 
-# Computes SDID in the simple case where only a single observation
-# (n, T) is treated. Also returns the synthetic control estimate.
-synth_did = function(Y, zeta = 1) {
+# Makes SDID prediction for missing control outcome in the simple case where only a
+# single observation (n, T) is treated. Also returns the synthetic control estimate.
+sdid_predict = function(Y, zeta = 1) {
     NN = nrow(Y)
     TT = ncol(Y)
     lambda.weight = sc_weight(Y[-NN, -TT], Y[-NN, TT], zeta = zeta)
