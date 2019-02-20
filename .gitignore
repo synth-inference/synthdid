@@ -1,0 +1,15 @@
+*.DS_Store
+*.aux
+*.blg
+*.log
+*.out
+*.gz
+*.toc
+*.nav
+*.snm
+*.pdf
+!figures/*.pdf
+!talks/MSR_sept2016/figures/*.pdf
+!literature/*.pdf
+!IRB/*.pdf
+!old_files/*.pdf
