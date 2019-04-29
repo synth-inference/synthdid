@@ -43,7 +43,6 @@ print(paste("true tau:", tau))
 print(paste0("point estimate: ", round(tau.hat, 2)))
 print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * attr(tau.hat, 'se'), 2), ", ", round(tau.hat + 1.96 * attr(tau.hat, 'se'), 2), ")"))
 ```
-```
 
 #### References
 Dmitry Arkhangelsky, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager.
