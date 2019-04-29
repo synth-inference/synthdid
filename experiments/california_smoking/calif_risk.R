@@ -4,7 +4,7 @@ library(lfe)
 library(lmtest)
 library(sandwich)
 library(xtable)
-source("../sdid_lib.R")
+library(synthdid)
 data.raw = read.table("MLAB_data.txt")
 
 STATE.NAME = c("Alabama", "Arkansas", "Colorado", "Connecticut", "Delaware",
