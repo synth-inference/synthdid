@@ -1,0 +1,15 @@
+Package: synthdid
+Title: Synthetic Difference-in-Difference Estimation
+Version: 0.0.0.9000
+Author: Dmitry Arkhangelsky [aut]
+        Susan Athey [aut]
+        David A. Hirshberg [aut, cre]
+        Guido W. Imbens [aut]
+        Stefan Wager [aut]
+Description: A package for estimating average treatment effects in panel data.
+    synthdid currently provides methods only for the case that all treated units
+    adopt treatment at the same time. This package is currently in beta.
+Depends: 
+    R (>= 3.4.4), quadprog 
+License: none
+RoxygenNote: 6.1.1.9000
