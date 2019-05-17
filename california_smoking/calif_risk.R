@@ -71,12 +71,12 @@ for(iter in 1:length(STATE.NAME)) {
     y.did = sapply(all.preds[iter,], function(vv)vv["did"])
     y.sc = sapply(all.preds[iter,], function(vv)vv["sc"])
     y.sdid = sapply(all.preds[iter,], function(vv)vv["sdid"])
-    plot(1969 + focal.time, y.truth, type = "l", lwd = 2,
+    plot(1969 + focal.time, y.truth, type = "l", lwd = 4,
          ylim = range(y.sc, y.did, y.sdid, y.truth),
          xlab = "year", ylab = "smoking [packs per capita]")
-    lines(1969 + focal.time, y.did, lwd = 2, col = 5, lty = 2)
-    lines(1969 + focal.time, y.sc, lwd = 2, col = 4, lty = 5)
-    lines(1969 + focal.time, y.sdid, lwd = 2, col = 2, lty = 4)
+    lines(1969 + focal.time, y.did, lwd = 4, col = 5, lty = 2)
+    lines(1969 + focal.time, y.sc, lwd = 4, col = 4, lty = 5)
+    lines(1969 + focal.time, y.sdid, lwd = 4, col = 2, lty = 4)
     par(pardef)
     dev.off()
 }
