@@ -4,7 +4,7 @@
 \alias{synthdid_estimate}
 \title{Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block. 
 See Section 4.1 of the paper. Also computes a jacknife estimate of its standard error.
-If fast.var=TRUE, this uses the method described in Section 5 of the paper, in which lambda and omega 
+If fast.var=TRUE, this uses the method described in Section 5 of the paper, in which lambda and omega are held fixed 
 over jackknife replications. If fast.var=FALSE, we re-estimate lambda and omega in each jacknife replication.}
 \usage{
 synthdid_estimate(Y, N_0, T_0, zeta = var(as.numeric(Y)), fast.var = T,
@@ -27,6 +27,6 @@ An average treatment effect estimate, with a standard error estimate attached as
 \description{
 Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block. 
 See Section 4.1 of the paper. Also computes a jacknife estimate of its standard error.
-If fast.var=TRUE, this uses the method described in Section 5 of the paper, in which lambda and omega 
+If fast.var=TRUE, this uses the method described in Section 5 of the paper, in which lambda and omega are held fixed 
 over jackknife replications. If fast.var=FALSE, we re-estimate lambda and omega in each jacknife replication.
 }
