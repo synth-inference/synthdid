@@ -14,7 +14,7 @@ rho <- 0.7
 var <- outer(1:T, 1:T, FUN=function(x, y) rho^(abs(x-y)))
 W <- (1:N > N_0) %*% t(1:T > T_0)
 
-mu.reps <- 10
+mu.reps <- 100
 noise.reps <- 10
 include.slow=TRUE
 

@@ -37,7 +37,7 @@ mu <- U %*% t(V)
 error <- rmvnorm(n, sigma = var, method = "chol")
 Y <- mu + tau * W  + sigma * error 
 
-tau.hat = sdid_est(Y,n_0,T_0)
+tau.hat = synthdid_estimate(Y,n_0,T_0)
 
 print(paste("true tau:", tau))
 print(paste0("point estimate: ", round(tau.hat, 2)))
