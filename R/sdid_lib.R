@@ -1,14 +1,6 @@
-library(quadprog)
+library(osqp)
 
-#' Computes regularized synthetic control weights:
-#' gamma = argmin_g{||M g - target||_2^2 / length(target) +
-#'                  zeta * ||g||_2^2 : sum g = 1, g >= 0}
-#' @param M
-#' @param target
-#' @param zeta. Defaults to 1.
-#' @return gamma
-#' @export sc_weight
-sc_weight = function(M, target, zeta = 1) {
+sc_weight_no_intercept = function(M, target, zeta = 1) {
     if (nrow(M) != length(target)) {
         stop("invalid dimensions")
     }
@@ -23,33 +15,33 @@ sc_weight = function(M, target, zeta = 1) {
     # = [ weights, imbalance]' * [zeta*I, 0; 0, (1/length(target)) I] * [weights, imbalance] 
     # in our call to solve.QP, the parameter Dmat is this block-diagonal matrix, 
     # and we pass dvec=0 because we have no linear term
-    Dmat = diag(c(rep(zeta, ncol(M)), rep(1 / length(target), nrow(M))))
-    dvec = rep(0, ncol(M) + nrow(M))
+    #Dmat = diag(c(rep(zeta, ncol(M)), rep(1 / length(target), nrow(M))))
+    #dvec = rep(0, ncol(M) + nrow(M))
     # our first nrow(M)+1 constraints are equality constraints
     # the first nrow(M) impose that M*weights - imbalance = target
     # the next imposes that sum(weights)=1
     # and the remaining constraints impose the positivity of our weights
-    meq = nrow(M) + 1
-    AT = rbind(cbind(M, diag(1, nrow(M))),
-               c(rep(1, ncol(M)), rep(0, nrow(M))),
-               cbind(diag(1, ncol(M)), matrix(0, ncol(M), nrow(M))))
-    bvec = c(target, 1, rep(0, ncol(M)))
+    #AT = rbind(cbind(M, diag(1, nrow(M))),
+    #           c(rep(1, ncol(M)), rep(0, nrow(M))),
+    #           cbind(diag(1, ncol(M)), matrix(0, ncol(M), nrow(M))))
+    #lb = c(target, 1, rep(0, ncol(M)))
+    #ub = c(target, 1, rep(Inf, ncol(M)))
+    #soln = solve_osqp(Dmat, -dvec, AT, lb, ub, osqpSettings(verbose=FALSE))
+    #gamma = soln$x[1:ncol(M)]
     
-    soln = solve.QP(Dmat, dvec, t(AT), bvec, meq = meq)
-    gamma = soln$solution[1:ncol(M)]
+    Dmat = t(M) %*% M + zeta * diag(ncol(M))
+    dvec = t(target) %*% M
+    meq = 1
+    AT = rbind(rep(1, ncol(M)), 
+               diag(1, ncol(M)))
+    lb = c(1, rep(0, ncol(M)))
+    ub = c(1, rep(Inf, ncol(M)))
+    soln = solve_osqp(Dmat, -dvec, AT, lb, ub, osqpSettings(verbose=FALSE))
+    gamma = soln$x
     return(gamma)
 }
 
-#' Computes regularized synthetic control weights with an intercept.
-#' gamma = argmin_g{||M g - target - c||_2^2 / length(target) +
-#'                       zeta * ||g||_2^2 : sum g = 1, g >= 0}
-#' This may be useful when there are global time trends; see (2.7) in the paper.
-#' @param M
-#' @param target
-#' @param zeta. Defaults to 1.
-#' @return gamma
-#' @export sc_weight_FE 
-sc_weight_FE = function(M, target, zeta = 1) {
+sc_weight_intercept = function(M, target, zeta = 1) {
     if (nrow(M) != length(target)) {
         stop("invalid dimensions")
     }
@@ -63,12 +55,32 @@ sc_weight_FE = function(M, target, zeta = 1) {
     AT = rbind(cbind(M, diag(1, nrow(M)), -1),
                c(rep(1, ncol(M)), rep(0, nrow(M)), 0),
                cbind(diag(1, ncol(M)), matrix(0, ncol(M), nrow(M)), 0))
-    bvec = c(target, 1, rep(0, ncol(M)))
-    meq = nrow(M) + 1
+    lb = c(target, 1, rep(0, ncol(M)))
+    ub = c(target, 1, rep(Inf, ncol(M)))
     
-    soln = solve.QP(Dmat, dvec, t(AT), bvec, meq = meq)
-    gamma = soln$solution[1:ncol(M)]
+    soln = solve_osqp(Dmat, -dvec, AT, lb, ub, osqpSettings(verbose=FALSE))
+    gamma = soln$x[1:ncol(M)]
     return(gamma)
+}
+
+#' Computes regularized synthetic control weights
+#  if intercept = FALSE, these weights gamma solve
+#' argmin_{gamma}{||M gamma - target||_2^2 / length(target) + zeta * ||gamma||_2^2 : sum gamma = 1, gamma >= 0}.
+#' if intercept = TRUE, these weights gamma solve
+#' argmin_{gamma,c}{||M gamma - target - c||_2^2 / length(target) + zeta * ||gamma||_2^2 : sum gamma = 1, gamma >= 0}
+#' Allowing an intercept may be useful when there are global time trends; see (2.7) in the paper.
+#' @param M
+#' @param target
+#' @param zeta. Defaults to 1.
+#' @param intercept. Defaults to FALSE
+#' @return gamma
+#' @export sc_weight
+sc_weight = function(M, target, zeta=1, intercept=FALSE) {
+    if(intercept) {
+        sc_weight_intercept(M,target,zeta)
+    } else {
+        sc_weight_no_intercept(M,target,zeta)
+    }
 }
 
 #' synthetic diff-in-diff and synthetic control predictions 
@@ -77,16 +89,19 @@ sc_weight_FE = function(M, target, zeta = 1) {
 #' @param zeta, the weight on an L2 penalty on the weights. See (6.1) in the paper. Defaults to var(Y).
 #' @return a 2-vector of estimates, synthetic diff-in-diff followed by synthetic control
 #' @export sdid_predict
-sdid_predict = function(Y, zeta = var(as.numeric(Y))) {
+sdid_predict = function(Y, zeta = var(as.numeric(Y)), lambda.intercept=FALSE, omega.intercept=FALSE) {
     NN = nrow(Y)
     TT = ncol(Y)
-    lambda.weight = sc_weight(Y[-NN, -TT], Y[-NN, TT], zeta = zeta)
-    omega.weight = sc_weight(t(Y[-NN, -TT]), Y[NN, -TT], zeta = zeta)
+    lambda.weight = sc_weight(Y[-NN, -TT], Y[-NN, TT], zeta = zeta, intercept = lambda.intercept)
+    omega.weight = sc_weight(t(Y[-NN, -TT]), Y[NN, -TT], zeta = zeta, intercept = omega.intercept)
     SC.transpose.est = sum(lambda.weight * Y[NN, -TT])
     SC.est = sum(omega.weight * Y[-NN, TT])
     interact.est = omega.weight %*% Y[-NN, -TT] %*% lambda.weight
     sdid.est = SC.est + SC.transpose.est - interact.est
-    c(SDID=sdid.est, SC=SC.est)
+    attr(sdid.est, 'sc.estimate') = SC.est
+    attr(sdid.est, 'lambda') = lambda.weight
+    attr(sdid.est, 'omega') = omega.weight
+    return(sdid.est)
 }
 
 #' Computes synthetic diff-in-diff estimate for an average treatment effect with a treated block. 
@@ -101,15 +116,15 @@ sdid_predict = function(Y, zeta = var(as.numeric(Y))) {
 #' @param fast.var. Defaults to TRUE.
 #' @return An average treatment effect estimate, with a standard error estimate attached as the attribute 'se'
 #' @export sdid_est
-sdid_est <- function(Y, n_0, T_0, zeta=var(as.numeric(Y)), fast.var=T){
+sdid_est <- function(Y, n_0, T_0, zeta=var(as.numeric(Y)), fast.var=T, lambda.intercept=FALSE, omega.intercept=FALSE){
     n = nrow(Y)
     T = ncol(Y)
     Y_00 <- Y[1:n_0,1:T_0]
     Y_10 <- Y[(n_0+1):n,1:T_0]
     Y_01 <- Y[1:n_0,(T_0+1):T]
     Y_11 <- Y[(n_0+1):n,(T_0+1):T]
-    omega.weight <- sc_weight(t(Y_00), colMeans(Y_10), zeta = zeta)
-    lambda.weight <- sc_weight(Y_00, rowMeans(Y_01),   zeta = zeta)
+    omega.weight <- sc_weight(t(Y_00), colMeans(Y_10), zeta = zeta, intercept = omega.intercept)
+    lambda.weight <- sc_weight(Y_00, rowMeans(Y_01),   zeta = zeta, intercept = lambda.intercept)
         
     est <- sdid_simple(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11)
     
@@ -118,11 +133,14 @@ sdid_est <- function(Y, n_0, T_0, zeta=var(as.numeric(Y)), fast.var=T){
         if(fast.var) {
             est_jk[i] <- sdid_simple(omega.weight, lambda.weight, Y_00, Y_10[-i,], Y_01, Y_11[-i,])
         } else {
-            est_jk[i] <- sdid_est(Y[-(n_0+i),], n_0, T_0, zeta=zeta, fast.var=T)
+            est_jk[i] <- sdid_est(Y[-(n_0+i),], n_0, T_0, zeta=zeta, fast.var=T, 
+                                  lambda.intercept = lambda.intercept, omega.intercept = omega.intercept)
         }
     }
     V.hat <- (n - n_0 - 1) * mean((est_jk - est)^2)
     attr(est, 'se')=sqrt(V.hat)
+    attr(est, 'lambda') = lambda.weight
+    attr(est, 'omega') = omega.weight
     return(est)
 }
 sdid_simple <- function(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11){
@@ -184,12 +202,12 @@ did_simple <- function(Y_00, Y_10, Y_01, Y_11){
 #' @param T_0, the number of pre-treatment time steps. Columns 1-T_0 of Y correspond to pre-treatment time steps.
 #' @return A copy of Y with entries Y[i,j] for i > n_0, j > T_0 replaced with imputed values
 #' @export sdid_impute
-sdid_impute = function(Y, n_0, T_0) { 
+sdid_impute = function(Y, n_0, T_0, lambda.intercept = FALSE, omega.intercept = FALSE) { 
     n = nrow(Y)
     T = ncol(Y)
     for(ii in (n_0+1):n) {
         for(jj in (T_0+1):T) {
-            Y[ii,jj] = sdid_predict(Y[c(1:n_0, ii), c(1:T_0, jj)])[1]
+            Y[ii,jj] = sdid_predict(Y[c(1:n_0, ii), c(1:T_0, jj)], lambda.intercept=lambda.intercept, omega.intercept=omega.intercept)[1]
         }
     }
     Y
