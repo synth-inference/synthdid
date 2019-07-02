@@ -81,7 +81,7 @@ synthdid_impute_1 = function(Y, zeta = var(as.numeric(Y)), lambda.intercept=FALS
 
 #' Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block. 
 #' See Section 4.1 of the paper. Also computes a jacknife estimate of its standard error.
-#' If fast.var=TRUE, this uses the method described in Section 5 of the paper, in which lambda and omega 
+#' If fast.var=TRUE, this uses the method described in Section 5 of the paper, in which lambda and omega are held fixed 
 #' over jackknife replications. If fast.var=FALSE, we re-estimate lambda and omega in each jacknife replication.
 #' @param Y, the observation matrix. 
 #' @param N_0, the number of control units. Rows 1-N_0 of Y correspond to the control units.
