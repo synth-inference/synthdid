@@ -20,66 +20,69 @@ STATE = data.raw[1,]
 X = t(data.raw[2:8,])
 Y.pre = t(data.raw[9:27,])
 Y.post = t(data.raw[28:39,])
+pre = 1:19
+post = 20:31
 
 calif = which(STATE.NAME == "California")
 
+Y.avg = apply(data.raw[9:39, -calif], 1, mean)
+Y.calif = data.raw[9:39, calif]
+Y.avg.sec = seq(Y.avg[1], Y.avg[31], length.out=31)
+Y.calif.sec = Y.avg.sec + Y.calif[pre] - Y.avg.sec[pre]
+plot.data = data.frame(y=c(Y.avg, Y.avg.sec, Y.calif, Y.calif.sec), time=rep(1960 + (9:39), 4), state=rep(c('Average', 'California'), each=31*2),
+                       type = rep(rep(c('Observed', 'Secant'), each=31),2))
+ggplot(plot.data) + geom_line(aes(x=time, y=y, color=state, linetype=type), size=1)
+
+Y.avg = apply(data.raw[9:39, -calif], 1, mean)
+Y.calif = data.raw[9:39, calif]
+plot.data = data.frame(y=c(Y.avg, Y.avg.sec, Y.calif, Y.calif.sec), time=rep(1960 + (9:39), 4), state=rep(c('Average', 'California'), each=31*2),
+                       type = rep(rep(c('Observed', 'Secant'), each=31),2))
+ggplot(plot.data) + geom_line(aes(x=time, y=y, color=state, linetype=type), size=1)
+
+
+
+
 # only consider 5 post-treatment periods
-post.periods = 1
-focal.time = 11:ncol(Y.pre)
+ss = calif
+omega.weight = sc_weight(t(Y.pre[-ss,]), Y.pre[ss,], zeta = var(as.numeric(Y.pre)))
+lambda.weight = sc_weight(Y.pre[-ss,], apply(Y.post[-ss,],1,mean), zeta = var(as.numeric(Y.pre)))
 
-Delta.pre = Y.pre[,-1] - Y.pre[,-19]
+col.SC = sum(lambda.weight * Y.pre[ss,])
+row.SC = sum(omega.weight  *  apply(Y.post[-ss,], 1, mean))
+cross.term = omega.weight %*% Y.pre[-ss,] %*% lambda.weight
+sdid = as.numeric(row.SC + col.SC - cross.term)
+sc.trajectory = omega.weight %*% cbind(Y.pre[-ss,], Y.post[-ss,])
 
-sigma.sq = var(as.numeric(Delta.pre))
+pre.time = sum(pre * lambda.weight) + 1969
+post.time = mean(post) + 1969
+calif.post = mean(Y.post[ss,])
+ggplot() + geom_segment(aes(x=pre.time, xend=post.time, y=col.SC, yend=calif.post), color='red') +
+           geom_point(aes(x=c(pre.time, post.time), y=c(col.SC, calif.post)), color = 'red') +
+           geom_segment(aes(x=pre.time, xend=post.time, y=cross.term, yend=row.SC), color='blue') +
+           geom_point(aes(x=c(pre.time, post.time), y=c(cross.term, yend=row.SC)), color='blue') +
+           geom_segment(aes(x=pre.time, xend=post.time, y=col.SC, yend=row.SC + col.SC - cross.term), color='red', linetype=2) +
+           geom_point(aes(x=c(pre.time, post.time), y=c(col.SC, yend=row.SC + col.SC - cross.term)), color='red', shape=21) +
+           geom_line(aes(x=1969+pre, y=Y.pre[ss,]), color='red', linetype=3) +
+           geom_line(aes(x=1969+1:31, y = as.numeric(sc.trajectory)), color='blue', linetype=3) + 
+           geom_vline(aes(xintercept=1969+19), color='black', linetype=1, alpha=.2) +  
+           + xlab('') + ylab('') 
 
-all.preds = outer(1:length(STATE.NAME), focal.time, Vectorize(function(ss, tt) {
-    omega.weight = sc_weight(t(Y.pre[-ss,1:(tt-1)]), Y.pre[ss,1:(tt-1)], zeta = sigma.sq)
-    lambda.weight = sc_weight_FE(Y.pre[-ss,1:(tt-1)], Y.pre[-ss,tt], zeta = sigma.sq)
-    col.SC = sum(lambda.weight * Y.pre[ss,1:(tt-1)])
-    row.SC = sum(omega.weight * Y.pre[-ss,tt])
-    cross.term = omega.weight %*% Y.pre[-ss,1:(tt-1)] %*% lambda.weight
-    sdid = as.numeric(row.SC + col.SC - cross.term)
-    sc = row.SC
-    did = mean(Y.pre[-ss,tt]) + mean(Y.pre[ss,1:(tt-1)]) - mean(Y.pre[-ss,1:(tt-1)])
-    list(c(did=did, sc=sc, sdid=sdid, truth=Y.pre[ss,tt]))
-}))
+list(c(did=did, sc=sc, sdid=sdid, truth=Y.pre[ss,tt]))
 
-did.err = apply(all.preds, 1:2, function(vv) vv[[1]]["did"] - vv[[1]]["truth"])
-sc.err = apply(all.preds, 1:2, function(vv) vv[[1]]["sc"] - vv[[1]]["truth"])
-sdid.err = apply(all.preds, 1:2, function(vv) vv[[1]]["sdid"] - vv[[1]]["truth"])
-
-c(mean(did.err^2), mean(sc.err^2), mean(sdid.err^2))
-
-state.rmse = data.frame(DID=sqrt(rowMeans(did.err^2)),
-                        SC=sqrt(rowMeans(sc.err^2)),
-                        SDID=sqrt(rowMeans(sdid.err^2)))
-
-pdf("calif_sdid_vs_sc_mse.pdf")
+pdf(fnm)
 pardef = par(xpd = FALSE, mar = c(4.5, 5, 3, 3) + 0.5, cex.lab=1.4, cex.axis=1.4, cex.main=1.4, cex.sub=1.4)
-plot(state.rmse$SDID, state.rmse$SC, log = "xy", cex = 1.5,
-     xlab = "synthetic diff-in-diff RMSE",
-     ylab = "synthetic control RMSE")
-abline(0, 1, lwd = 2, lty = 3)
-points(state.rmse$SDID[calif], state.rmse$SC[calif], pch = 16, col = 4, cex = 1.5)
+y.truth = sapply(all.preds[iter,], function(vv)vv["truth"])
+y.did = sapply(all.preds[iter,], function(vv)vv["did"])
+y.sc = sapply(all.preds[iter,], function(vv)vv["sc"])
+y.sdid = sapply(all.preds[iter,], function(vv)vv["sdid"])
+plot(1969 + focal.time, y.truth, type = "l", lwd = 2,
+     ylim = range(y.sc, y.did, y.sdid, y.truth),
+     xlab = "year", ylab = "smoking [packs per capita]")
+lines(1969 + focal.time, y.did, lwd = 2, col = 5, lty = 2)
+lines(1969 + focal.time, y.sc, lwd = 2, col = 4, lty = 5)
+lines(1969 + focal.time, y.sdid, lwd = 2, col = 2, lty = 4)
 par(pardef)
 dev.off()
-
-for(iter in 1:length(STATE.NAME)) {
-    fnm = paste0("state_plots/", STATE.NAME[iter], ".pdf")
-    pdf(fnm)
-    pardef = par(xpd = FALSE, mar = c(4.5, 5, 3, 3) + 0.5, cex.lab=1.4, cex.axis=1.4, cex.main=1.4, cex.sub=1.4)
-    y.truth = sapply(all.preds[iter,], function(vv)vv["truth"])
-    y.did = sapply(all.preds[iter,], function(vv)vv["did"])
-    y.sc = sapply(all.preds[iter,], function(vv)vv["sc"])
-    y.sdid = sapply(all.preds[iter,], function(vv)vv["sdid"])
-    plot(1969 + focal.time, y.truth, type = "l", lwd = 2,
-         ylim = range(y.sc, y.did, y.sdid, y.truth),
-         xlab = "year", ylab = "smoking [packs per capita]")
-    lines(1969 + focal.time, y.did, lwd = 2, col = 5, lty = 2)
-    lines(1969 + focal.time, y.sc, lwd = 2, col = 4, lty = 5)
-    lines(1969 + focal.time, y.sdid, lwd = 2, col = 2, lty = 4)
-    par(pardef)
-    dev.off()
-}
 
 row.names(state.rmse) = STATE.NAME
 state.rmse.ord = state.rmse[order(STATE.NAME),]
