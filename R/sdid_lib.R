@@ -140,7 +140,7 @@ synthdid_simple <- function(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11)
 #' @param N_0, the number of control units. Rows 1-N_0 of Y correspond to the control units.
 #' @param T_0, the number of pre-treatment time steps. Columns 1-T_0 of Y correspond to pre-treatment time steps.
 #' @return An average treatment effect estimate, with a standard error estimate attached as the attribute 'se'
-#' @export did_est
+#' @export did_estimate
 did_estimate <- function(Y, N_0, T_0){
     N = nrow(Y)
     T = ncol(Y)
