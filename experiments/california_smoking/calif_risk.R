@@ -4,7 +4,7 @@ library(lfe)
 library(lmtest)
 library(sandwich)
 library(xtable)
-source("../sdid_lib.R")
+library(synthdid)
 data.raw = read.table("MLAB_data.txt")
 
 STATE.NAME = c("Alabama", "Arkansas", "Colorado", "Connecticut", "Delaware",
@@ -33,7 +33,7 @@ sigma.sq = var(as.numeric(Delta.pre))
 
 all.preds = outer(1:length(STATE.NAME), focal.time, Vectorize(function(ss, tt) {
     omega.weight = sc_weight(t(Y.pre[-ss,1:(tt-1)]), Y.pre[ss,1:(tt-1)], zeta = sigma.sq)
-    lambda.weight = sc_weight_FE(Y.pre[-ss,1:(tt-1)], Y.pre[-ss,tt], zeta = sigma.sq)
+    lambda.weight = sc_weight(Y.pre[-ss,1:(tt-1)], Y.pre[-ss,tt], zeta = sigma.sq, intercept=TRUE)
     col.SC = sum(lambda.weight * Y.pre[ss,1:(tt-1)])
     row.SC = sum(omega.weight * Y.pre[-ss,tt])
     cross.term = omega.weight %*% Y.pre[-ss,1:(tt-1)] %*% lambda.weight
