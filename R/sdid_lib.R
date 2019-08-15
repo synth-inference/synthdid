@@ -15,9 +15,8 @@ sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = c("OSQP", 
     if (nrow(M) != length(target)) {
         stop("invalid dimensions")
     }
-    
     # solve.QP cannot have 0 penalty for quadratic term
-    if (zeta == 0) { zeta = 1e-06 }
+    if (is.null(zeta) || zeta == 0) { zeta = 1e-06 }
     
 
     if(solver %in% c('ECOS', 'SCS')) {
@@ -61,14 +60,15 @@ sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = c("OSQP", 
 #' use synthetic diff-in-diff and synthetic control to impute 
 #' a single missing observation, element (N, T) in an N x T matrix.
 #' @param Y, the observation matrix
-#' @param zeta, the weight on an L2 penalty on the weights. See (6.1) in the paper. Defaults to var(Y).
+#' @param zeta.lambda, the weight on an L2 penalty on lambda. See (6.1) in the paper. Defaults to zero.
+#' @param zeta.omega,  analogous for omega. Defaults to var(Y).
 #' @return a 2-vector of estimates, synthetic diff-in-diff followed by synthetic control
 #' @export synthdid_impute_1
-synthdid_impute_1 = function(Y, zeta = var(as.numeric(Y)), lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL) {
+synthdid_impute_1 = function(Y, zeta.lambda=0, zeta.omega=var(as.numeric(Y)), lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL) {
     N = nrow(Y)
     T = ncol(Y)
-    lambda.weight = sc_weight(Y[-N, -T], Y[-N, T], zeta = zeta, intercept = lambda.intercept, solver = solver)
-    omega.weight = sc_weight(t(Y[-N, -T]), Y[N, -T], zeta = zeta, intercept = omega.intercept)
+    lambda.weight = sc_weight(Y[-N, -T], Y[-N, T], zeta = zeta.lambda, intercept = lambda.intercept, solver = solver)
+    omega.weight = sc_weight(t(Y[-N, -T]), Y[N, -T], zeta = zeta.omega, intercept = omega.intercept)
     SC.transpose.est = sum(lambda.weight * Y[N, -T])
     SC.est = sum(omega.weight * Y[-N, T])
     interact.est = omega.weight %*% Y[-N, -T] %*% lambda.weight
@@ -86,19 +86,20 @@ synthdid_impute_1 = function(Y, zeta = var(as.numeric(Y)), lambda.intercept=FALS
 #' @param Y, the observation matrix. 
 #' @param N_0, the number of control units. Rows 1-N_0 of Y correspond to the control units.
 #' @param T_0, the number of pre-treatment time steps. Columns 1-T_0 of Y correspond to pre-treatment time steps.
-#' @param zeta, the weight on an L2 penalty on the weights. See (6.1) in the paper. Defaults to var(Y).
+#' @param zeta.lambda, the weight on an L2 penalty on lambda. See (6.1) in the paper. Defaults to zero.
+#' @param zeta.omega,  analogous for omega. Defaults to var(Y).
 #' @param fast.var. Defaults to TRUE.
 #' @return An average treatment effect estimate, with a standard error estimate attached as the attribute 'se'
 #' @export synthdid_estimate
-synthdid_estimate <- function(Y, N_0, T_0, zeta=var(as.numeric(Y)), fast.var=T, lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL){
+synthdid_estimate <- function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=var(as.numeric(Y)), fast.var=TRUE, lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL){
     N = nrow(Y)
     T = ncol(Y)
     Y_00 <- Y[1:N_0,1:T_0]
     Y_10 <- Y[(N_0+1):N,1:T_0]
     Y_01 <- Y[1:N_0,(T_0+1):T]
     Y_11 <- Y[(N_0+1):N,(T_0+1):T]
-    omega.weight <- sc_weight(t(Y_00), colMeans(Y_10), zeta = zeta, intercept = omega.intercept, solver = solver)
-    lambda.weight <- sc_weight(Y_00, rowMeans(Y_01),   zeta = zeta, intercept = lambda.intercept, solver = solver)
+    omega.weight <- sc_weight(t(Y_00), colMeans(Y_10), zeta = zeta.omega/(N-N_0),  intercept = omega.intercept, solver = solver)
+    lambda.weight <- sc_weight(Y_00, rowMeans(Y_01),   zeta = zeta.lambda/(T-T_0), intercept = lambda.intercept, solver = solver)
     est <- synthdid_simple(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11)
         
     est_jk = rep(0,N)
@@ -115,7 +116,7 @@ synthdid_estimate <- function(Y, N_0, T_0, zeta=var(as.numeric(Y)), fast.var=T, 
 		}
 	} else {
         for(i in 1:N) {
-            est_jk[i] <- synthdid_estimate(Y[-i,], ifelse(i <= N_0, N_0 - 1, N_0), T_0, zeta=zeta, fast.var=T, 
+            est_jk[i] <- synthdid_estimate(Y[-i,], ifelse(i <= N_0, N_0 - 1, N_0), T_0, zeta.lambda=zeta.lambda, zeta.omega=zeta.omega, fast.var=T, 
                                   lambda.intercept = lambda.intercept, omega.intercept = omega.intercept)
         }
     }
@@ -182,14 +183,17 @@ did_simple <- function(Y_00, Y_10, Y_01, Y_11){
 #' @param Y, the observation matrix. 
 #' @param N_0, the number of control units. Rows 1-N_0 of Y correspond to the control units.
 #' @param T_0, the number of pre-treatment time steps. Columns 1-T_0 of Y correspond to pre-treatment time steps.
+#' @param zeta.lambda, the weight on an L2 penalty on lambda. See (6.1) in the paper. Defaults to zero.
+#' @param zeta.omega,  analogous for omega. Defaults to var(Y).
 #' @return A copy of Y with entries Y[i,j] for i > N_0, j > T_0 replaced with imputed values
 #' @export synthdid_impute
-synthdid_impute = function(Y, N_0, T_0, lambda.intercept = FALSE, omega.intercept = FALSE, solver = NULL) { 
+synthdid_impute = function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=var(as.numeric(Y)), lambda.intercept = FALSE, omega.intercept = FALSE, solver = NULL) { 
     N = nrow(Y)
     T = ncol(Y)
     for(ii in (N_0+1):N) {
         for(jj in (T_0+1):T) {
-            Y[ii,jj] = synthdid_impute_1(Y[c(1:N_0, ii), c(1:T_0, jj)], lambda.intercept=lambda.intercept, omega.intercept=omega.intercept, solver=solver)[1]
+            Y[ii,jj] = synthdid_impute_1(Y[c(1:N_0, ii), c(1:T_0, jj)], zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
+                                         lambda.intercept=lambda.intercept, omega.intercept=omega.intercept, solver=solver)[1]
         }
     }
     Y

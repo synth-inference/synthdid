@@ -1,5 +1,6 @@
 library(mvtnorm)
 library(synthdid)
+source('../../R/sdid_lib.R')
 
 N_0 <- 100
 N_1 <- 20 
@@ -15,10 +16,10 @@ var <- outer(1:T, 1:T, FUN=function(x, y) rho^(abs(x-y)))
 W <- (1:N > N_0) %*% t(1:T > T_0)
 
 mu.reps <- 100
-noise.reps <- 10
-include.slow=TRUE
+noise.reps <- 100
+include.slow=FALSE
 
-results_full <- matrix(0, ncol = 3, nrow = mu.reps*noise.reps)
+results_full <- matrix(0, ncol = 4, nrow = mu.reps*noise.reps)
    
 for (l in 1:mu.reps){
     U <- matrix(rpois(rank * N, sqrt(1:N) / sqrt(N)), N, rank)
@@ -31,7 +32,9 @@ for (l in 1:mu.reps){
         Y <- mu + tau * W  + sigma * error 
 
         tau.sdid = synthdid_estimate(Y,N_0,T_0)
+        tau.sdid.2 = synthdid_estimate(Y,N_0,T_0, zeta.omega=var(as.numeric(Y))*100)
         t.sdid = (tau.sdid - tau)/attr(tau.sdid,'se')
+        t.sdid.2 = (tau.sdid.2 - tau)/attr(tau.sdid.2,'se')
         tau.did = did_estimate(Y,N_0,T_0)
         t.did = (tau.did - tau)/attr(tau.did,'se')
         
@@ -43,14 +46,15 @@ for (l in 1:mu.reps){
         }
 
         index <- (l-1)*noise.reps + e
-        results_full[index,] <- c(t.sdid, t.did, t.sdid.slow)
+        results_full[index,] <- c(t.sdid.slow, t.sdid, t.sdid.2, t.did)
     }
 }
 
     
-print(paste('coverage', 'synthdid',           round(mean(abs(results_full[,3]) < 1.96),4),
-                        'synthdid-fastvar',   round(mean(abs(results_full[,1]) < 1.96),4),
-                        'did',                round(mean(abs(results_full[,2]) < 1.96),4)))
+print(paste('coverage', 'synthdid',                        round(mean(abs(results_full[,1]) < 1.96),4),
+                        'synthdid-fastvar',                round(mean(abs(results_full[,2]) < 1.96),4),
+                        'synthdid-fastvar-omegapenalty',   round(mean(abs(results_full[,3]) < 1.96),4),
+                        'did',                             round(mean(abs(results_full[,4]) < 1.96),4)))
     
 
 pdf(sprintf('qq_sdid_cor_%d.pdf', 100*rho), width=5,height=5,paper='special') 
