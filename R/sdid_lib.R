@@ -67,11 +67,11 @@ sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = c("OSQP", 
 synthdid_impute_1 = function(Y, zeta.lambda=0, zeta.omega=var(as.numeric(Y)), lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL) {
     N = nrow(Y)
     T = ncol(Y)
-    lambda.weight = sc_weight(Y[-N, -T], Y[-N, T], zeta = zeta.lambda, intercept = lambda.intercept, solver = solver)
-    omega.weight = sc_weight(t(Y[-N, -T]), Y[N, -T], zeta = zeta.omega, intercept = omega.intercept)
+    lambda.weight = sc_weight(Y[-N, -T, drop=FALSE], Y[-N, T], zeta = zeta.lambda, intercept = lambda.intercept, solver = solver)
+    omega.weight = sc_weight(t(Y[-N, -T, drop=FALSE]), Y[N, -T], zeta = zeta.omega, intercept = omega.intercept)
     SC.transpose.est = sum(lambda.weight * Y[N, -T])
     SC.est = sum(omega.weight * Y[-N, T])
-    interact.est = omega.weight %*% Y[-N, -T] %*% lambda.weight
+    interact.est = omega.weight %*% Y[-N, -T, drop=FALSE] %*% lambda.weight
     sdid.est = SC.est + SC.transpose.est - interact.est
     attr(sdid.est, 'sc.estimate') = SC.est
     attr(sdid.est, 'lambda') = lambda.weight
@@ -94,33 +94,39 @@ synthdid_impute_1 = function(Y, zeta.lambda=0, zeta.omega=var(as.numeric(Y)), la
 synthdid_estimate <- function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=var(as.numeric(Y)), fast.var=TRUE, lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL){
     N = nrow(Y)
     T = ncol(Y)
-    Y_00 <- Y[1:N_0,1:T_0]
-    Y_10 <- Y[(N_0+1):N,1:T_0]
-    Y_01 <- Y[1:N_0,(T_0+1):T]
-    Y_11 <- Y[(N_0+1):N,(T_0+1):T]
+    stopifnot(N > N_0, T > T_0)
+
+    Y_00 <- Y[1:N_0,1:T_0, drop=FALSE]
+    Y_10 <- Y[(N_0+1):N,1:T_0, drop=FALSE]
+    Y_01 <- Y[1:N_0,(T_0+1):T, drop=FALSE]
+    Y_11 <- Y[(N_0+1):N,(T_0+1):T, drop=FALSE]
     omega.weight <- sc_weight(t(Y_00), colMeans(Y_10), zeta = zeta.omega/(N-N_0),  intercept = omega.intercept, solver = solver)
     lambda.weight <- sc_weight(Y_00, rowMeans(Y_01),   zeta = zeta.lambda/(T-T_0), intercept = lambda.intercept, solver = solver)
     est <- synthdid_simple(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11)
         
-    est_jk = rep(0,N)
-    if(fast.var) { 
-	    for (i in 1:N_0) {
-            # drop the jackknifed-out row of omega and renormalize to sum to one
-            # this renormalization arises from the weighted least squares interpretation of our estimator
-            # it is not asymptotically necessary but helps in practice
-		    omega.jk  = omega.weight[-i]/sum(omega.weight[-i]) 
-		    est_jk[i] = synthdid_simple(omega.jk, lambda.weight, Y_00[-i,], Y_10, Y_01[-i,], Y_11)
+    if(N == N_0 + 1) { ## if we cannot jackknife rows, return NA variance estimate
+       V.hat <- NA
+    } else { 
+        est_jk = rep(0,N)
+        if(fast.var) { 
+            for (i in 1:N_0) {
+                # drop the jackknifed-out row of omega and renormalize to sum to one
+                # this renormalization arises from the weighted least squares interpretation of our estimator
+                # it is not asymptotically necessary but helps in practice
+                omega.jk  = omega.weight[-i]/sum(omega.weight[-i]) 
+                est_jk[i] = synthdid_simple(omega.jk, lambda.weight, Y_00[-i,, drop=FALSE], Y_10, Y_01[-i,, drop=FALSE], Y_11)
+            }
+            for(i in (N_0+1):N) {
+                est_jk[i] <- synthdid_simple(omega.weight, lambda.weight, Y_00, Y_10[-(i - N_0),, drop=FALSE], Y_01, Y_11[-(i - N_0),, drop=FALSE])
+            }
+        } else {
+            for(i in 1:N) {
+                est_jk[i] <- synthdid_estimate(Y[-i,, drop=FALSE], ifelse(i <= N_0, N_0 - 1, N_0), T_0, zeta.lambda=zeta.lambda, zeta.omega=zeta.omega, fast.var=T, 
+                                      lambda.intercept = lambda.intercept, omega.intercept = omega.intercept)
+            }
         }
-        for(i in (N_0+1):N) {
-		    est_jk[i] <- synthdid_simple(omega.weight, lambda.weight, Y_00, Y_10[-(i - N_0 + 1),], Y_01, Y_11[-(i - N_0 + 1),])
-		}
-	} else {
-        for(i in 1:N) {
-            est_jk[i] <- synthdid_estimate(Y[-i,], ifelse(i <= N_0, N_0 - 1, N_0), T_0, zeta.lambda=zeta.lambda, zeta.omega=zeta.omega, fast.var=T, 
-                                  lambda.intercept = lambda.intercept, omega.intercept = omega.intercept)
-        }
+        V.hat <- (N - 1) * mean((est_jk - est)^2)
     }
-    V.hat <- (N - 1) * mean((est_jk - est)^2)
     attr(est, 'se')=sqrt(V.hat)
     attr(est, 'lambda') = lambda.weight
     attr(est, 'omega') = omega.weight
@@ -145,29 +151,35 @@ synthdid_simple <- function(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11)
 did_estimate <- function(Y, N_0, T_0){
     N = nrow(Y)
     T = ncol(Y)
-    Y_00 <- Y[1:N_0,1:T_0]
-    Y_10 <- Y[(N_0+1):N,1:T_0]
-    Y_01 <- Y[1:N_0,(T_0+1):T]
-    Y_11 <- Y[(N_0+1):N,(T_0+1):T]
+    stopifnot(N > N_0, T > T_0)
+
+    Y_00 <- Y[1:N_0,1:T_0, drop=FALSE]
+    Y_10 <- Y[(N_0+1):N,1:T_0, drop=FALSE]
+    Y_01 <- Y[1:N_0,(T_0+1):T, drop=FALSE]
+    Y_11 <- Y[(N_0+1):N,(T_0+1):T, drop=FALSE]
         
     est <- did_simple(Y_00, Y_10, Y_01, Y_11)
-    est_jk <- rep(0, nrow=N)
-    for(i in 1:N) {
-        if (i <= N_0){
-            Y_00_jk <- Y_00[-i,] 
-            Y_10_jk <- Y_10
-            Y_01_jk <- Y_01[-i,]
-            Y_11_jk <- Y_11
-            est_jk[i] <- did_simple(Y_00_jk, Y_10_jk, Y_01_jk, Y_11_jk)
-        } else {
-            Y_00_jk <- Y_00
-            Y_10_jk <- Y_10[-(i - N_0 +1),]
-            Y_01_jk <- Y_01
-            Y_11_jk <- Y_11[-(i - N_0 +1),]
-            est_jk[i] <- did_simple(Y_00_jk, Y_10_jk, Y_01_jk, Y_11_jk)
+    if(N == N_0 + 1) { ## if we cannot jackknife rows, return NA variance estimate
+       V.hat <- NA
+    } else { 
+        est_jk <- rep(0, nrow=N)
+        for(i in 1:N) {
+            if (i <= N_0){
+                Y_00_jk <- Y_00[-i,, drop=FALSE] 
+                Y_10_jk <- Y_10
+                Y_01_jk <- Y_01[-i,, drop=FALSE]
+                Y_11_jk <- Y_11
+                est_jk[i] <- did_simple(Y_00_jk, Y_10_jk, Y_01_jk, Y_11_jk)
+            } else {
+                Y_00_jk <- Y_00
+                Y_10_jk <- Y_10[-(i - N_0),, drop=FALSE]
+                Y_01_jk <- Y_01
+                Y_11_jk <- Y_11[-(i - N_0),, drop=FALSE]
+                est_jk[i] <- did_simple(Y_00_jk, Y_10_jk, Y_01_jk, Y_11_jk)
+            }
         }
+        V.hat <- (N - 1) * mean((est_jk - est)^2)
     }
-    V.hat <- (N - 1) * mean((est_jk - est)^2)
     attr(est,'se')=sqrt(V.hat)
     return(est)
 }
