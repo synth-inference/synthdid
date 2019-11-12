@@ -15,17 +15,14 @@ sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = c("OSQP", 
     if (nrow(M) != length(target)) {
         stop("invalid dimensions")
     }
-    # solve.QP cannot have 0 penalty for quadratic term
-    if (is.null(zeta) || zeta == 0) { zeta = 1e-06 }
-    
 
     if(solver %in% c('ECOS', 'SCS')) {
         weights = CVXR::Variable(ncol(M))
         if(intercept) { 
             theintercept = CVXR::Variable(1)
-            objective = zeta * sum(weights^2) + sum((M %*% weights - target - theintercept)^2)/length(target)
+            objective = zeta^2 * length(target) * sum(weights^2) + sum((M %*% weights - target - theintercept)^2)
         } else {
-            objective = zeta * sum(weights^2) + sum((M %*% weights - target)^2)/length(target)
+            objective = zeta^2 * length(target) * sum(weights^2) + sum((M %*% weights - target)^2)
         }
         constraints = list(sum(weights) == 1, weights >= 0)  
         cvx.problem = CVXR::Problem(CVXR::Minimize(objective), constraints)
@@ -37,8 +34,8 @@ sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = c("OSQP", 
             dvec = t(target) %*% cbind(M,1)
             A = cbind(rbind(rep(1, ncol(M)),
                              diag(1, ncol(M))), 0)
-            lb = c(1, rep(0, ncol(M)), -Inf)
-            ub = c(1, rep(Inf, ncol(M)), Inf)
+            lb = c(1, rep(0, ncol(M)))
+            ub = c(1, rep(Inf, ncol(M)))
             soln = osqp::solve_osqp(Dmat, -dvec, A, lb, ub, osqpSettings(verbose=FALSE, adaptive_rho=FALSE))
             soln$x[1:ncol(M)]
 

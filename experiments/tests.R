@@ -1,5 +1,6 @@
 library(mvtnorm)
-library(synthdid)
+library(osqp)
+source('../R/sdid_lib.R')
 
 N_0 <- 100
 N_1 <- 20 
@@ -25,5 +26,12 @@ max(abs(attr(synthdid_estimate(Y,N_0,T_0, solver='OSQP'), 'lambda') -
         attr(synthdid_estimate(Y,N_0,T_0, solver='ECOS'), 'lambda')))
 max(abs(attr(synthdid_estimate(Y,N_0,T_0, lambda.intercept=TRUE, solver='OSQP'), 'lambda') - 
         attr(synthdid_estimate(Y,N_0,T_0, lambda.intercept=TRUE, solver='ECOS'), 'lambda')))
+
+## and these should be near one
+cosine = function(x,y){ sum(x*y)/sqrt(sum(x^2)*sum(y^2)) }
+cosine(attr(synthdid_estimate(Y,N_0,T_0, solver='OSQP'), 'lambda'),
+        attr(synthdid_estimate(Y,N_0,T_0, solver='ECOS'), 'lambda'))
+cosine(attr(synthdid_estimate(Y,N_0,T_0, lambda.intercept=TRUE, solver='OSQP'), 'lambda'),
+        attr(synthdid_estimate(Y,N_0,T_0, lambda.intercept=TRUE, solver='ECOS'), 'lambda'))
 
 
