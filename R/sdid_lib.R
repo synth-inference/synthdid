@@ -33,17 +33,17 @@ sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = c("OSQP", 
         as.numeric(cvx.output$getValue(weights))     
     } else { 
         if(intercept) {
-            Dmat = t(cbind(M,1)) %*% cbind(M,1) + zeta * diag(rep(c(1,0),c(ncol(M), 1))) * length(target)
+            Dmat = t(cbind(M,1)) %*% cbind(M,1) + zeta^2 * diag(rep(c(1,0),c(ncol(M), 1))) * length(target)
             dvec = t(target) %*% cbind(M,1)
             A = cbind(rbind(rep(1, ncol(M)),
                              diag(1, ncol(M))), 0)
-            lb = c(1, rep(0, ncol(M)))
-            ub = c(1, rep(Inf, ncol(M)))
+            lb = c(1, rep(0, ncol(M)), -Inf)
+            ub = c(1, rep(Inf, ncol(M)), Inf)
             soln = osqp::solve_osqp(Dmat, -dvec, A, lb, ub, osqpSettings(verbose=FALSE, adaptive_rho=FALSE))
             soln$x[1:ncol(M)]
 
         } else {
-            Dmat = t(M) %*% M + zeta * diag(ncol(M)) * length(target)
+            Dmat = t(M) %*% M + zeta^2 * diag(ncol(M)) * length(target)
             dvec = t(target) %*% M
             meq = 1
             A = rbind(rep(1, ncol(M)),
@@ -100,8 +100,8 @@ synthdid_estimate <- function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=var(as.nume
     Y_10 <- Y[(N_0+1):N,1:T_0, drop=FALSE]
     Y_01 <- Y[1:N_0,(T_0+1):T, drop=FALSE]
     Y_11 <- Y[(N_0+1):N,(T_0+1):T, drop=FALSE]
-    omega.weight <- sc_weight(t(Y_00), colMeans(Y_10), zeta = zeta.omega/(N-N_0),  intercept = omega.intercept, solver = solver)
-    lambda.weight <- sc_weight(Y_00, rowMeans(Y_01),   zeta = zeta.lambda/(T-T_0), intercept = lambda.intercept, solver = solver)
+    omega.weight <- sc_weight(t(Y_00), colMeans(Y_10), zeta = zeta.omega,  intercept = omega.intercept, solver = solver)
+    lambda.weight <- sc_weight(Y_00, rowMeans(Y_01),   zeta = zeta.lambda, intercept = lambda.intercept, solver = solver)
     est <- synthdid_simple(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11)
         
     if(N == N_0 + 1) { ## if we cannot jackknife rows, return NA variance estimate
