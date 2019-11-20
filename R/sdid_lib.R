@@ -61,7 +61,7 @@ sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = c("OSQP", 
 #' @param zeta.omega,  analogous for omega. Defaults to var(Y).
 #' @return a 2-vector of estimates, synthetic diff-in-diff followed by synthetic control
 #' @export synthdid_impute_1
-synthdid_impute_1 = function(Y, zeta.lambda=0, zeta.omega=var(as.numeric(Y)), lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL) {
+synthdid_impute_1 = function(Y, zeta.lambda=0, zeta.omega=sd(as.numeric(Y)), lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL) {
     N = nrow(Y)
     T = ncol(Y)
     lambda.weight = sc_weight(Y[-N, -T, drop=FALSE], Y[-N, T], zeta = zeta.lambda, intercept = lambda.intercept, solver = solver)
@@ -88,7 +88,7 @@ synthdid_impute_1 = function(Y, zeta.lambda=0, zeta.omega=var(as.numeric(Y)), la
 #' @param fast.var. Defaults to TRUE.
 #' @return An average treatment effect estimate, with a standard error estimate attached as the attribute 'se'
 #' @export synthdid_estimate
-synthdid_estimate <- function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=var(as.numeric(Y)), fast.var=TRUE, lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL){
+synthdid_estimate <- function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=sd(as.numeric(Y)), fast.var=TRUE, lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL){
     N = nrow(Y)
     T = ncol(Y)
     stopifnot(N > N_0, T > T_0)
