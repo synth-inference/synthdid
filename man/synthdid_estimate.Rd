@@ -7,7 +7,8 @@ See Section 4.1 of the paper. Also computes a jacknife estimate of its standard 
 If fast.var=TRUE, this uses the method described in Section 5 of the paper, in which lambda and omega are held fixed 
 over jackknife replications. If fast.var=FALSE, we re-estimate lambda and omega in each jacknife replication.}
 \usage{
-synthdid_estimate(Y, N_0, T_0, zeta = var(as.numeric(Y)), fast.var = T,
+synthdid_estimate(Y, N_0, T_0, zeta.lambda = 0,
+  zeta.omega = sd(as.numeric(Y)), fast.var = TRUE,
   lambda.intercept = FALSE, omega.intercept = FALSE, solver = NULL)
 }
 \arguments{
@@ -17,7 +18,9 @@ synthdid_estimate(Y, N_0, T_0, zeta = var(as.numeric(Y)), fast.var = T,
 
 \item{T_0, }{the number of pre-treatment time steps. Columns 1-T_0 of Y correspond to pre-treatment time steps.}
 
-\item{zeta, }{the weight on an L2 penalty on the weights. See (6.1) in the paper. Defaults to var(Y).}
+\item{zeta.lambda, }{the weight on an L2 penalty on lambda. See (6.1) in the paper. Defaults to zero.}
+
+\item{zeta.omega, }{analogous for omega. Defaults to var(Y).}
 
 \item{fast.var.}{Defaults to TRUE.}
 }

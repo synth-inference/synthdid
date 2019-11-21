@@ -5,13 +5,15 @@
 \title{use synthetic diff-in-diff and synthetic control to impute 
 a single missing observation, element (N, T) in an N x T matrix.}
 \usage{
-synthdid_impute_1(Y, zeta = var(as.numeric(Y)),
+synthdid_impute_1(Y, zeta.lambda = 0, zeta.omega = sd(as.numeric(Y)),
   lambda.intercept = FALSE, omega.intercept = FALSE, solver = NULL)
 }
 \arguments{
 \item{Y, }{the observation matrix}
 
-\item{zeta, }{the weight on an L2 penalty on the weights. See (6.1) in the paper. Defaults to var(Y).}
+\item{zeta.lambda, }{the weight on an L2 penalty on lambda. See (6.1) in the paper. Defaults to zero.}
+
+\item{zeta.omega, }{analogous for omega. Defaults to var(Y).}
 }
 \value{
 a 2-vector of estimates, synthetic diff-in-diff followed by synthetic control

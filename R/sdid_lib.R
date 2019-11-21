@@ -10,7 +10,7 @@
 #' @param intercept. Defaults to FALSE
 #' @return gamma
 #' @export sc_weight
-sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = c("ECOS"), verbose = FALSE) {
+sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = CVXR::installed_solvers(), verbose = FALSE) {
     solver = match.arg(solver)
     if (nrow(M) != length(target)) {
         stop("invalid dimensions")
@@ -27,29 +27,6 @@ sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = c("ECOS"),
     cvx.problem = CVXR::Problem(CVXR::Minimize(objective), constraints)
     cvx.output = solve(cvx.problem, solver = solver, verbose = verbose)
     as.numeric(cvx.output$getValue(weights))     
-}
-
-
-#' use synthetic diff-in-diff and synthetic control to impute 
-#' a single missing observation, element (N, T) in an N x T matrix.
-#' @param Y, the observation matrix
-#' @param zeta.lambda, the weight on an L2 penalty on lambda. See (6.1) in the paper. Defaults to zero.
-#' @param zeta.omega,  analogous for omega. Defaults to var(Y).
-#' @return a 2-vector of estimates, synthetic diff-in-diff followed by synthetic control
-#' @export synthdid_impute_1
-synthdid_impute_1 = function(Y, zeta.lambda=0, zeta.omega=sd(as.numeric(Y)), lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL) {
-    N = nrow(Y)
-    T = ncol(Y)
-    lambda.weight = sc_weight(Y[-N, -T, drop=FALSE], Y[-N, T], zeta = zeta.lambda, intercept = lambda.intercept, solver = solver)
-    omega.weight = sc_weight(t(Y[-N, -T, drop=FALSE]), Y[N, -T], zeta = zeta.omega, intercept = omega.intercept)
-    SC.transpose.est = sum(lambda.weight * Y[N, -T])
-    SC.est = sum(omega.weight * Y[-N, T])
-    interact.est = omega.weight %*% Y[-N, -T, drop=FALSE] %*% lambda.weight
-    sdid.est = SC.est + SC.transpose.est - interact.est
-    attr(sdid.est, 'sc.estimate') = SC.est
-    attr(sdid.est, 'lambda') = lambda.weight
-    attr(sdid.est, 'omega') = omega.weight
-    return(sdid.est)
 }
 
 #' Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block. 
@@ -100,11 +77,17 @@ synthdid_estimate <- function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=sd(as.numer
         }
         V.hat <- (N - 1) * mean((est_jk - est)^2)
     }
+    
+    class(est) = 'synthdid'
     attr(est, 'se')=sqrt(V.hat)
     attr(est, 'lambda') = lambda.weight
     attr(est, 'omega') = omega.weight
+    attr(est, 'Y') = Y
+    attr(est, 'N0') = N_0
+    attr(est, 'T0') = T_0
     return(est)
 }
+
 synthdid_simple <- function(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11){
     interact_est <- omega.weight %*% Y_00 %*% lambda.weight
     time_est <- sum(lambda.weight* colMeans(Y_10))
@@ -112,7 +95,7 @@ synthdid_simple <- function(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11)
     est <- as.vector(mean(Y_11) - unit_est - time_est+ interact_est)
     return(est)
 }
-        
+
 
 #' Returns a diff-in-diff estimate for treatment effect with a treated block. 
 #' Also returns, as an attribute of the return value, a jacknife estimate of its standard error.
@@ -153,13 +136,40 @@ did_estimate <- function(Y, N_0, T_0){
         }
         V.hat <- (N - 1) * mean((est_jk - est)^2)
     }
-    attr(est,'se')=sqrt(V.hat)
+    
+    class(est) = 'did'
+    attr(est, 'se')=sqrt(V.hat)
+    attr(est, 'Y') = Y
+    attr(est, 'N0') = N_0
+    attr(est, 'T0') = T_0
+
     return(est)
 }
 did_simple <- function(Y_00, Y_10, Y_01, Y_11){
     return(as.vector(mean(Y_11) - mean(Y_01) - mean(Y_10) + mean(Y_00)))
 }
 
+#' use synthetic diff-in-diff and synthetic control to impute 
+#' a single missing observation, element (N, T) in an N x T matrix.
+#' @param Y, the observation matrix
+#' @param zeta.lambda, the weight on an L2 penalty on lambda. See (6.1) in the paper. Defaults to zero.
+#' @param zeta.omega,  analogous for omega. Defaults to var(Y).
+#' @return a 2-vector of estimates, synthetic diff-in-diff followed by synthetic control
+#' @export synthdid_impute_1
+synthdid_impute_1 = function(Y, zeta.lambda=0, zeta.omega=sd(as.numeric(Y)), lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL) {
+    N = nrow(Y)
+    T = ncol(Y)
+    lambda.weight = sc_weight(Y[-N, -T, drop=FALSE], Y[-N, T], zeta = zeta.lambda, intercept = lambda.intercept, solver = solver)
+    omega.weight = sc_weight(t(Y[-N, -T, drop=FALSE]), Y[N, -T], zeta = zeta.omega, intercept = omega.intercept)
+    SC.transpose.est = sum(lambda.weight * Y[N, -T])
+    SC.est = sum(omega.weight * Y[-N, T])
+    interact.est = omega.weight %*% Y[-N, -T, drop=FALSE] %*% lambda.weight
+    sdid.est = SC.est + SC.transpose.est - interact.est
+    attr(sdid.est, 'sc.estimate') = SC.est
+    attr(sdid.est, 'lambda') = lambda.weight
+    attr(sdid.est, 'omega') = omega.weight
+    return(sdid.est)
+}
 
 #' Imputes control potential outcomes for each element of a treated block, Y[i,j] for i > N_0, j > T_0. 
 #' Each such entry is imputed separately using synthetic diff-in-diff based on control and pretreatment observations in Y.
@@ -183,3 +193,72 @@ synthdid_impute = function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=var(as.numeric
     }
     Y
 } 
+
+
+#' Plots treated and synthetic control trajectories and overlays a 2x2 diff-in-diff diagram of our estimator.
+#' In this overlay, the treatment effect is the length of the vertical dotted line. 
+#' The weights lambda defining our synthetic pre-treatment time period are plotted below.
+#' Requires ggplot2
+#' @param est, output of synthdid_estimate
+#' @param treated.name, the name of the treated curve that appears in the legend. Defaults to 'treated'
+#' @param treated.name, the name of the control curve that appears in the legend. Defaults to 'synthetic control'
+#' @export plot.synthdid
+plot.synthdid = function(est, treated.name='treated', control.name='synthetic control') { 
+   library(ggplot2)
+    Y = attr(est, 'Y')
+    N0 = attr(est, 'N0'); N1 = nrow(Y)-N0
+    T0 = attr(est, 'T0'); T1 = ncol(Y)-T0
+    omega.synth  = c(attr(est, 'omega'),  rep(0, N1))
+    lambda.synth = c(attr(est, 'lambda'), rep(0, T1))
+    omega.target = c(rep(0,N0), rep(1/N1, N1))
+    lambda.target = c(rep(0,T0), rep(1/T1, T1))
+
+    col.SC = omega.target %*% Y %*% lambda.synth 
+    row.SC = omega.synth %*% Y %*% lambda.target
+    cross.term = omega.synth %*% Y %*% lambda.synth
+    sdid = as.numeric(row.SC + col.SC - cross.term)
+    syn.trajectory = as.numeric(omega.synth %*% Y)
+    obs.trajectory = as.numeric(omega.target %*% Y)
+    units = factor(c(treated.name, control.name))
+    treated = units[1]
+    control = units[2]
+    unit = rep(units, each=T0+T1)
+    time = as.numeric(colnames(Y))
+    linetype = 1 
+    p = ggplot() +  geom_line(aes(x=rep(time,2), y=c(obs.trajectory, syn.trajectory), color=unit), linetype=linetype) +
+                    geom_vline(aes(xintercept=time[T0]), color='black', linetype=1, alpha=.2) + 
+                    theme_light() + xlab('') + ylab('') + labs(color='') + 
+                    theme(legend.position = c(0.88, 0.9), legend.direction = "vertical") # legend.background = element_blank()) 
+
+    pre.time = lambda.synth %*% time
+    post.time = lambda.target %*% time
+    post.val = omega.target %*% Y %*% lambda.target
+    p = p + geom_segment(aes(x=pre.time, xend=post.time, y=col.SC, yend=post.val, color=treated)) +
+            geom_point(aes(x=c(pre.time, post.time), y=c(col.SC, post.val), color=treated)) +
+            geom_segment(aes(x=pre.time, xend=post.time, y=cross.term, yend=row.SC, color=control)) +
+            geom_point(aes(x=c(pre.time, post.time), y=c(cross.term, yend=row.SC), color=control)) +
+            geom_segment(aes(x=pre.time, xend=post.time, y=col.SC, yend=row.SC + col.SC - cross.term, color=treated), linetype=2) +
+            geom_point(aes(x=c(pre.time, post.time), y=c(col.SC, yend=row.SC + col.SC - cross.term), color=treated), shape=21) 
+    p = p + geom_segment(aes(x=post.time, xend=post.time, y=post.val, yend=row.SC + col.SC - cross.term, color=treated), linetype=3)
+        
+    height = (max(c(obs.trajectory,syn.trajectory))-min(c(obs.trajectory, syn.trajectory)))/4
+    bottom = min(c(obs.trajectory, syn.trajectory)) - height
+    density.color = 'black'
+    p = p + geom_ribbon(aes(x=time[1:T0], ymin = rep(bottom,T0), ymax= bottom + height*lambda.synth[1:T0]/max(lambda.synth)),
+                                color=density.color, fill=density.color, alpha = .4)  
+    p
+}
+
+#' Plots treated and average control trajectories and overlays a 2x2 diff-in-diff diagram of our estimator.
+#' In this overlay, the treatment effect is the length of the vertical dotted line. 
+#' Requires ggplot2
+#' @param est, output of did_estimate
+#' @export plot.did
+plot.did = function(est) {
+    N0 = attr(est, 'N0') 
+    T0 = attr(est, 'T0') 
+    attr(est, 'lambda') = rep(1/T0, T0)
+    attr(est, 'omega') = rep(1/N0, N0)
+    plot.synthdid(est, control.name='average control')
+}
+
