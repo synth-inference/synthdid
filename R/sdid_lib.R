@@ -10,47 +10,23 @@
 #' @param intercept. Defaults to FALSE
 #' @return gamma
 #' @export sc_weight
-sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = c("OSQP", "ECOS", "SCS"), verbose = FALSE) {
+sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = c("ECOS"), verbose = FALSE) {
     solver = match.arg(solver)
     if (nrow(M) != length(target)) {
         stop("invalid dimensions")
     }
 
-    if(solver %in% c('ECOS', 'SCS')) {
-        weights = CVXR::Variable(ncol(M))
-        if(intercept) { 
-            theintercept = CVXR::Variable(1)
-            objective = zeta^2 * length(target) * sum(weights^2) + sum((M %*% weights - target - theintercept)^2)
-        } else {
-            objective = zeta^2 * length(target) * sum(weights^2) + sum((M %*% weights - target)^2)
-        }
-        constraints = list(sum(weights) == 1, weights >= 0)  
-        cvx.problem = CVXR::Problem(CVXR::Minimize(objective), constraints)
-        cvx.output = solve(cvx.problem, solver = solver, verbose = verbose)
-        as.numeric(cvx.output$getValue(weights))     
-    } else { 
-        if(intercept) {
-            Dmat = t(cbind(M,1)) %*% cbind(M,1) + zeta^2 * diag(rep(c(1,0),c(ncol(M), 1))) * length(target)
-            dvec = t(target) %*% cbind(M,1)
-            A = cbind(rbind(rep(1, ncol(M)),
-                             diag(1, ncol(M))), 0)
-            lb = c(1, rep(0, ncol(M)))
-            ub = c(1, rep(Inf, ncol(M)))
-            soln = osqp::solve_osqp(Dmat, -dvec, A, lb, ub, osqpSettings(verbose=FALSE, adaptive_rho=FALSE))
-            soln$x[1:ncol(M)]
-
-        } else {
-            Dmat = t(M) %*% M + zeta^2 * diag(ncol(M)) * length(target)
-            dvec = t(target) %*% M
-            meq = 1
-            A = rbind(rep(1, ncol(M)),
-                      diag(1, ncol(M)))
-            lb = c(1, rep(0, ncol(M)))
-            ub = c(1, rep(Inf, ncol(M)))
-            soln = osqp::solve_osqp(Dmat, -dvec, A, lb, ub, osqpSettings(verbose=FALSE, adaptive_rho=FALSE))
-            soln$x
-        }
-    } 
+    weights = CVXR::Variable(ncol(M))
+    if(intercept) { 
+        theintercept = CVXR::Variable(1)
+        objective = zeta^2 * length(target) * sum(weights^2) + sum((M %*% weights - target - theintercept)^2)
+    } else {
+        objective = zeta^2 * length(target) * sum(weights^2) + sum((M %*% weights - target)^2)
+    }
+    constraints = list(sum(weights) == 1, weights >= 0)  
+    cvx.problem = CVXR::Problem(CVXR::Minimize(objective), constraints)
+    cvx.output = solve(cvx.problem, solver = solver, verbose = verbose)
+    as.numeric(cvx.output$getValue(weights))     
 }
 
 
