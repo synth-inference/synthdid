@@ -1,32 +1,52 @@
 #' Computes regularized synthetic control weights
 #  if intercept = FALSE, these weights gamma solve
-#' argmin_{gamma}{||M gamma - target||_2^2 / length(target) + zeta * ||gamma||_2^2 : sum gamma = 1, gamma >= 0}.
+#' argmin_{gamma}{||M gamma - target||_2^2 / length(target) + zeta^2 ||gamma||_2^2
 #' if intercept = TRUE, these weights gamma solve
-#' argmin_{gamma,c}{||M gamma - target - c||_2^2 / length(target) + zeta * ||gamma||_2^2 : sum gamma = 1, gamma >= 0}
+#' argmin_{gamma,c}{||M gamma + intercept - target||_2^2 / length(target) + zeta^2 ||gamma||_2^2 
+#' where gamma is constrained either to the simplex or the l1 ball of radius radius
 #' Allowing an intercept may be useful when there are global time trends; see (2.7) in the paper.
 #' @param M
 #' @param target
 #' @param zeta. Defaults to 1.
-#' @param intercept. Defaults to FALSE
-#' @return gamma
+#' @param intercept.  Defaults to FALSE
+#' @param constraint. Defaults to simplex
+#' @param radius.    Defaults to 2, used only when constraint=l1
+#' @return gamma, with intercept in attribute
 #' @export sc_weight
-sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = CVXR::installed_solvers(), verbose = FALSE) {
+sc_weight = function(M, target, zeta = 1, intercept=FALSE, constraint = c('simplex', 'l1'), radius=2, solver = CVXR::installed_solvers(), solver.options=list()) {
     solver = match.arg(solver)
+    constraint = match.arg(constraint)
     if (nrow(M) != length(target)) {
         stop("invalid dimensions")
     }
 
-    weights = CVXR::Variable(ncol(M))
-    if(intercept) { 
-        theintercept = CVXR::Variable(1)
-        objective = zeta^2 * length(target) * sum(weights^2) + sum((M %*% weights - target - theintercept)^2)
-    } else {
-        objective = zeta^2 * length(target) * sum(weights^2) + sum((M %*% weights - target)^2)
+    # return constant weights for zeta=infinity, taking the limit of the solution as zeta->infinity for M finite
+    if(zeta == Inf) {
+        if(constraint == 'simplex') {
+            return(rep(1/ncol(M), ncol(M)))
+        } else {
+            return(rep(0, ncol(M))); 
+        }
     }
-    constraints = list(sum(weights) == 1, weights >= 0)  
+
+    weights = CVXR::Variable(ncol(M))
+    theintercept = CVXR::Variable(1)
+    objective = if(!intercept) { 
+        zeta^2 * length(target) * sum(weights^2) + sum((M %*% weights - target)^2)
+    } else {
+        zeta^2 * length(target) * sum(weights^2) + sum((M %*% weights + theintercept - target)^2)
+    }
+    constraints = if(constraint == 'simplex') {
+        list(sum(weights) == 1, weights >= 0)
+    } else {
+        list(sum(weights) <= radius)
+    }
+        
     cvx.problem = CVXR::Problem(CVXR::Minimize(objective), constraints)
-    cvx.output = solve(cvx.problem, solver = solver, verbose = verbose)
-    as.numeric(cvx.output$getValue(weights))     
+    cvx.output = do.call(solve, c(list(cvx.problem, solver = solver), solver.options))
+    v=as.numeric(cvx.output$getValue(weights))     
+    if(intercept) { attr(v, 'intercept') = cvx.output$getValue(theintercept) }
+    v
 }
 
 #' Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block. 
@@ -41,7 +61,10 @@ sc_weight = function(M, target, zeta = 1, intercept = FALSE, solver = CVXR::inst
 #' @param fast.var. Defaults to TRUE.
 #' @return An average treatment effect estimate, with a standard error estimate attached as the attribute 'se'
 #' @export synthdid_estimate
-synthdid_estimate <- function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=sd(as.numeric(Y)), fast.var=TRUE, lambda.intercept=FALSE, omega.intercept=FALSE, solver=NULL){
+synthdid_estimate <- function(Y, N_0, T_0, 
+                              zeta.lambda=0, zeta.omega=sd(as.numeric(Y)), fast.var=TRUE, 
+                              lambda.intercept=FALSE, omega.intercept=FALSE, omega.constraint = NULL, lambda.constraint = NULL, 
+                              solver=NULL, solver.options=list(),  standardize=FALSE) {
     N = nrow(Y)
     T = ncol(Y)
     stopifnot(N > N_0, T > T_0)
@@ -50,8 +73,17 @@ synthdid_estimate <- function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=sd(as.numer
     Y_10 <- Y[(N_0+1):N,1:T_0, drop=FALSE]
     Y_01 <- Y[1:N_0,(T_0+1):T, drop=FALSE]
     Y_11 <- Y[(N_0+1):N,(T_0+1):T, drop=FALSE]
-    omega.weight <- sc_weight(t(Y_00), colMeans(Y_10), zeta = zeta.omega,  intercept = omega.intercept, solver = solver)
-    lambda.weight <- sc_weight(Y_00, rowMeans(Y_01),   zeta = zeta.lambda, intercept = lambda.intercept, solver = solver)
+    
+    # if standardize=TRUE, rescale when estimating omega as in Hainmueller's Synth package. 
+    # Not recommended. This makes more sense in the more general framework of Hainmueller, where what we balance aren't necessarily the outcomes.
+    scale = if(!standardize) { diag(T0) } else { diag(1 / apply(rbind(Y_00,Y_10), 2, sd)) } 
+        
+    omega.weight <- sc_weight(t(Y_00 %*% scale), colMeans(Y_10 %*% scale), zeta = zeta.omega,  
+                              intercept = omega.intercept,  constraint = omega.constraint, 
+                              solver = solver, solver.options=solver.options)
+    lambda.weight <- sc_weight(Y_00, rowMeans(Y_01),   zeta = zeta.lambda, 
+                              intercept = lambda.intercept, constraint = lambda.constraint, 
+                              solver = solver, solver.options=solver.options)
     est <- synthdid_simple(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11)
         
     if(N == N_0 + 1) { ## if we cannot jackknife rows, return NA variance estimate
@@ -71,8 +103,10 @@ synthdid_estimate <- function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=sd(as.numer
             }
         } else {
             for(i in 1:N) {
-                est_jk[i] <- synthdid_estimate(Y[-i,, drop=FALSE], ifelse(i <= N_0, N_0 - 1, N_0), T_0, zeta.lambda=zeta.lambda, zeta.omega=zeta.omega, fast.var=T, 
-                                      lambda.intercept = lambda.intercept, omega.intercept = omega.intercept)
+                est_jk[i] <- synthdid_estimate(Y[-i,, drop=FALSE], ifelse(i <= N_0, N_0 - 1, N_0), T_0, 
+                                      zeta.lambda=zeta.lambda, zeta.omega=zeta.omega, fast.var=T, 
+                                      lambda.intercept = lambda.intercept, omega.intercept = omega.intercept, 
+                                      omega.constraint = omega.constraint, lambda.constraint = lambda.constraint, solver = solver, solver.options = solver.options)
             }
         }
         V.hat <- (N - 1) * mean((est_jk - est)^2)
@@ -203,8 +237,8 @@ synthdid_impute = function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=var(as.numeric
 #' @param treated.name, the name of the treated curve that appears in the legend. Defaults to 'treated'
 #' @param treated.name, the name of the control curve that appears in the legend. Defaults to 'synthetic control'
 #' @export plot.synthdid
-plot.synthdid = function(est, treated.name='treated', control.name='synthetic control') { 
-   library(ggplot2)
+plot.synthdid = function(est, treated.name='treated', control.name='synthetic control', use.intercept=TRUE) { 
+    library(ggplot2)
     Y = attr(est, 'Y')
     N0 = attr(est, 'N0'); N1 = nrow(Y)-N0
     T0 = attr(est, 'T0'); T1 = ncol(Y)-T0
@@ -212,34 +246,40 @@ plot.synthdid = function(est, treated.name='treated', control.name='synthetic co
     lambda.synth = c(attr(est, 'lambda'), rep(0, T1))
     omega.target = c(rep(0,N0), rep(1/N1, N1))
     lambda.target = c(rep(0,T0), rep(1/T1, T1))
+    lambda.intercept = attr(attr(est, 'lambda'), 'intercept')
+    if(!use.intercept || is.null(lambda.intercept)) { lambda.intercept = 0 }
 
-    col.SC = omega.target %*% Y %*% lambda.synth 
-    row.SC = omega.synth %*% Y %*% lambda.target
-    cross.term = omega.synth %*% Y %*% lambda.synth
-    sdid = as.numeric(row.SC + col.SC - cross.term)
-    syn.trajectory = as.numeric(omega.synth %*% Y)
-    obs.trajectory = as.numeric(omega.target %*% Y)
     units = factor(c(treated.name, control.name))
     treated = units[1]
     control = units[2]
     unit = rep(units, each=T0+T1)
     time = as.numeric(colnames(Y))
     linetype = 1 
+
+    col.SC = omega.target %*% (Y %*% lambda.synth + lambda.intercept)
+    row.SC = omega.synth %*% Y %*% lambda.target
+    cross.term = omega.synth %*% (Y %*% lambda.synth + lambda.intercept)
+    sdid = as.numeric(row.SC + col.SC - cross.term)
+    post.val = omega.target %*% Y %*% lambda.target
+    syn.trajectory = as.numeric(omega.synth %*% Y)
+    obs.trajectory = as.numeric(omega.target %*% Y)
+
+    pre.time = (lambda.synth / sum(lambda.synth)) %*% time # for non-simplex weights, normalize to locate the synthetic time period on the x axis
+    post.time = lambda.target %*% time 
     p = ggplot() +  geom_line(aes(x=rep(time,2), y=c(obs.trajectory, syn.trajectory), color=unit), linetype=linetype) +
                     geom_vline(aes(xintercept=time[T0]), color='black', linetype=1, alpha=.2) + 
-                    theme_light() + xlab('') + ylab('') + labs(color='') + 
-                    theme(legend.position = c(0.88, 0.9), legend.direction = "vertical") # legend.background = element_blank()) 
-
-    pre.time = lambda.synth %*% time
-    post.time = lambda.target %*% time
-    post.val = omega.target %*% Y %*% lambda.target
-    p = p + geom_segment(aes(x=pre.time, xend=post.time, y=col.SC, yend=post.val, color=treated)) +
-            geom_point(aes(x=c(pre.time, post.time), y=c(col.SC, post.val), color=treated)) +
-            geom_segment(aes(x=pre.time, xend=post.time, y=cross.term, yend=row.SC, color=control)) +
-            geom_point(aes(x=c(pre.time, post.time), y=c(cross.term, yend=row.SC), color=control)) +
-            geom_segment(aes(x=pre.time, xend=post.time, y=col.SC, yend=row.SC + col.SC - cross.term, color=treated), linetype=2) +
-            geom_point(aes(x=c(pre.time, post.time), y=c(col.SC, yend=row.SC + col.SC - cross.term), color=treated), shape=21) 
-    p = p + geom_segment(aes(x=post.time, xend=post.time, y=post.val, yend=row.SC + col.SC - cross.term, color=treated), linetype=3)
+                    theme_light() + xlab('') + ylab('') + labs(color='') + theme(legend.direction = "horizontal", legend.position = "top")
+    if(all(lambda.synth == 0)) { # sc case
+        p = p + geom_point(aes(x=post.time, y=post.val, color=treated)) + geom_point(aes(x=post.time, y=sdid,   color=control))
+    } else { 
+        p = p + geom_segment(aes(x=pre.time, xend=post.time, y=col.SC, yend=post.val, color=treated)) +
+                geom_point(aes(x=c(pre.time, post.time), y=c(col.SC, post.val), color=treated)) +
+                geom_segment(aes(x=pre.time, xend=post.time, y=cross.term, yend=row.SC, color=control)) +
+                geom_point(aes(x=c(pre.time, post.time), y=c(cross.term, yend=row.SC), color=control)) +
+                geom_segment(aes(x=pre.time, xend=post.time, y=col.SC, yend=sdid, color=treated), linetype=2) +
+                geom_point(aes(x=c(pre.time, post.time), y=c(col.SC, yend=sdid), color=treated), shape=21) 
+    }
+    p = p + geom_segment(aes(x=post.time, xend=post.time, y=post.val, yend=sdid, color=treated), linetype=3)
         
     height = (max(c(obs.trajectory,syn.trajectory))-min(c(obs.trajectory, syn.trajectory)))/4
     bottom = min(c(obs.trajectory, syn.trajectory)) - height
