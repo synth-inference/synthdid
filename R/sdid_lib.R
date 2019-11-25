@@ -76,7 +76,7 @@ synthdid_estimate <- function(Y, N_0, T_0,
     
     # if standardize=TRUE, rescale when estimating omega as in Hainmueller's Synth package. 
     # Not recommended. This makes more sense in the more general framework of Hainmueller, where what we balance aren't necessarily the outcomes.
-    scale = if(!standardize) { diag(T0) } else { diag(1 / apply(rbind(Y_00,Y_10), 2, sd)) } 
+    scale = if(!standardize) { diag(T_0) } else { diag(1 / apply(rbind(Y_00,Y_10), 2, sd)) } 
         
     omega.weight <- sc_weight(t(Y_00 %*% scale), colMeans(Y_10 %*% scale), zeta = zeta.omega,  
                               intercept = omega.intercept,  constraint = omega.constraint, 
