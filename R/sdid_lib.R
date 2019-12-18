@@ -39,7 +39,7 @@ sc_weight = function(M, target, zeta = 1, intercept=FALSE, constraint = c('simpl
     constraints = if(constraint == 'simplex') {
         list(sum(weights) == 1, weights >= 0)
     } else {
-        list(sum(weights) <= radius)
+        list(sum(abs(weights)) <= radius)
     }
         
     cvx.problem = CVXR::Problem(CVXR::Minimize(objective), constraints)
@@ -237,7 +237,7 @@ synthdid_impute = function(Y, N_0, T_0, zeta.lambda=0, zeta.omega=var(as.numeric
 #' @param treated.name, the name of the treated curve that appears in the legend. Defaults to 'treated'
 #' @param treated.name, the name of the control curve that appears in the legend. Defaults to 'synthetic control'
 #' @export plot.synthdid
-plot.synthdid = function(est, treated.name='treated', control.name='synthetic control', use.intercept=TRUE) { 
+plot.synthdid = function(est, treated.name='treated', control.name='synthetic control', use.intercept=FALSE) { 
     library(ggplot2)
     Y = attr(est, 'Y')
     N0 = attr(est, 'N0'); N1 = nrow(Y)-N0
