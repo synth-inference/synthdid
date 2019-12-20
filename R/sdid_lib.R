@@ -266,7 +266,7 @@ plot.synthdid = function(est, treated.name='treated', control.name='synthetic co
 
     pre.time = (lambda.synth / sum(lambda.synth)) %*% time # for non-simplex weights, normalize to locate the synthetic time period on the x axis
     post.time = lambda.target %*% time 
-    p = ggplot() +  geom_line(aes(x=rep(time,2), y=c(obs.trajectory, syn.trajectory), color=unit), linetype=linetype) +
+    p = ggplot() +  geom_line(aes(x=rep(time,2), y=c(obs.trajectory, syn.trajectory), color=unit), linetype=linetype, alpha=.5) +
                     geom_vline(aes(xintercept=time[T0]), color='black', linetype=1, alpha=.2) + 
                     theme_light() + xlab('') + ylab('') + labs(color='') + theme(legend.direction = "horizontal", legend.position = "top")
     if(all(lambda.synth == 0)) { # sc case
