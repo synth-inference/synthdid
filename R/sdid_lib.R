@@ -13,7 +13,7 @@
 #' @param radius.    Defaults to 2, used only when constraint=l1
 #' @return gamma, with intercept in attribute
 #' @export sc_weight
-sc_weight = function(M, target, zeta = 1, intercept=FALSE, constraint = c('simplex', 'l1'), radius=2, solver = CVXR::installed_solvers(), solver.options=list()) {
+sc_weight = function(M, target, zeta = 1, intercept=FALSE, constraint = c('simplex', 'l1'), radius=2, solver = c(CVXR::installed_solvers(), 'fw'), solver.options=list()) {
     solver = match.arg(solver)
     constraint = match.arg(constraint)
     if (nrow(M) != length(target)) {
@@ -29,6 +29,11 @@ sc_weight = function(M, target, zeta = 1, intercept=FALSE, constraint = c('simpl
         }
     }
 
+    if(solver == 'fw') {
+        stopifnot(constraint == 'simplex')
+        return(do.call(sc_weight.fw, c(list(M, target, zeta=zeta, intercept=intercept), solver.options)));
+    }
+        
     weights = CVXR::Variable(ncol(M))
     theintercept = CVXR::Variable(1)
     objective = if(!intercept) { 
@@ -40,14 +45,66 @@ sc_weight = function(M, target, zeta = 1, intercept=FALSE, constraint = c('simpl
         list(sum(weights) == 1, weights >= 0)
     } else {
         list(sum(abs(weights)) <= radius)
-    }
-        
+    }  
     cvx.problem = CVXR::Problem(CVXR::Minimize(objective), constraints)
     cvx.output = do.call(solve, c(list(cvx.problem, solver = solver), solver.options))
     v=as.numeric(cvx.output$getValue(weights))     
     if(intercept) { attr(v, 'intercept') = cvx.output$getValue(theintercept) }
     v
 }
+
+# frank-wolfe solver for ridge-penalized least squares over the simplex.
+# essentially as described in https://arxiv.org/pdf/1911.04415.pdf
+# exhibits slow convergence near optimum. Error in x relative to an exact solution tends to be about 1/max.iter
+sc_weight.fw = function(M, target, zeta=1, intercept=FALSE, min.step.size=1e-3, max.iter=1000, x.init=NULL, step='linesearch') {
+    lambda.reg = zeta^2*length(target)
+    if(intercept) {
+        target = target - mean(target)
+        M = apply(M, 2, function(row) { row - mean(row) })
+    } 
+    
+    vals = rep(NA, max.iter)
+    t=0
+    if(is.null(x.init)) { 
+        x=rep(0,ncol(M))
+        x[1]=1
+    } else {
+        x.init
+    }
+
+    step.size = Inf
+    while(t < max.iter && step.size > min.step.size) {
+        t=t+1
+        Mx = M %*% x
+        dif = Mx - target
+        grad = lambda.reg * x + t(M) %*% dif
+        i = which.min(grad)
+        
+        vals[t] = zeta^2*mean(x^2) + mean(dif^2) 
+        if(identical(step,'linesearch')) { 
+            delta = -x; delta[i] = delta[i]+1
+            Mdelta = M[,i] - Mx 
+            step.size = min(1, c( -t(grad) %*% delta / (lambda.reg * sum(delta^2) + sum(Mdelta^2))))
+            # Check that this analytic line search is correct by doing an iterative line search
+            #line.obj = function(step.size) {        
+            #    x = x*(1-step.size)
+            #    x[i] = x[i] + step.size
+            #    lambda.reg * sum(x^2) + sum((M %*% x - target)^2)
+            #}
+            #approx.step.size = optimize(line.obj, c(0, 1))$minimum
+            #print(c(step.size, approx.step.size))
+        } else {
+            step.size = 2/(t+2)
+        }
+
+        x = x*(1-step.size)
+        x[i] = x[i] + step.size
+    }
+    attr(x,'objective') = vals
+    x
+}
+
+sc_weight.projgrd = function(M, target)
 
 #' Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block. 
 #' See Section 4.1 of the paper. Also computes a jacknife estimate of its standard error.
@@ -64,7 +121,8 @@ sc_weight = function(M, target, zeta = 1, intercept=FALSE, constraint = c('simpl
 synthdid_estimate <- function(Y, N_0, T_0, 
                               zeta.lambda=0, zeta.omega=sd(as.numeric(Y)), fast.var=TRUE, 
                               lambda.intercept=FALSE, omega.intercept=FALSE, omega.constraint = NULL, lambda.constraint = NULL, 
-                              solver=NULL, solver.options=list(),  standardize=FALSE) {
+                              solver=NULL, solver.options=list(), standardize=FALSE,
+                              lambda.solver.options=solver.options, omega.solver.options = solver.options) {
     N = nrow(Y)
     T = ncol(Y)
     stopifnot(N > N_0, T > T_0)
@@ -80,12 +138,13 @@ synthdid_estimate <- function(Y, N_0, T_0,
         
     omega.weight <- sc_weight(t(Y_00 %*% scale), colMeans(Y_10 %*% scale), zeta = zeta.omega,  
                               intercept = omega.intercept,  constraint = omega.constraint, 
-                              solver = solver, solver.options=solver.options)
+                              solver = solver, solver.options=omega.solver.options)
     lambda.weight <- sc_weight(Y_00, rowMeans(Y_01),   zeta = zeta.lambda, 
                               intercept = lambda.intercept, constraint = lambda.constraint, 
-                              solver = solver, solver.options=solver.options)
-    est <- synthdid_simple(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11)
-        
+                              solver = solver, solver.options=lambda.solver.options)
+    tau.curve <- synthdid_simple(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11)
+    est <- mean(tau.curve)
+
     if(N == N_0 + 1) { ## if we cannot jackknife rows, return NA variance estimate
        V.hat <- NA
     } else { 
@@ -96,10 +155,10 @@ synthdid_estimate <- function(Y, N_0, T_0,
                 # this renormalization arises from the weighted least squares interpretation of our estimator
                 # it is not asymptotically necessary but helps in practice
                 omega.jk  = omega.weight[-i]/sum(omega.weight[-i]) 
-                est_jk[i] = synthdid_simple(omega.jk, lambda.weight, Y_00[-i,, drop=FALSE], Y_10, Y_01[-i,, drop=FALSE], Y_11)
+                est_jk[i] = mean(synthdid_simple(omega.jk, lambda.weight, Y_00[-i,, drop=FALSE], Y_10, Y_01[-i,, drop=FALSE], Y_11))
             }
             for(i in (N_0+1):N) {
-                est_jk[i] <- synthdid_simple(omega.weight, lambda.weight, Y_00, Y_10[-(i - N_0),, drop=FALSE], Y_01, Y_11[-(i - N_0),, drop=FALSE])
+                est_jk[i] <- mean(synthdid_simple(omega.weight, lambda.weight, Y_00, Y_10[-(i - N_0),, drop=FALSE], Y_01, Y_11[-(i - N_0),, drop=FALSE]))
             }
         } else {
             for(i in 1:N) {
@@ -114,6 +173,7 @@ synthdid_estimate <- function(Y, N_0, T_0,
     
     class(est) = 'synthdid'
     attr(est, 'se')=sqrt(V.hat)
+    attr(est, 'tau.curve') = tau.curve
     attr(est, 'lambda') = lambda.weight
     attr(est, 'omega') = omega.weight
     attr(est, 'Y') = Y
@@ -122,11 +182,12 @@ synthdid_estimate <- function(Y, N_0, T_0,
     return(est)
 }
 
+#' returns treatment effect curve tau_t for the post-treatment period
 synthdid_simple <- function(omega.weight, lambda.weight, Y_00, Y_10, Y_01, Y_11){
     interact_est <- omega.weight %*% Y_00 %*% lambda.weight
-    time_est <- sum(lambda.weight* colMeans(Y_10))
-    unit_est <- sum(omega.weight*rowMeans(Y_01))
-    est <- as.vector(mean(Y_11) - unit_est - time_est+ interact_est)
+    time_est <- mean(Y_10 %*% lambda.weight)
+    unit_est <- omega.weight %*% Y_01
+    est <- as.vector(colMeans(Y_11) - c(unit_est) - time_est + c(interact_est))
     return(est)
 }
 
