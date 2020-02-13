@@ -7,9 +7,16 @@ Each such entry is imputed separately using synthetic diff-in-diff based on cont
 Use sdid_est instead of this when estimating average treatment effects with multiple missing units,
 as it is better to impute the mean of the missing entries than to impute each missing entry individually and average them.}
 \usage{
-synthdid_impute(Y, N_0, T_0, zeta.lambda = 0,
-  zeta.omega = var(as.numeric(Y)), lambda.intercept = FALSE,
-  omega.intercept = FALSE, solver = NULL)
+synthdid_impute(
+  Y,
+  N_0,
+  T_0,
+  zeta.lambda = 0,
+  zeta.omega = var(as.numeric(Y)),
+  lambda.intercept = FALSE,
+  omega.intercept = FALSE,
+  solver = NULL
+)
 }
 \arguments{
 \item{Y, }{the observation matrix.}

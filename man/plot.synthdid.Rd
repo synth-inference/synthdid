@@ -7,13 +7,15 @@ In this overlay, the treatment effect is the length of the vertical dotted line.
 The weights lambda defining our synthetic pre-treatment time period are plotted below.
 Requires ggplot2}
 \usage{
-\method{plot}{synthdid}(est, treated.name = "treated",
-  control.name = "synthetic control")
+\method{plot}{synthdid}(
+  est,
+  treated.name = "treated",
+  control.name = "synthetic control",
+  use.intercept = FALSE
+)
 }
 \arguments{
 \item{est, }{output of synthdid_estimate}
-
-\item{treated.name, }{the name of the treated curve that appears in the legend. Defaults to 'treated'}
 
 \item{treated.name, }{the name of the control curve that appears in the legend. Defaults to 'synthetic control'}
 }

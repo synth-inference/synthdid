@@ -7,9 +7,23 @@ See Section 4.1 of the paper. Also computes a jacknife estimate of its standard 
 If fast.var=TRUE, this uses the method described in Section 5 of the paper, in which lambda and omega are held fixed 
 over jackknife replications. If fast.var=FALSE, we re-estimate lambda and omega in each jacknife replication.}
 \usage{
-synthdid_estimate(Y, N_0, T_0, zeta.lambda = 0,
-  zeta.omega = sd(as.numeric(Y)), fast.var = TRUE,
-  lambda.intercept = FALSE, omega.intercept = FALSE, solver = NULL)
+synthdid_estimate(
+  Y,
+  N_0,
+  T_0,
+  zeta.lambda = 0,
+  zeta.omega = sd(as.numeric(Y)),
+  fast.var = TRUE,
+  lambda.intercept = FALSE,
+  omega.intercept = FALSE,
+  omega.constraint = NULL,
+  lambda.constraint = NULL,
+  solver = NULL,
+  solver.options = list(),
+  standardize = FALSE,
+  lambda.solver.options = solver.options,
+  omega.solver.options = solver.options
+)
 }
 \arguments{
 \item{Y, }{the observation matrix.}

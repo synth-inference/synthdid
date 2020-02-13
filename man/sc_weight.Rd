@@ -2,27 +2,31 @@
 % Please edit documentation in R/sdid_lib.R
 \name{sc_weight}
 \alias{sc_weight}
-\title{Computes regularized synthetic control weights
-argmin_{gamma}{||M gamma - target||_2^2 / length(target) + zeta * ||gamma||_2^2 : sum gamma = 1, gamma >= 0}.
-if intercept = TRUE, these weights gamma solve
-argmin_{gamma,c}{||M gamma - target - c||_2^2 / length(target) + zeta * ||gamma||_2^2 : sum gamma = 1, gamma >= 0}
-Allowing an intercept may be useful when there are global time trends; see (2.7) in the paper.}
+\title{}
 \usage{
-sc_weight(M, target, zeta = 1, intercept = FALSE,
-  solver = CVXR::installed_solvers(), verbose = FALSE)
+sc_weight(
+  M,
+  target,
+  zeta = 1,
+  intercept = FALSE,
+  constraint = c("simplex", "l1"),
+  radius = 2,
+  solver = c(CVXR::installed_solvers(), "fw"),
+  solver.options = list()
+)
 }
 \arguments{
 \item{zeta.}{Defaults to 1.}
 
 \item{intercept.}{Defaults to FALSE}
+
+\item{constraint.}{Defaults to simplex}
+
+\item{radius.}{Defaults to 2, used only when constraint=l1}
 }
 \value{
-gamma
+gamma, with intercept in attribute
 }
 \description{
-Computes regularized synthetic control weights
-argmin_{gamma}{||M gamma - target||_2^2 / length(target) + zeta * ||gamma||_2^2 : sum gamma = 1, gamma >= 0}.
-if intercept = TRUE, these weights gamma solve
-argmin_{gamma,c}{||M gamma - target - c||_2^2 / length(target) + zeta * ||gamma||_2^2 : sum gamma = 1, gamma >= 0}
-Allowing an intercept may be useful when there are global time trends; see (2.7) in the paper.
+
 }

@@ -5,8 +5,14 @@
 \title{use synthetic diff-in-diff and synthetic control to impute 
 a single missing observation, element (N, T) in an N x T matrix.}
 \usage{
-synthdid_impute_1(Y, zeta.lambda = 0, zeta.omega = sd(as.numeric(Y)),
-  lambda.intercept = FALSE, omega.intercept = FALSE, solver = NULL)
+synthdid_impute_1(
+  Y,
+  zeta.lambda = 0,
+  zeta.omega = sd(as.numeric(Y)),
+  lambda.intercept = FALSE,
+  omega.intercept = FALSE,
+  solver = NULL
+)
 }
 \arguments{
 \item{Y, }{the observation matrix}

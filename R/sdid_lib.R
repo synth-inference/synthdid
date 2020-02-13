@@ -104,8 +104,6 @@ sc_weight.fw = function(M, target, zeta=1, intercept=FALSE, min.step.size=1e-3, 
     x
 }
 
-sc_weight.projgrd = function(M, target)
-
 #' Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block. 
 #' See Section 4.1 of the paper. Also computes a jacknife estimate of its standard error.
 #' If fast.var=TRUE, this uses the method described in Section 5 of the paper, in which lambda and omega are held fixed 
