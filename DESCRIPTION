@@ -10,6 +10,6 @@ Description: A package for estimating average treatment effects in panel data.
     synthdid currently provides methods only for the case that all treated units
     adopt treatment at the same time. This package is currently in beta.
 Depends: 
-    R (>= 3.4.4), CVXR
+    R (>= 3.4.4)
 License: none
 RoxygenNote: 7.0.2
