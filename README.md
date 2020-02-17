@@ -42,18 +42,12 @@ rownames(Y) = 1:n
 colnames(Y) = 1:T
 
 tau.hat = synthdid_estimate(Y,n_0,T_0)
+se = synthdid_se(tau.hat)
 
 print(paste("true tau:", tau))
 print(paste0("point estimate: ", round(tau.hat, 2)))
-print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * attr(tau.hat, 'se'), 2), ", ", round(tau.hat + 1.96 * attr(tau.hat, 'se'), 2), ")"))
+print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * se, 2), ", ", round(tau.hat + 1.96 * se, 2), ")"))
 plot(tau.hat)
-
-tau.hat = synthdid_estimate(Y,n_0,T_0, lambda.intercept=TRUE, omega.intercept=TRUE)
-print(paste("true tau:", tau))
-print(paste0("point estimate: ", round(tau.hat, 2)))
-print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * attr(tau.hat, 'se'), 2), ", ", round(tau.hat + 1.96 * attr(tau.hat, 'se'), 2), ")"))
-plot(tau.hat)
-
 ```
 
 #### References

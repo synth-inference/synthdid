@@ -1,4 +1,4 @@
-library(synthdid)
+source('../../R/synthdid.R')
 data.raw = read.table("MLAB_data.txt")
 
 STATE.NAME = c("Alabama", "Arkansas", "Colorado", "Connecticut", "Delaware",
@@ -20,15 +20,24 @@ Y = Y[c(setdiff(1:nrow(Y), calif), calif), ]
 T0 = 19
 N0 = nrow(Y)-1
 
-X.noise = rnorm(5*length(Y)); dim(X.noise)=c(dim(Y), 5)
+X.noise = rnorm(50*length(Y)); dim(X.noise)=c(dim(Y), 50)
 X.sqrt = sqrt(Y)
 estimates = list(synthdid_estimate(Y, N0, T0),
                  synthdid_estimate(Y, N0, T0, X.noise[,,1]),
-                 synthdid_estimate(Y, N0, T0, X.noise,),
+                 synthdid_estimate(Y, N0, T0, X.noise[,,1:10]),
                  synthdid_estimate(Y, N0, T0, X.sqrt))
-names(estimates) = c('no covariates', 'one noise covariate', 'five noise covariates', 'sqrt(Y) as covariate')
+names(estimates) = c('no covariates', 'one noise covariate', 'ten noise covariates', 'sqrt(Y) as covariate')
 
 synthdid_rmse_plot(estimates)
 synthdid_plot(estimates)
-print(synthdid_controls(estimates[1:3], mass=.9))
 
+plot(estimates[[1]])
+summary(estimates[[1]])
+synthdid_placebo_plot(estimates[[1]])
+synthdid_placebo_plot(estimates[[1]])
+synthdid_placebo_plot(estimates[[1]], overlay=TRUE)
+
+synthdid = estimates[[1]]
+did = synthdid_estimate(Y, N0, T0, weights=list(lambda=rep(1/T0,T0), omega=rep(1/N0,N0)))
+synthdid_plot(list(synthdid=synthdid, did=did)) 
+synthdid_plot(list(synthdid=synthdid, did=did), lambda.comparable=TRUE) + facet_grid(. ~ facet)

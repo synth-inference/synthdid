@@ -8,9 +8,53 @@ contract3 = function(X,v) {
     return(out)
 }
 
-# frank-wolfe + gradient solver
+# a Frank-Wolfe step for \\Ax - b||^2 + eta * ||x||^2 with x in unit simplex. 
+fw.step = function(A, x, b, eta) {
+    Ax = A %*% x
+    half.grad = t(Ax - b) %*% A + eta *  x
+    i = which.min(half.grad)
+    d.x = -x; d.x[i] = 1-x[i]
+    if(all(d.x == 0)) { return(x) }
+    d.err = A[,i] - Ax
+    step = -t(c(half.grad)) %*% d.x / (sum(d.err^2) + eta * sum(d.x^2))
+    constrained.step = min(1, max(0, step))
+    return( x + constrained.step*d.x )
+}
+
+# a Frank-Wolfe solver for synthetic control weights using exact line search
+sc.weight.fw = function(Y, zeta, intercept=TRUE, lambda=NULL, min.step.length=1e-3, max.iter=1000) {
+    T0 = ncol(Y)-1
+    N0 = nrow(Y)-1
+    if(is.null(lambda)) {
+        lambda=rep(0,T0)
+        lambda[1]=1
+    }  
+    if(intercept) {
+        Y = apply(Y, 2, function(row) { row - mean(row) })
+    }
+
+    t=0
+    squared.step.length = Inf
+    vals = rep(NA, max.iter)
+    A = Y[1:N0, 1:T0]
+    b = Y[1:N0,T0+1]
+    eta = N0*Re(zeta^2)
+    while(t < max.iter && squared.step.length > min.step.length^2) {
+        t=t+1   
+        lambda.p = fw.step(A, lambda, b, eta)
+        squared.step.length = sum((lambda-lambda.p)^2)
+        lambda = lambda.p
+        err = Y[1:N0,] %*% c(lambda, -1) 
+        vals[t] = Re(zeta^2)*sum(lambda^2) + sum(err^2)/N0 
+    }
+    list(lambda=lambda, vals=vals)
+}
+
+# A Frank-Wolfe + Gradient solver for lambda, omega, and beta when there are covariates
+# Uses the exact line search Frank-Wolfe steps for lambda, omega and (1/t)*gradient steps for beta
 sc.weight.fw.covariates = function(Y, X=array(0,dim=c(dim(Y),0)), zeta.lambda = 0, zeta.omega=0,
-                                   min.step.size=1e-3, max.iter=1000, step='linesearch', start.beta=rep(0,dim(X)[3]),
+                                   lambda.intercept=TRUE, omega.intercept=TRUE,
+                                   min.step.length=1e-3, max.iter=1000,
                                    lambda=NULL, omega=NULL, beta = NULL) {
     stopifnot(length(dim(Y))==2 && length(dim(X)) == 3 && all(dim(Y)==dim(X)[1:2]))
     T0 = ncol(Y)-1
@@ -28,33 +72,44 @@ sc.weight.fw.covariates = function(Y, X=array(0,dim=c(dim(Y),0)), zeta.lambda = 
         beta=rep(0,dim(X)[3])
     } 
 
-    t=0
-    step.size = Inf
+    update.weights = function(Y, lambda, omega) { 
+        Y.lambda = if(lambda.intercept) { apply(Y[1:N0,], 2, function(row) { row - mean(row) }) } else { Y[1:N0,] }
+        lambda = fw.step(Y.lambda[,1:T0], lambda, Y.lambda[,T0+1], N0*Re(zeta.lambda^2))
+        err.lambda = Y.lambda %*% c(lambda, -1) 
+        
+        Y.omega = if(omega.intercept)  { apply(t(Y[,1:T0]), 2, function(row) { row - mean(row) }) } else { t(Y[,1:T0]) }
+        omega  = fw.step(Y.omega[,1:N0], omega, Y.omega[,N0+1], T0*Re(zeta.omega^2))
+        err.omega  = Y.omega %*% c(omega,  -1) 
+
+        val = Re(zeta.omega^2) * sum(omega^2) + Re(zeta.lambda^2) * sum(lambda^2) + sum(err.omega^2) / T0 + sum(err.lambda^2) / N0
+        list(val=val, lambda=lambda, omega = omega, err.lambda=err.lambda, err.omega=err.omega)
+    }
+
     vals = rep(NA, max.iter)
-    while(t < max.iter && step.size > min.step.size) {
+    t=0
+    squared.step.length = Inf
+    Y.beta = Y - contract3(X,beta)
+    weights = update.weights(Y.beta, lambda, omega)
+    # state is kept in weights$lambda, weights$omega, beta
+    while(t < max.iter && squared.step.length > min.step.length^2) {
         t=t+1
-        X.beta = contract3(X,beta)
-        Y.beta = Y - X.beta
-        err.lambda = Y.beta[1:N0,] %*% c(lambda, -1) / N0
-        err.omega  = t(Y.beta[,1:T0]) %*% c(omega, -1) / T0
-        grad.lambda = t(err.lambda) %*% Y.beta[1:N0,1:T0]     + Re(zeta.lambda^2)  *  lambda
-        grad.omega  = t(err.omega)  %*% t(Y.beta[1:N0,1:T0])  + Re(zeta.omega^2)   *  omega
         grad.beta = if(dim(X)[3]==0) { c() } else {
-            -apply(X, 3, function(Xi) { 
-                t(err.lambda) %*% Xi[1:N0,] %*% c(lambda,-1)   + 
-                t(err.omega) %*% t(Xi[,1:T0]) %*% c(omega, -1) 
+            apply(X, 3, function(Xi) { 
+                t(weights$err.lambda) %*% Xi[1:N0,]    %*% c(weights$lambda,-1) / N0  + 
+                t(weights$err.omega)  %*% t(Xi[,1:T0]) %*% c(weights$omega, -1) / T0 
             })
         }
-        i.lambda = which.min(grad.lambda)
-        i.omega  = which.min(grad.omega)
+        
+        alpha = 1/t
+        beta = beta - alpha * grad.beta
+        Y.beta = Y + contract3(X,beta)
+        old.weights = weights
+        weights = update.weights(Y.beta, weights$lambda, weights$omega)
 
-        vals[t] = Re(zeta.omega^2) * sum(omega^2) + Re(zeta.lambda^2) * sum(lambda^2) + N0*sum(err.omega^2) + T0*sum(err.lambda^2)
-        step.size = 2/(t+2)
-        lambda = lambda*(1-step.size); lambda[i.lambda] = lambda[i.lambda] + step.size
-        omega  = omega*(1-step.size);  omega[i.omega]   = omega[i.omega]   + step.size
-        beta   = beta - grad.beta * step.size * (t >= start.beta)
+        squared.step.length = alpha^2*sum(grad.beta^2) + sum((old.weights$lambda-weights$lambda)^2)/N0 + sum((old.weights$omega - weights$omega)^2)/T0
+        vals[t] = weights$val
     }
-    list(lambda=lambda, omega=omega, beta=beta, vals=vals)
+    list(lambda=weights$lambda, omega=weights$omega, beta=beta, vals=vals)
 }
 
 collapsed.form = function(Y, N0, T0) {
@@ -79,67 +134,128 @@ collapsed.form = function(Y, N0, T0) {
 synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
                               zeta.lambda=0, zeta.omega=0,
                               lambda.intercept=TRUE, omega.intercept=TRUE, 
-                              weights = NULL, start.beta = 0) {
+                              weights = NULL, min.step.length=1e-3) {
     stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2,3), dim(X)[1:2] == dim(Y))
     if(length(dim(X)) == 2) { dim(X) = c(dim(X),1) }
-
-    Yc=collapsed.form(Y, N0, T0)
-    Xc=apply(X, 3, function(Xi) { collapsed.form(Xi, N0, T0) })
-    dim(Xc) = c(dim(Yc), dim(X)[3])
-    # add intercept dummies
-    if(lambda.intercept) {
-        Xi = array(0,dim=dim(Yc))
-        Xi[,T0+1] = 1
-        Xc = array(c(Xi,Xc), dim=dim(Xc)+c(0,0,1))
-    }
-    if(omega.intercept) {
-        Xi = array(0,dim=dim(Yc))
-        Xi[N0+1,] = 1
-        Xc = array(c(Xi,Xc), dim=dim(Xc)+c(0,0,1))
-    }
-    is.intercept = rep(FALSE, dim(Xc)[3])
-    if(lambda.intercept || omega.intercept) { is.intercept[1] = TRUE }
-    if(lambda.intercept && omega.intercept) { is.intercept[2] = TRUE }
+    N1 = nrow(Y)-N0
+    T1 = ncol(Y)-T0
 
     if(is.null(weights)) { 
-        start.betas = rep(start.beta, dim(Xc)[3])
-        start.betas[is.intercept] = 0
-        weights = sc.weight.fw.covariates(Yc, Xc, zeta.lambda=zeta.lambda, zeta.omega=zeta.omega, start.beta=start.betas)
-        weights.no = sc.weight.fw.covariates(Yc, Xc[,,is.intercept], zeta.lambda=zeta.lambda, zeta.omega=zeta.omega, start.beta=start.betas[is.intercept])
-     }
+        Yc=collapsed.form(Y, N0, T0)
+        if(dim(X)[3] == 0) {
+            lambda.opt = sc.weight.fw(Yc, zeta = zeta.lambda, intercept=lambda.intercept, min.step.length=min.step.length)
+            omega.opt  = sc.weight.fw(t(Yc), zeta = zeta.omega,  intercept=omega.intercept, min.step.length=min.step.length)
+            weights = list(lambda = lambda.opt$lambda, omega = omega.opt$lambda, vals = lambda.opt$vals + omega.opt$vals)
+        } else {
+            Xc=apply(X, 3, function(Xi) { collapsed.form(Xi, N0, T0) })
+            dim(Xc) = c(dim(Yc), dim(X)[3])
+            weights = sc.weight.fw.covariates(Yc, Xc, zeta.lambda=zeta.lambda, zeta.omega=zeta.omega, 
+                                              lambda.intercept=lambda.intercept, omega.intercept=omega.intercept, min.step.length=min.step.length)
+         }
+    }
     
-    X.beta = contract3(Xc, weights$beta)
-    est = t(c(weights$omega, -1)) %*% (Yc - X.beta) %*% c(weights$lambda, -1)
+    X.beta = contract3(X, weights$beta)
+    estimate = t(c(-weights$omega, rep(1/N1,N1))) %*% (Y - X.beta) %*% c(-weights$lambda, rep(1/T1, T1))
 
-    # separate intercepts from regression coefficients
-    if(omega.intercept)   { weights$omega0  = weights$beta[1] }
-    if(lambda.intercept) { weights$lambda0 = weights$beta[sum(is.intercept)] }
-    weights$beta = weights$beta[!is.intercept]
+    class(estimate) = 'synthdid'
+    attr(estimate, 'weights') = weights
+    attr(estimate, 'setup') = list(Y=Y, X=X, N0=N0, T0=T0)
+    attr(estimate, 'opts') =  list(zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
+                              lambda.intercept=lambda.intercept, omega.intercept=omega.intercept)
+    return(estimate)
+}
 
-    class(est) = 'synthdid'
-    attr(est, 'weights') = weights
-    attr(est, 'setup') = list(Y=Y, X=X, N0=N0, T0=T0)
-    return(est)
+#' Computes a placebo variant of our estimator using pre-treatment data only
+#' @param estimate, as output by synthdid_estimate
+#' @param treated.fraction, the fraction of pre-treatment data to use as a placebo treatment period
+#'        Defaults to NULL, which indicates that it should be the fraction of post-treatment to pre-treatment data
+#' @export synthdid_placebo
+synthdid_placebo = function(estimate, treated.fraction=NULL) {
+    setup = attr(estimate, 'setup')
+    opts = attr(estimate, 'opts')
+    weights = attr(estimate, 'weights')
+    X.beta = contract3(setup$X, weights$beta)
+
+    if(is.null(treated.fraction)) { treated.fraction = 1 - setup$T0/ncol(setup$Y) }
+    placebo.T0 = floor(setup$T0*(1-treated.fraction))
+    
+    synthdid_estimate(setup$Y[,1:setup$T0], setup$N0, placebo.T0, setup$X[,1:setup$T0,], 
+                      zeta.lambda=opts$zeta.lambda, zeta.omega=opts$zeta.omega,
+                      lambda.intercept=opts$lambda.intercept, omega.intercept=opts$omega.intercept)
+}
+
+#' Outputs the effect curve that was averaged to produce our estimate
+#' @param estimate, as output by synthdid_estimate
+#' @export synthdid_effect_curve
+synthdid_effect_curve = function(estimate) {
+    setup = attr(estimate, 'setup')
+    weights = attr(estimate, 'weights')
+    X.beta = contract3(setup$X, weights$beta)
+    N1 = nrow(setup$Y)-setup$N0
+    T1 = ncol(setup$Y)-setup$T0
+
+    tau.sc = t(c(-weights$omega, rep(1/N1,N1))) %*% (setup$Y - X.beta)
+    tau.curve = tau.sc[setup$T0+(1:T1)] - tau.sc %*% weights$lambda
+    tau.curve
+}   
+
+#' An estimate of the standard error of our estimator via unit-wise jackknife.
+#' Should not be trusted when the number of treated units is small, and returns NA if there is only one treated unit.
+#' By default, does not recompute the weights omega and lambda. Instead, weights$lambda and weights$beta will be used unchanged and 
+#' weights$omega will have jackknifed-out units removed then be renormalized to sum to one.
+#' Pass weights=NULL to recompute weights for each jackknife replication.
+#' Requires bootstrap
+#' @param estimate, as output by synthdid_estimate
+#' @param weights, like attr(estimate, 'weights') 
+#' @export synthdid_se
+synthdid_se = function(estimate, weights = attr(estimate, 'weights')) { 
+    library(bootstrap)
+    setup = attr(estimate, 'setup')
+    opts = attr(estimate, 'opts')
+    if(setup$N0 == nrow(setup$Y)-1) { return(NA) }
+
+    sum_normalize = function(x){ x / sum(x) }
+    theta = function(ind) {
+        weights.jk = weights
+        if(!is.null(weights)) { weights.jk$omega = sum_normalize(weights$omega[ind[ind <= setup$N0]]) }
+        estimate.jk = synthdid_estimate(setup$Y[ind,], sum(ind <= setup$N0), setup$T0, X=setup$X[ind,,],
+                                        zeta.lambda=opts$zeta.lambda, zeta.omega=opts$zeta.omega,
+                                        lambda.intercept=opts$lambda.intercept, omega.intercept=opts$omega.intercept,
+                                        weights = weights.jk)
+    }
+    jackknife(1:nrow(setup$Y), theta)$jack.se
 }
 
 
 #' Plots treated and synthetic control trajectories and overlays a 2x2 diff-in-diff diagram of our estimator.
 #' In this overlay, the treatment effect is indicated by an arrow.
 #' The weights lambda defining our synthetic pre-treatment time period are plotted below.
+#' If a list of estimates is passed, plots all of them. By default, does this in different facets.
+#' To overlay estimates in the same facet, indicate a facet for each estimator in the argument `facet'.
 #' Requires ggplot2
 #' @param estimates, a list of estimates output by synthdid_estimate. Or a single estimate.
 #' @param treated.name, the name of the treated curve that appears in the legend. Defaults to 'treated'
 #' @param control.name, the name of the control curve that appears in the legend. Defaults to 'synthetic control'
+#' @param facet, a list of the same length as estimates indicating the facet in which to plot each estimate.
+#'        The values of the elements of the list are used to label the facets.
+#'        If NULL, plot each estimate in a different facet. Defaults to NULL.
+#' @param lambda.comparable, TRUE if the weights lambda should be plotted in such a way that the ribbons
+#'        have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side plots. Defaults to FALSE.
 #' @export synthdid_plot
-synthdid_plot = function(estimates, treated.name='treated', control.name='synthetic control') {
+synthdid_plot = function(estimates, treated.name='treated', control.name='synthetic control', facet=NULL, lambda.comparable = FALSE) {
     library(ggplot2)
+    if(class(estimates) == 'synthdid') { estimates = list(estimates) } 
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
-    
+        
     treated = 1
     control = 2    
     groups = factor(c(treated, control), labels=c(treated.name, control.name))
-    estimate.factors = factor(1:length(estimates), labels=names(estimates))
-
+    estimate_factors = factor(1:length(estimates), labels=names(estimates))
+    facet_factors = if(is.null(facet)) {
+        factor(1:length(estimates), labels=names(estimates))
+    } else {
+        factor(facet, levels=1:length(unique(facet)), labels=unique(facet))
+    }
     plot.descriptions = lapply(estimates, function(est) { 
         setup = attr(est, 'setup')
         weights = attr(est, 'weights')
@@ -160,7 +276,7 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
         syn.trajectory = as.numeric(omega.synth %*% Y)
         obs.trajectory = as.numeric(omega.target %*% Y)
         
-        time = (1-T0):T1
+        time = 1:(T0+T1)
         pre.time =  lambda.synth  %*% time
         post.time = lambda.target %*% time
 
@@ -185,47 +301,68 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
         arrows = data.frame(x=post.time, xend = post.time, y=sdid.post, yend=treated.post)
         vlines = data.frame(xintercept=time[T0])
 
-        height = (max(c(obs.trajectory,syn.trajectory))-min(c(obs.trajectory, syn.trajectory)))/4
-        bottom = min(c(obs.trajectory, syn.trajectory)) - height
-        density.color = 'black'
-        ribbons = data.frame(x=time[1:T0], ymin = rep(bottom,T0), ymax= bottom + height*lambda.synth[1:T0]/max(lambda.synth))
-
+        if(lambda.comparable) { 
+            height = max(c(obs.trajectory))-min(c(obs.trajectory))
+            bottom = min(c(obs.trajectory)) - height
+            ribbons = data.frame(x=time[1:T0], ymin = rep(bottom,T0), ymax= bottom + height*lambda.synth[1:T0])
+        } else { 
+            height = (max(c(obs.trajectory,syn.trajectory))-min(c(obs.trajectory, syn.trajectory)))/4
+            bottom = min(c(obs.trajectory, syn.trajectory)) - height
+            ribbons = data.frame(x=time[1:T0], ymin = rep(bottom,T0), ymax= bottom + height*lambda.synth[1:T0]/max(lambda.synth))
+        }
         list(lines=lines, points=points, segments=segments, 
              constructed.points=constructed.points, constructed.segments=constructed.segments, faint.segments=faint.segments,
              arrows=arrows, vlines=vlines, ribbons=ribbons)
     })
     
-   
-    concatenate.field = function(descs, names, field) {
-        do.call(rbind, mapply(function(desc, name) { 
-                element = desc[[field]]
-                element$estimate = name
-                element
-            }, descs, names, SIMPLIFY=FALSE))
-    }
-    conc = lapply(names(plot.descriptions[[1]]), function(field) { concatenate.field(plot.descriptions, estimate.factors, field) })
-    names(conc) = names(plot.descriptions[[1]])
-    
 
-    p=ggplot() + facet_grid(estimate ~ ., scales='free_y') +
-        geom_line(aes(x=x,y=y,color=color),  data=conc$lines) +
+    concatenate.field = function(field) {
+        do.call(rbind, mapply(function(desc, estimate_factor) { 
+                element = desc[[field]]
+                element$facet = facet_factors[as.integer(estimate_factor)]
+                element$estimate = if(is.null(facet)) { factor(1) } else { estimate_factor }
+                if(field == 'lines') { 
+                    element$group = interaction(element$color, element$estimate)
+                }
+                if(field == 'ribbons') {
+                    element$group = element$estimate
+                }
+                element
+            }, plot.descriptions, estimate_factors, SIMPLIFY=FALSE))
+    }
+    conc = lapply(names(plot.descriptions[[1]]), concatenate.field)
+    names(conc) = names(plot.descriptions[[1]])
+
+    p=ggplot() +
+        geom_line(aes(x=x,y=y,color=color,group=group),  data=conc$lines) +
         geom_point(aes(x=x,y=y,color=color), data=conc$points) +
-        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,color=color), data=conc$segments) +
+        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,color=color, group=estimate), data=conc$segments) +
         geom_point(aes(x=x,y=y), color='black', data=conc$constructed.points, shape=21) + 
         geom_segment(aes(x=x,xend=xend,y=y,yend=yend), data=conc$constructed.segments, linetype=2) +
-        geom_segment(aes(x=x,xend=xend,y=y,yend=yend), data=conc$faint.segments, alpha=.1, linetype=3) +
+        geom_segment(aes(x=x,xend=xend,y=y,yend=yend), data=conc$faint.segments, alpha=.1, linetype=2) +
         geom_segment(aes(x=x,xend=xend,y=y,yend=yend), data=conc$arrows, color='black', alpha=.2, size=1, arrow=arrow(length=unit(.2, 'cm'))) +
         geom_vline(aes(xintercept=xintercept), data=conc$vlines, color='black', alpha=.4) + 
-        geom_ribbon(aes(x=x,ymin=ymin,ymax=ymax), data = conc$ribbons, color='black', fill='black', alpha=.3) + 
+        geom_ribbon(aes(x=x,ymin=ymin,ymax=ymax, group=group), data = conc$ribbons, color='black', fill='black', alpha=.4) + 
         xlab('') + ylab('') + labs(color='') + 
         theme_light() + theme(legend.direction = "horizontal", legend.position = "top") 
-                
-        p
+    # facet if we want multiple facets
+    if(!all(conc$lines$facet == conc$lines$facet[1])) { p = p + facet_grid(facet ~ ., scales='free_y') }
+    # if only one estimate per facet, exclude estimate-denoting linetype from legend
+    if(is.null(facet)) { p = p + guides(linetype = FALSE) } 
+    p
 }
-# make a one-estimate variant available as plot(estimate)
 plot.synthdid = synthdid_plot
 
 
+#' For our estimator and a placebo, plots treated and synthetic control trajectories and overlays a 2x2 diff-in-diff diagram.
+#' Requires ggplot2
+#' @param estimate, as output by synthdid_estimate. 
+#' @param overlay, binary, indicates whether plots should be overlaid or shown in different facets. Defaults to FALSE.
+#' @param treated.fraction as in synthdid_placebo 
+synthdid_placebo_plot = function(estimate, overlay=FALSE, treated.fraction=NULL) {
+   estimates = list(estimate=estimate, placebo=synthdid_placebo(estimate, treated.fraction=treated.fraction))
+   synthdid_plot(estimates, facet=if(overlay) { c(1,1) } else { NULL })
+} 
 
 #' A diagnostic plot for sc.weight.fw.covariates. Plots the objective function, regularized RMSE,
 #' as a function of the number of Frank-Wolfe / Gradient steps taken.
@@ -240,7 +377,8 @@ synthdid_rmse_plot = function(estimates) { # pass an estimate or list of estimat
     plot.data = data.frame(rmse = unlist(rmse),         
                            iteration=unlist(lapply(rmse, function(vals) { 1:length(vals) })),
                            method = unlist(mapply(function(vals, name) { rep(factor(name), length(vals)) }, rmse, names(estimates), SIMPLIFY=FALSE)))
-    ggplot(plot.data) + geom_line(aes(x=iteration, y=rmse, color=method)) + scale_y_log10() 
+    ggplot(plot.data) + geom_line(aes(x=iteration, y=rmse, color=method)) + scale_y_log10() + 
+        theme_light() + theme(legend.direction = "horizontal", legend.position = "top") + labs(color='')
 }
 
 #' Outputs a table of important synthetic controls and their corresponding weights omega, sorted by weight.
@@ -256,15 +394,23 @@ synthdid_controls = function(estimates, sort.by=1, digits=3, mass=.9) {
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
     
     omegas = do.call(cbind, lapply(estimates, function(est) { attr(est, 'weights')$omega }))
-    if(length(dim(omegas))==1) { dim(omegas) = c(dim(omegas), 1) }
+    if(is.null(dim(omegas))) { dim(omegas) = c(length(omegas), 1) }
 
     Y = attr(estimates[[1]], 'setup')$Y
     o = rev(order(omegas[,sort.by]))
-    tab = round(omegas[o,], digits=digits)
+    tab = round(omegas[o,,drop=FALSE], digits=digits)
     rownames(tab) = rownames(Y)[o]
     colnames(tab) = names(estimates)
     
     # truncate table to retain a weight sum of at least mass for each unit
-    tab.len = min(apply(tab, 2, function(col) { Position(function(x){ x >= mass }, cumsum(col)) }))
+    tab.len = max(apply(tab, 2, function(col) { Position(function(x){ x >= mass }, cumsum(col)) }))
     tab[1:tab.len, ]
 }
+
+summary.synthdid = function(estimate) {
+    list(estimate = c(estimate), 
+         se = synthdid_se(estimate),
+         controls = synthdid_controls(estimate))
+}
+
+
