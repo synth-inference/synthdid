@@ -15,7 +15,7 @@ synthdid_estimate(
   lambda.intercept = TRUE,
   omega.intercept = TRUE,
   weights = NULL,
-  start.beta = 0
+  min.step.length = 0.001
 )
 }
 \arguments{

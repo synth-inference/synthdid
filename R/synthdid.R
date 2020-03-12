@@ -9,28 +9,31 @@ contract3 = function(X,v) {
 }
 
 # a Frank-Wolfe step for \\Ax - b||^2 + eta * ||x||^2 with x in unit simplex. 
-fw.step = function(A, x, b, eta) {
+fw.step = function(A, x, b, eta, alpha=NULL) {
     Ax = A %*% x
     half.grad = t(Ax - b) %*% A + eta *  x
     i = which.min(half.grad)
-    d.x = -x; d.x[i] = 1-x[i]
-    if(all(d.x == 0)) { return(x) }
-    d.err = A[,i] - Ax
-    step = -t(c(half.grad)) %*% d.x / (sum(d.err^2) + eta * sum(d.x^2))
-    constrained.step = min(1, max(0, step))
-    return( x + constrained.step*d.x )
+    if(!is.null(alpha)) {
+        x=x*(1-alpha)
+        x[i] = x[i] + alpha
+        return( x )
+    } else {
+        d.x = -x; d.x[i] = 1-x[i]
+        if(all(d.x == 0)) { return(x) }
+        d.err = A[,i] - Ax
+        step = -t(c(half.grad)) %*% d.x / (sum(d.err^2) + eta * sum(d.x^2))
+        constrained.step = min(1, max(0, step))
+        return( x + constrained.step*d.x )
+    }
 }
 
 # a Frank-Wolfe solver for synthetic control weights using exact line search
 sc.weight.fw = function(Y, zeta, intercept=TRUE, lambda=NULL, min.step.length=1e-3, max.iter=1000) {
     T0 = ncol(Y)-1
     N0 = nrow(Y)-1
-    if(is.null(lambda)) {
-        lambda=rep(0,T0)
-        lambda[1]=1
-    }  
+    if(is.null(lambda)) { lambda=rep(1/T0,T0) }  
     if(intercept) {
-        Y = apply(Y, 2, function(row) { row - mean(row) })
+        Y = apply(Y, 2, function(col) { col - mean(col) })
     }
 
     t=0
@@ -56,21 +59,13 @@ sc.weight.fw.covariates = function(Y, X=array(0,dim=c(dim(Y),0)), zeta.lambda = 
                                    lambda.intercept=TRUE, omega.intercept=TRUE,
                                    min.step.length=1e-3, max.iter=1000,
                                    lambda=NULL, omega=NULL, beta = NULL) {
-    stopifnot(length(dim(Y))==2 && length(dim(X)) == 3 && all(dim(Y)==dim(X)[1:2]))
+    stopifnot(length(dim(Y))==2, length(dim(X)) == 3, all(dim(Y)==dim(X)[1:2]), all(is.finite(Y)), all(is.finite(X)))
     T0 = ncol(Y)-1
     N0 = nrow(Y)-1
     if(length(dim(X)) == 2) { dim(X) = c(dim(X),1) }
-    if(is.null(lambda)) {
-        lambda=rep(0,T0)
-        lambda[1]=1
-    }    
-    if(is.null(omega)) {
-        omega=rep(0,N0)
-        omega[1]=1
-    } 
-    if(is.null(beta)) {
-        beta=rep(0,dim(X)[3])
-    } 
+    if(is.null(lambda)) {  lambda=rep(1/T0,T0)   }    
+    if(is.null(omega))  {  omega=rep(1/N0,N0)    } 
+    if(is.null(beta))   {  beta=rep(0,dim(X)[3]) } 
 
     update.weights = function(Y, lambda, omega) { 
         Y.lambda = if(lambda.intercept) { apply(Y[1:N0,], 2, function(row) { row - mean(row) }) } else { Y[1:N0,] }
@@ -132,9 +127,9 @@ collapsed.form = function(Y, N0, T0) {
 #'         Setup is a list describing the problem passed in: Y, N0, T0, X. 
 #' @export synthdid_estimate
 synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
-                              zeta.lambda=0, zeta.omega=0,
+                              zeta.lambda=0, zeta.omega=sd(apply(Y,1,diff)),
                               lambda.intercept=TRUE, omega.intercept=TRUE, 
-                              weights = NULL, min.step.length=1e-3) {
+                              weights = NULL, min.step.length=0) {
     stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2,3), dim(X)[1:2] == dim(Y))
     if(length(dim(X)) == 2) { dim(X) = c(dim(X),1) }
     N1 = nrow(Y)-N0
@@ -195,7 +190,7 @@ synthdid_effect_curve = function(estimate) {
     T1 = ncol(setup$Y)-setup$T0
 
     tau.sc = t(c(-weights$omega, rep(1/N1,N1))) %*% (setup$Y - X.beta)
-    tau.curve = tau.sc[setup$T0+(1:T1)] - tau.sc %*% weights$lambda
+    tau.curve = tau.sc[setup$T0+(1:T1)] - c(tau.sc[1:setup$T0] %*% weights$lambda)
     tau.curve
 }   
 
@@ -299,7 +294,13 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
                                          y    = c(control.pre, control.post), 
                                          yend = c(treated.pre, sdid.post))    
         arrows = data.frame(x=post.time, xend = post.time, y=sdid.post, yend=treated.post)
-        vlines = data.frame(xintercept=time[T0])
+        
+        T0s = attr(est, 'T0s')
+        if(!is.null(T0s)) {
+            vlines = data.frame(xintercept=time[T0s])
+        } else {
+            vlines = data.frame(xintercept=time[T0])
+        }
 
         if(lambda.comparable) { 
             height = max(c(obs.trajectory))-min(c(obs.trajectory))
