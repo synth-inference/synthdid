@@ -21,17 +21,33 @@ T0 = 19
 N0 = nrow(Y)-1
 
 X.noise = rnorm(50*length(Y)); dim(X.noise)=c(dim(Y), 50)
-X.sqrt = sqrt(Y)
+beta.noise = rnorm(50)
 estimates = list(synthdid_estimate(Y, N0, T0),
-                 synthdid_estimate(Y, N0, T0, X.noise[,,1]),
-                 synthdid_estimate(Y, N0, T0, X.noise[,,1:10]),
-                 synthdid_estimate(Y, N0, T0, X.sqrt))
-names(estimates) = c('no covariates', 'one noise covariate', 'ten noise covariates', 'sqrt(Y) as covariate')
+                 synthdid_estimate(Y+contract3(X.noise[,,1:2], 5*beta.noise[1:2]), N0, T0, X.noise[,,1]))
+names(estimates) = c('no covariates', 'ten noise covariates')
 
 synthdid_rmse_plot(estimates)
+synthdid_plot(estimates[[3]], sc.plot=TRUE)
+source('../../R/synthdid.R')
+
+indices=which(rownames(Y) %in% c('Alabama', 'Arkansas', 'Mississippi', 'Louisiana', 'Georgia', 'Kentucky', 'Tennesee','Florida'))
+estimates = list(synthdid_estimate(Y[c(indices, nrow(Y)),], length(indices), T0), synthdid_estimate(Y, N0, T0), synthdid_estimate(Y, N0, T0, omega.intercept=FALSE))
+attr(estimates[[3]], 'weights')$lambda = rep(1/T0,T0)
+names(estimates) = c('southeast control states', 'all control states', 'sc')
+synthdid_plot(estimates, facet.vertical=FALSE)
+synthdid_plot(estimates[[1]], treated.name='california', control.name='synth. california') + theme(legend.position=c(.9,.9)
+
+
+Y.offset = Y[,6:ncol(Y)]
+Y.offset[1:N0,] = Y[1:N0, 1:(ncol(Y)-5)]
+estimates = list(synthdid_estimate(Y.offset, N0, T0-5), synthdid_estimate(Y, N0, T0))
 synthdid_plot(estimates)
 
-plot(estimates[[1]])
+Y.offset = Y[,6:ncol(Y)]
+Y.offset[1:N0,] = Y[1:N0, 1:(ncol(Y)-5)]
+estimates = synthdid_estimate(Y.offset, N0, T0-5)
+plot(estimates)
+
 summary(estimates[[1]])
 synthdid_placebo_plot(estimates[[1]])
 synthdid_placebo_plot(estimates[[1]])

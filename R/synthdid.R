@@ -237,14 +237,14 @@ synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
 #' @param lambda.comparable, TRUE if the weights lambda should be plotted in such a way that the ribbons
 #'        have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side plots. Defaults to FALSE.
 #' @export synthdid_plot
-synthdid_plot = function(estimates, treated.name='treated', control.name='synthetic control', facet=NULL, lambda.comparable = FALSE) {
+synthdid_plot = function(estimates, treated.name='treated', control.name='synthetic control', facet=NULL, facet.vertical=TRUE, lambda.comparable = FALSE) {
     library(ggplot2)
     if(class(estimates) == 'synthdid') { estimates = list(estimates) } 
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
         
     treated = 1
     control = 2    
-    groups = factor(c(treated, control), labels=c(treated.name, control.name))
+    groups = factor(c(control,treated), labels=c(control.name, treated.name))
     estimate_factors = factor(1:length(estimates), labels=names(estimates))
     facet_factors = if(is.null(facet)) {
         factor(1:length(estimates), labels=names(estimates))
@@ -271,7 +271,8 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
         syn.trajectory = as.numeric(omega.synth %*% Y)
         obs.trajectory = as.numeric(omega.target %*% Y)
         
-        time = 1:(T0+T1)
+        time = as.numeric(colnames(Y))
+        if(is.null(time)) { time = 1:(T0+T1) }
         pre.time =  lambda.synth  %*% time
         post.time = lambda.target %*% time
 
@@ -287,8 +288,8 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
                               y    =        c(control.pre,  treated.pre),  
                               yend =        c(control.post, treated.post),   
                               color= groups[c(control, treated)])
-        constructed.points   = data.frame(x = post.time, y=sdid.post)
-        constructed.segments = data.frame(x = pre.time, xend = post.time, y = treated.pre, yend = sdid.post)
+        constructed.points   = data.frame(x = post.time, y=sdid.post, color=groups[treated])
+        constructed.segments = data.frame(x = pre.time, xend = post.time, y = treated.pre, yend = sdid.post, color=groups[treated])
         faint.segments      = data.frame(x    = c(pre.time,    post.time),    
                                          xend = c(pre.time,    post.time),    
                                          y    = c(control.pre, control.post), 
@@ -335,19 +336,22 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
     names(conc) = names(plot.descriptions[[1]])
 
     p=ggplot() +
-        geom_line(aes(x=x,y=y,color=color,group=group),  data=conc$lines) +
+        geom_line(aes(x=x,y=y,color=color,group=group),  data=conc$lines, linetype=3) +
         geom_point(aes(x=x,y=y,color=color), data=conc$points) +
         geom_segment(aes(x=x,xend=xend,y=y,yend=yend,color=color, group=estimate), data=conc$segments) +
-        geom_point(aes(x=x,y=y), color='black', data=conc$constructed.points, shape=21) + 
-        geom_segment(aes(x=x,xend=xend,y=y,yend=yend), data=conc$constructed.segments, linetype=2) +
+        geom_point(aes(x=x,y=y,color=color), data=conc$constructed.points, shape=21) + 
+        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,color=color), data=conc$constructed.segments, linetype=2) +
         geom_segment(aes(x=x,xend=xend,y=y,yend=yend), data=conc$faint.segments, alpha=.1, linetype=2) +
         geom_segment(aes(x=x,xend=xend,y=y,yend=yend), data=conc$arrows, color='black', alpha=.2, size=1, arrow=arrow(length=unit(.2, 'cm'))) +
         geom_vline(aes(xintercept=xintercept), data=conc$vlines, color='black', alpha=.4) + 
-        geom_ribbon(aes(x=x,ymin=ymin,ymax=ymax, group=group), data = conc$ribbons, color='black', fill='black', alpha=.4) + 
+        geom_ribbon(aes(x=x,ymin=ymin,ymax=ymax, group=group), data = conc$ribbons, color='black', fill='orange', alpha=.4) + 
         xlab('') + ylab('') + labs(color='') + 
         theme_light() + theme(legend.direction = "horizontal", legend.position = "top") 
     # facet if we want multiple facets
-    if(!all(conc$lines$facet == conc$lines$facet[1])) { p = p + facet_grid(facet ~ ., scales='free_y') }
+    if(!all(conc$lines$facet == conc$lines$facet[1])) { 
+        if(facet.vertical) { p = p + facet_grid(facet ~ ., scales='free_y') }
+        else { p = p + facet_grid(. ~ facet) }
+    }
     # if only one estimate per facet, exclude estimate-denoting linetype from legend
     if(is.null(facet)) { p = p + guides(linetype = FALSE) } 
     p
@@ -360,6 +364,7 @@ plot.synthdid = synthdid_plot
 #' @param estimate, as output by synthdid_estimate. 
 #' @param overlay, binary, indicates whether plots should be overlaid or shown in different facets. Defaults to FALSE.
 #' @param treated.fraction as in synthdid_placebo 
+#' @export synthdid_placebo_plot
 synthdid_placebo_plot = function(estimate, overlay=FALSE, treated.fraction=NULL) {
    estimates = list(estimate=estimate, placebo=synthdid_placebo(estimate, treated.fraction=treated.fraction))
    synthdid_plot(estimates, facet=if(overlay) { c(1,1) } else { NULL })
