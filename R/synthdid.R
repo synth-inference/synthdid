@@ -55,10 +55,11 @@ sc.weight.fw = function(Y, zeta, intercept=TRUE, lambda=NULL, min.step.length=1e
 
 # A Frank-Wolfe + Gradient solver for lambda, omega, and beta when there are covariates
 # Uses the exact line search Frank-Wolfe steps for lambda, omega and (1/t)*gradient steps for beta
+# pass update.lambda=FALSE/update.omega=FALSE to fix those weights at initial values, defaulting to uniform 1/T0 and 1/N0
 sc.weight.fw.covariates = function(Y, X=array(0,dim=c(dim(Y),0)), zeta.lambda = 0, zeta.omega=0,
                                    lambda.intercept=TRUE, omega.intercept=TRUE,
                                    min.step.length=1e-3, max.iter=1000,
-                                   lambda=NULL, omega=NULL, beta = NULL) {
+                                   lambda=NULL, omega=NULL, beta = NULL, update.lambda=TRUE, update.omega=TRUE) {
     stopifnot(length(dim(Y))==2, length(dim(X)) == 3, all(dim(Y)==dim(X)[1:2]), all(is.finite(Y)), all(is.finite(X)))
     T0 = ncol(Y)-1
     N0 = nrow(Y)-1
@@ -69,11 +70,11 @@ sc.weight.fw.covariates = function(Y, X=array(0,dim=c(dim(Y),0)), zeta.lambda = 
 
     update.weights = function(Y, lambda, omega) { 
         Y.lambda = if(lambda.intercept) { apply(Y[1:N0,], 2, function(row) { row - mean(row) }) } else { Y[1:N0,] }
-        lambda = fw.step(Y.lambda[,1:T0], lambda, Y.lambda[,T0+1], N0*Re(zeta.lambda^2))
+        if(update.lambda) { lambda = fw.step(Y.lambda[,1:T0], lambda, Y.lambda[,T0+1], N0*Re(zeta.lambda^2)) }
         err.lambda = Y.lambda %*% c(lambda, -1) 
         
         Y.omega = if(omega.intercept)  { apply(t(Y[,1:T0]), 2, function(row) { row - mean(row) }) } else { t(Y[,1:T0]) }
-        omega  = fw.step(Y.omega[,1:N0], omega, Y.omega[,N0+1], T0*Re(zeta.omega^2))
+        if(update.omega) { omega  = fw.step(Y.omega[,1:N0], omega, Y.omega[,N0+1], T0*Re(zeta.omega^2)) }
         err.omega  = Y.omega %*% c(omega,  -1) 
 
         val = Re(zeta.omega^2) * sum(omega^2) + Re(zeta.lambda^2) * sum(lambda^2) + sum(err.omega^2) / T0 + sum(err.lambda^2) / N0
@@ -120,7 +121,10 @@ collapsed.form = function(Y, N0, T0) {
 #' @param T0, the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.
 #' @param X, an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.
 #' @param zeta.lambda. Its square is weight of the ridge penalty relative to MSE. Defaults to 0.
-#' @param zeta.omega. Analogous for omega. Defaults to 0.
+#' @param zeta.omega. Analogous for omega. Defaults to the standard deviation of first differences of Y.
+#' @param lambda.intercept/omega.intercept. Binary. Use an intercept when estimating lambda/omega.
+#' @param weights: a list with fields lambda and omega. If non-null weights$lambda is passed, 
+#'        we use them instead of estimating lambda weights. Same for weights$omega.
 #' @return An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
 #'         Weights contains the estimated weights lambda and omega and corresponding intercepts.
 #'         If covariates X are passedas well as regression coefficients beta if X is passed
@@ -129,24 +133,33 @@ collapsed.form = function(Y, N0, T0) {
 synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
                               zeta.lambda=0, zeta.omega=sd(apply(Y,1,diff)),
                               lambda.intercept=TRUE, omega.intercept=TRUE, 
-                              weights = NULL, min.step.length=0) {
-    stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2,3), dim(X)[1:2] == dim(Y))
+                              weights = list(lambda=NULL, omega=NULL, vals=NULL), min.step.length=0) {
+    stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2,3), dim(X)[1:2] == dim(Y), 
+              is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0)
     if(length(dim(X)) == 2) { dim(X) = c(dim(X),1) }
     N1 = nrow(Y)-N0
     T1 = ncol(Y)-T0
 
-    if(is.null(weights)) { 
-        Yc=collapsed.form(Y, N0, T0)
-        if(dim(X)[3] == 0) {
+    Yc=collapsed.form(Y, N0, T0)
+    if(dim(X)[3] == 0) {
+        weights$vals = NULL
+        if(is.null(weights$lambda)) { 
             lambda.opt = sc.weight.fw(Yc, zeta = zeta.lambda, intercept=lambda.intercept, min.step.length=min.step.length)
+            weights$lambda = lambda.opt$lambda
+            weights$vals =   lambda.opt$vals
+        }
+        if(is.null(weights$omega)) {
             omega.opt  = sc.weight.fw(t(Yc), zeta = zeta.omega,  intercept=omega.intercept, min.step.length=min.step.length)
-            weights = list(lambda = lambda.opt$lambda, omega = omega.opt$lambda, vals = lambda.opt$vals + omega.opt$vals)
-        } else {
-            Xc=apply(X, 3, function(Xi) { collapsed.form(Xi, N0, T0) })
-            dim(Xc) = c(dim(Yc), dim(X)[3])
-            weights = sc.weight.fw.covariates(Yc, Xc, zeta.lambda=zeta.lambda, zeta.omega=zeta.omega, 
-                                              lambda.intercept=lambda.intercept, omega.intercept=omega.intercept, min.step.length=min.step.length)
-         }
+            weights$omega = omega.opt$lambda
+            if(is.null(weights$vals)) { weights$vals = omega.opt$vals }
+            else { weights$vals = weights$vals + omega.opt$vals }                
+        }
+    } else {
+        Xc=apply(X, 3, function(Xi) { collapsed.form(Xi, N0, T0) })
+        dim(Xc) = c(dim(Yc), dim(X)[3])
+        weights = sc.weight.fw.covariates(Yc, Xc, zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
+                                          lambda.intercept=lambda.intercept, omega.intercept=omega.intercept, min.step.length=min.step.length,
+                                          lambda=weights$lambda, omega=weights$omega, update.lambda=is.null(weights$lambda), update.omega=is.null(weights$omega))
     }
     
     X.beta = contract3(X, weights$beta)
@@ -158,6 +171,33 @@ synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
     attr(estimate, 'opts') =  list(zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
                               lambda.intercept=lambda.intercept, omega.intercept=omega.intercept)
     return(estimate)
+}
+
+#' synthdid_estimate for synthetic control estimates.
+#' Takes all the same parameters, but default, passes options for synthetic control
+#' with no intercept and a penalty term that defaults to the standard deviation of first differences of Y.
+#' @export sc_estimate
+sc_estimate = function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
+                       zeta.lambda=0, zeta.omega=sd(apply(Y,1,diff)),
+                       lambda.intercept=FALSE, omega.intercept=FALSE, 
+                       weights = list(lambda=rep(0,T0), omega=NULL, vals=NULL), min.step.length=0) {
+    synthdid_estimate(Y, N0, T0, X=X,
+                       zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
+                       lambda.intercept=lambda.intercept, omega.intercept=omega.intercept,
+                       weights = weights, min.step.length=min.step.length) 
+}
+
+#' synthdid_estimate for diff-in-diff estimates.
+#' Takes all the same parameters, but default, uses constant weights lambda and omega
+#' @export did_estimate
+did_estimate = function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
+                       zeta.lambda=0, zeta.omega=sd(apply(Y,1,diff)),
+                       lambda.intercept=FALSE, omega.intercept=FALSE, 
+                       weights = list(lambda=rep(1/T0,T0), omega=rep(1/N0,N0), vals=NULL), min.step.length=0) {
+    synthdid_estimate(Y, N0, T0, X=X,
+                       zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
+                       lambda.intercept=lambda.intercept, omega.intercept=omega.intercept,
+                       weights = weights, min.step.length=min.step.length) 
 }
 
 #' Computes a placebo variant of our estimator using pre-treatment data only
@@ -227,6 +267,10 @@ synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
 #' The weights lambda defining our synthetic pre-treatment time period are plotted below.
 #' If a list of estimates is passed, plots all of them. By default, does this in different facets.
 #' To overlay estimates in the same facet, indicate a facet for each estimator in the argument `facet'.
+#'
+#' If passed a synthetic control estimate, overlays a diff-in-diff diagram for synthetic diff-in-diff with equal time weights,
+#' but plots an arrow indicating the synthetic control treatment effect estimate.
+#'
 #' Requires ggplot2
 #' @param estimates, a list of estimates output by synthdid_estimate. Or a single estimate.
 #' @param treated.name, the name of the treated curve that appears in the legend. Defaults to 'treated'
@@ -258,10 +302,16 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
         N0 = setup$N0; N1 = nrow(Y)-N0
         T0 = setup$T0; T1 = ncol(Y)-T0
 
-        omega.synth  = c(weights$omega,  rep(0, N1))
-        lambda.synth = c(weights$lambda, rep(0, T1))
-        omega.target = c(rep(0,N0),  rep(1/N1, N1))
+        # if we're given a synthetic control estimate, pretend it's a synthetic diff-in-diff estimate with equal time weights
+        if(all(weights$lambda==0)) { 
+            lambda.synth = c(rep(1/T0,T0), rep(0,T1)) 
+        }
+        else { 
+            lambda.synth = c(weights$lambda, rep(0, T1)) 
+        }
         lambda.target = c(rep(0,T0), rep(1/T1, T1))
+        omega.synth  = c(weights$omega,  rep(0, N1))
+        omega.target = c(rep(0,N0),  rep(1/N1, N1))
 
         treated.post   = omega.target %*% Y %*% lambda.target
         treated.pre    = omega.target %*% Y %*% lambda.synth
@@ -272,7 +322,7 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
         obs.trajectory = as.numeric(omega.target %*% Y)
         
         time = as.numeric(colnames(Y))
-        if(is.null(time)) { time = 1:(T0+T1) }
+        if(length(time) == 0) { time = 1:(T0+T1) }
         pre.time =  lambda.synth  %*% time
         post.time = lambda.target %*% time
 
@@ -293,8 +343,13 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
         faint.segments      = data.frame(x    = c(pre.time,    post.time),    
                                          xend = c(pre.time,    post.time),    
                                          y    = c(control.pre, control.post), 
-                                         yend = c(treated.pre, sdid.post))    
-        arrows = data.frame(x=post.time, xend = post.time, y=sdid.post, yend=treated.post)
+                                         yend = c(treated.pre, sdid.post))   
+        # if we're given a synthetic control estimate, plot the synthetic control arrow
+        if(all(weights$lambda == 0)) { 
+            arrows = data.frame(x=post.time, xend=post.time, y=control.post, yend=treated.post)
+        } else {
+            arrows = data.frame(x=post.time, xend=post.time, y=sdid.post, yend=treated.post)
+        }
         
         T0s = attr(est, 'T0s')
         if(!is.null(T0s)) {

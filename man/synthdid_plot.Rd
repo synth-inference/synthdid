@@ -6,14 +6,14 @@
 In this overlay, the treatment effect is indicated by an arrow.
 The weights lambda defining our synthetic pre-treatment time period are plotted below.
 If a list of estimates is passed, plots all of them. By default, does this in different facets.
-To overlay estimates in the same facet, indicate a facet for each estimator in the argument `facet'.
-Requires ggplot2}
+To overlay estimates in the same facet, indicate a facet for each estimator in the argument `facet'.}
 \usage{
 synthdid_plot(
   estimates,
   treated.name = "treated",
   control.name = "synthetic control",
   facet = NULL,
+  facet.vertical = TRUE,
   lambda.comparable = FALSE
 )
 }
@@ -32,10 +32,9 @@ If NULL, plot each estimate in a different facet. Defaults to NULL.}
 have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side plots. Defaults to FALSE.}
 }
 \description{
-Plots treated and synthetic control trajectories and overlays a 2x2 diff-in-diff diagram of our estimator.
-In this overlay, the treatment effect is indicated by an arrow.
-The weights lambda defining our synthetic pre-treatment time period are plotted below.
-If a list of estimates is passed, plots all of them. By default, does this in different facets.
-To overlay estimates in the same facet, indicate a facet for each estimator in the argument `facet'.
+If passed a synthetic control estimate, overlays a diff-in-diff diagram for synthetic diff-in-diff with equal time weights,
+but plots an arrow indicating the synthetic control treatment effect estimate.
+}
+\details{
 Requires ggplot2
 }

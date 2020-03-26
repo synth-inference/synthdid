@@ -11,11 +11,11 @@ synthdid_estimate(
   T0,
   X = array(dim = c(dim(Y), 0)),
   zeta.lambda = 0,
-  zeta.omega = 0,
+  zeta.omega = sd(apply(Y, 1, diff)),
   lambda.intercept = TRUE,
   omega.intercept = TRUE,
-  weights = NULL,
-  min.step.length = 0.001
+  weights = list(lambda = NULL, omega = NULL, vals = NULL),
+  min.step.length = 0
 )
 }
 \arguments{
@@ -29,7 +29,12 @@ synthdid_estimate(
 
 \item{zeta.lambda.}{Its square is weight of the ridge penalty relative to MSE. Defaults to 0.}
 
-\item{zeta.omega.}{Analogous for omega. Defaults to 0.}
+\item{zeta.omega.}{Analogous for omega. Defaults to the standard deviation of first differences of Y.}
+
+\item{lambda.intercept/omega.intercept.}{Binary. Use an intercept when estimating lambda/omega.}
+
+\item{weights:}{a list with fields lambda and omega. If non-null weights$lambda is passed, 
+we use them instead of estimating lambda weights. Same for weights$omega.}
 }
 \value{
 An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
