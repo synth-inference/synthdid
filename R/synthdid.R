@@ -409,6 +409,12 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
     }
     # if only one estimate per facet, exclude estimate-denoting linetype from legend
     if(is.null(facet)) { p = p + guides(linetype = FALSE) } 
+    # use dates on x axis if provided in colnames(Y)
+    p = tryCatch({
+        as.Date(colnames(Y))
+        p + scale_x_continuous(labels=function(time) { as.Date(time, origin='1970-01-01') })
+    }, error = function(e) { p })
+        
     p
 }
 plot.synthdid = synthdid_plot
