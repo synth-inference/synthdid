@@ -14,7 +14,12 @@ X.attr = t(data.raw[2:8,])
 Y = t(data.raw[9:39,])
 colnames(Y) = 1969 + 1:31 
 rownames(Y) = STATE.NAME
-calif = which(STATE.NAME == "California")
-Y = Y[c(setdiff(1:nrow(Y), calif), calif), ]
+states = function(...) { which(STATE.NAME %in% c(...)) }
+southeast = list('Alabama', 'Arkansas', 'Mississippi', 'Louisiana', 'Georgia', 'Kentucky', 'Tennesee','Florida')
+west = list('Colorado', 'Idaho', 'Montana', 'Nevada', 'New Mexico', 'North Dakota', 'South Dakota', 'Utah', 'Wyoming')
+Y.southeast = Y[c(do.call(states, southeast), states('California')), ]
+Y.west = Y[c(do.call(states, west), states('California')), ]
+Y = Y[c(setdiff(1:nrow(Y), states('California')), states('California')), ]
 T0 = 19
 N0 = nrow(Y)-1
+

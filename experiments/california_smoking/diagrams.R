@@ -4,22 +4,56 @@ library(viridis)
 sdid = synthdid_estimate(Y, N0, T0)
 sc = sc_estimate(Y, N0, T0)
 did = did_estimate(Y, N0, T0)
-sdid.i = function(i) { est = sdid; attr(est,'intercept') = i; est }
+# wi: with intercept. Makes plots remove a fraction i in [0,1] of the SDID pre/post difference. i=0 means plot as usual, i=1 means plot overlaid (without parallelogram).
+wi = function(est, i) { attr(est,'intercept') = i; est } 
+
+# set up the box we zoom in on in plot 5
+time = as.integer(colnames(Y))
+lambda = attr(sdid,'weights')$lambda
+xbox.ind = c(which(lambda > .01)[1], T0+4)
+xbox = time[xbox.ind] + c(-1,1)
+ybox = range(Y[N0+1, min(xbox.ind):(max(xbox.ind))]) + c(-4,4)
+
+synthdid_plot(list(sdid=sdid,sc=sc,junk=sdid), facet=c(1,1,1), trajectory.linetype=1, lambda.comparable=TRUE,
+    trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0))
+p1=synthdid_plot(list(sdid=wi(sdid, 0), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) + 
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+p2=synthdid_plot(list(sdid=wi(sdid, .75), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) +
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+p3=synthdid_plot(list(sdid=wi(sdid, 1), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) +
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+p4=synthdid_plot(list(sdid=wi(sdid,  1), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,1,0), effect.curvature=-.4) + 
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+p4.zoom = p4 + coord_cartesian(xlim=xbox, ylim=ybox) + xlab('') + ylab('') + 
+    theme(axis.ticks.x= element_blank(), axis.text.x = element_text(color='grey'), axis.ticks.y=element_blank(), axis.text.y=element_blank())
+p5 = p4 + annotation_custom(ggplotGrob(p4.zoom), xmin = 1968.5, xmax = 1984.7,   ymin=0, ymax=95) # manually adjusted zoom box location
 
 
-synthdid_plot(list(sdid=sdid.i(0), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
-    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) + theme(legend.position='off') + scale_color_viridis_d()
-ggsave('figures/smoking-parallel-diagram.pdf', width=7, height=4)
-synthdid_plot(list(sdid=sdid.i(.75), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
-    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) + theme(legend.position='off') + scale_color_viridis_d()
-ggsave('figures/smoking-parallel-close.pdf', width=7, height=4)
-synthdid_plot(list(sdid=sdid.i(1), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
-    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) + theme(legend.position='off') + scale_color_viridis_d()
-ggsave('figures/smoking-overlay-diagram.pdf', width=7, height=4)
-synthdid_plot(list(sdid=sdid.i(1), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
-    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,1,0), effect.curvature=-.4) + theme(legend.position='off') + scale_color_viridis_d()
-ggsave('figures/smoking-overlay-vs-sc.pdf', width=7, height=4)
+ggsave('figures/smoking-parallel-diagram.pdf',    plot=p1, width=7, height=4)
+ggsave('figures/smoking-parallel-close.pdf',      plot=p2, width=7, height=4)
+ggsave('figures/smoking-overlay-diagram.pdf',     plot=p3, width=7, height=4)
+ggsave('figures/smoking-overlay-vs-sc.pdf',       plot=p4, width=7, height=4)
+ggsave('figures/smoking-overlay-vs-sc-inset.pdf', plot=p5, width=7, height=4)
 
+## compare using time weights vs not 
+sdid.notw = synthdid_estimate(Y,N0,T0,weights=list(lambda=rep(1/T0,T0)))
+synthdid_plot(list(sdid=wi(sdid, 0), sdid.notw=wi(sdid.notw, 0)), facet=c(1,1), lambda.comparable=TRUE, facet.vertical=FALSE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, alpha.multiplier=c(1,1,1), effect.curvature=-.4) + 
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+ggsave('figures/timeweights-vs-not.pdf', width=7, height=4)
+
+sdid.noi = synthdid_estimate(Y,N0,T0, omega.intercept=FALSE)
+sdid.notwnoi = synthdid_estimate(Y,N0,T0,weights=list(lambda=rep(1/T0,T0)), omega.intercept=FALSE)
+synthdid_plot(list(sdid=wi(sdid,0), sdid.noi=wi(sdid.noi, 0), sdid.notwnoi=wi(sdid.notwnoi, 0)), facet=c(1,1,1), lambda.comparable=TRUE, facet.vertical=FALSE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, alpha.multiplier=c(1,1,1), effect.curvature=-.4) + 
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+ggsave('figures/timeweights-vs-not-nointercept.pdf', width=7, height=4)
+
+##
 
 estimate = sdid
 setup = attr(estimate, 'setup')
@@ -29,28 +63,40 @@ N0 = setup$N0; N1 = nrow(Y)-N0
 T0 = setup$T0; T1 = ncol(Y)-T0
     
 lambda.did   = c(rep(1/T0, T0),  rep(0,T1))
-lambda.synth = c(weights$lambda, rep(0, T1)) 
-lambda.target = c(rep(0,T0), rep(1/T1, T1))
-omega.synth  = c(weights$omega,  rep(0, N1))
-omega.target = c(rep(0,N0),  rep(1/N1, N1))
+lambda.sdid = c(weights$lambda, rep(0, T1)) 
+lambda.post = c(rep(0,T0), rep(1/T1, T1))
+omega.did   = c(rep(1/N0, N0),  rep(0,N1))
+omega.sdid  = c(weights$omega,  rep(0, N1))
+omega.post = c(rep(0,N0),  rep(1/N1, N1))
+intercept.did = c(omega.did %*% Y %*% (lambda.post - lambda.did))
+intercept.sdid = c(omega.sdid %*% Y %*% (lambda.post - lambda.sdid))
 
-points = data.frame(y=c(Y %*% lambda.target, Y %*% lambda.synth, Y %*% lambda.did),
+points = data.frame(y=c(Y %*% lambda.post, Y %*% lambda.sdid + intercept.sdid, Y %*% lambda.did + intercept.did),
                     state=rep(factor(rownames(Y)),3),
-		    ypost = rep(Y %*% lambda.target, 3),
-                    color=rep(factor(c('post', 'synth', 'did')), each=nrow(Y)))
-ggplot(points) + geom_point(aes(x=state,y=y,color=color)) + theme(axis.text.x = element_text(angle = 90, hjust = 1));        ggsave('figures/time-parallel.pdf')
-ggplot(points) + geom_point(aes(x=state,y=y-ypost,color=color)) + theme(axis.text.x = element_text(angle = 90, hjust = 1));  ggsave('figures/time-parallel-relative.pdf')
-ggplot(points[points$state != 'California', ]) + geom_boxplot(aes(x=color, y=y-ypost));                                      ggsave('figures/time-parallel-boxplot.pdf')
+		    ypost = rep(Y %*% lambda.post, 3),
+                    estimate=rep(factor(c('post', 'sdid', 'did')), each=nrow(Y)),
+		    treated=rep(rownames(Y) == 'California', 3))
+ggplot(points) + geom_point(aes(x=state,y=y,color=estimate, shape=treated)) + 
+    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+ggsave('figures/all-time-parallel.pdf', width=7, height=4)
+ggplot(points[points$estimate != 'post', ]) + geom_point(aes(x=state,y=y-ypost,color=estimate, shape=treated)) + geom_hline(yintercept=0, alpha=.5) +
+    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+ggsave('figures/all-time-parallel-relative.pdf', width=7, height=4)
+ggplot(points[points$estimator != 'post' & points$state != 'California', ]) + geom_boxplot(aes(x=estimate, y=y-ypost)) + theme_light()
+ggsave('figures/all-time-parallel-boxplot.pdf', width=7, height=4)
 
-Y = Y[omega.synth+omega.target > .02, ]
-points = data.frame(y=c(Y %*% lambda.target, Y %*% lambda.synth, Y %*% lambda.did),
+Y = Y[omega.sdid+omega.post > .02, ]
+points = data.frame(y=c(Y %*% lambda.post, Y %*% lambda.sdid + intercept.sdid, Y %*% lambda.did + intercept.did),
                     state=rep(factor(rownames(Y)),3),
-		    ypost = rep(Y %*% lambda.target, 3),
-                    color=rep(factor(c('post', 'synth', 'did')), each=nrow(Y)))
-ggplot(points) + geom_point(aes(x=state,y=y,color=color)) + theme(axis.text.x = element_text(angle = 90, hjust = 1));        ggsave('figures/sc-time-parallel.pdf')
-ggplot(points) + geom_point(aes(x=state,y=y-ypost,color=color)) + theme(axis.text.x = element_text(angle = 90, hjust = 1));  ggsave('figures/sc-time-parallel-relative.pdf')
-ggplot(points[points$state != 'California', ]) + geom_boxplot(aes(x=color, y=y-ypost));                                      ggsave('figures/sc-time-parallel-boxplot.pdf')
+		    ypost = rep(Y %*% lambda.post, 3),
+                    estimate=rep(factor(c('post', 'sdid', 'did')), each=nrow(Y)),
+		    treated=rep(rownames(Y) == 'California', 3))
+ggplot(points) + geom_point(aes(x=state,y=y,color=estimate, shape=treated)) + 
+    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+ggsave('figures/sc-time-parallel.pdf', width=7, height=4)
+ggplot(points[points$estimate != 'post', ]) + geom_point(aes(x=state,y=y-ypost,color=estimate, shape=treated)) +  geom_hline(yintercept=0, alpha=.5) +
+    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+ggsave('figures/sc-time-parallel-relative.pdf', width=7, height=4)
+ggplot(points[points$estimator != 'post' & points$state != 'California', ]) + geom_boxplot(aes(x=estimate, y=y-ypost)) + theme_light()
+ggsave('figures/sc-time-parallel-boxplot.pdf', width=7, height=4)
 
-
-source('../../R/synthdid.R')
-synthdid_time_plot(sdid)
