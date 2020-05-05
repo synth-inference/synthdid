@@ -281,46 +281,56 @@ synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
 #' @param lambda.comparable, TRUE if the weights lambda should be plotted in such a way that the ribbons
 #'        have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side plots. Defaults to FALSE.
 #' @export synthdid_plot
-synthdid_plot = function(estimates, treated.name='treated', control.name='synthetic control', facet=NULL, facet.vertical=TRUE, lambda.comparable = FALSE) {
+synthdid_plot = function(estimates, treated.name='treated', control.name='synthetic control', force.sc=FALSE, 
+			 facet=NULL, facet.vertical=TRUE, lambda.comparable = !is.null(facet),
+			 overlay=0, lambda.plot.scale=3, hide=c(),
+			 trajectory.linetype=3, effect.curvature = 0,
+			 trajectory.alpha=.4, diagram.alpha = .95, effect.alpha=.95, alpha.multiplier = NULL) {
     library(ggplot2)
     if(class(estimates) == 'synthdid') { estimates = list(estimates) } 
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
-        
+    if(is.null(alpha.multiplier)) { alpha.multiplier = rep(1, length(estimates)) }
     treated = 1
     control = 2    
     groups = factor(c(control,treated), labels=c(control.name, treated.name))
-    estimate_factors = factor(1:length(estimates), labels=names(estimates))
+    estimate.factors = factor(1:(length(estimates)+1), labels=c(treated.name, names(estimates)))
     facet_factors = if(is.null(facet)) {
         factor(1:length(estimates), labels=names(estimates))
     } else {
         factor(facet, levels=1:length(unique(facet)), labels=unique(facet))
     }
-    plot.descriptions = lapply(estimates, function(est) { 
+    grid=expand.grid(estimate=1:length(estimates), overlay=1:length(overlay))
+    plot.descriptions = lapply(1:nrow(grid), function(row) {
+	est = estimates[[grid$estimate[row]]]
+	over = overlay[grid$overlay[row]]	
+ 
         setup = attr(est, 'setup')
         weights = attr(est, 'weights')
         Y = setup$Y - contract3(setup$X, weights$beta)
         N0 = setup$N0; N1 = nrow(Y)-N0
         T0 = setup$T0; T1 = ncol(Y)-T0
-
-        # if we're given a synthetic control estimate, pretend it's a synthetic diff-in-diff estimate with equal time weights
-        if(all(weights$lambda==0)) { 
-            lambda.synth = c(rep(1/T0,T0), rep(0,T1)) 
-        }
-        else { 
-            lambda.synth = c(weights$lambda, rep(0, T1)) 
-        }
+        
+        lambda.synth = c(weights$lambda, rep(0, T1)) 
         lambda.target = c(rep(0,T0), rep(1/T1, T1))
         omega.synth  = c(weights$omega,  rep(0, N1))
         omega.target = c(rep(0,N0),  rep(1/N1, N1))
 
+	# if we're given a synthetic control estimate, take note: we'll plot it differently
+	# and if we're passed a SDID estimate with 'intercept' attribute = 1, we'll subtract the SDID intercept offset
+	# and plot it like a synthetic control estimate
+	is.sc = all(weights$lambda==0) || (!is.null(attr(est,'intercept')) && attr(est, 'intercept') == 1)
+	if(!is.null(attr(est,'intercept'))) { over = attr(est,'intercept') }  # force overlaying curves if intercept attribute = 1
+  
+	intercept.offset = over * c((omega.target - omega.synth) %*% Y %*% lambda.synth)
+	obs.trajectory = as.numeric(omega.target %*% Y)
+        syn.trajectory = as.numeric(omega.synth %*% Y) + intercept.offset
+
         treated.post   = omega.target %*% Y %*% lambda.target
         treated.pre    = omega.target %*% Y %*% lambda.synth
-        control.post = omega.synth %*% Y %*% lambda.target
-        control.pre  = omega.synth %*% Y %*% lambda.synth 
+        control.post = omega.synth %*% Y %*% lambda.target + intercept.offset
+        control.pre  = omega.synth %*% Y %*% lambda.synth  + intercept.offset
         sdid.post = as.numeric(control.post + treated.pre - control.pre)
-        syn.trajectory = as.numeric(omega.synth %*% Y)
-        obs.trajectory = as.numeric(omega.target %*% Y)
-        
+
         time = as.numeric(colnames(Y))
         if(length(time) == 0) { time = 1:(T0+T1) }
         pre.time =  lambda.synth  %*% time
@@ -328,28 +338,23 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
 
         # construct objects on graph
         lines  = data.frame(x = rep(time,2), 
-                            y = c(obs.trajectory, syn.trajectory), 
+                            y = c(obs.trajectory, syn.trajectory),
                             color=rep(groups[c(treated, control)], each=length(time)))
-        points = data.frame(x     =        c(pre.time,    pre.time,    post.time,     post.time,     post.time),  
-                            y     =        c(treated.pre, control.pre, treated.post,  control.post,  treated.post),    
-                            color = groups[c(treated,     control,     treated,       control,       treated)])   
-        segments = data.frame(x    =        c(pre.time,     pre.time),      
-                              xend =        c(post.time,    post.time),      
-                              y    =        c(control.pre,  treated.pre),  
-                              yend =        c(control.post, treated.post),   
-                              color= groups[c(control, treated)])
-        constructed.points   = data.frame(x = post.time, y=sdid.post, color=groups[treated])
-        constructed.segments = data.frame(x = pre.time, xend = post.time, y = treated.pre, yend = sdid.post, color=groups[treated])
-        faint.segments      = data.frame(x    = c(pre.time,    post.time),    
-                                         xend = c(pre.time,    post.time),    
-                                         y    = c(control.pre, control.post), 
-                                         yend = c(treated.pre, sdid.post))   
-        # if we're given a synthetic control estimate, plot the synthetic control arrow
-        if(all(weights$lambda == 0)) { 
-            arrows = data.frame(x=post.time, xend=post.time, y=control.post, yend=treated.post)
-        } else {
-            arrows = data.frame(x=post.time, xend=post.time, y=sdid.post, yend=treated.post)
-        }
+        points   = data.frame(x = c(post.time, post.time), y=c(treated.post, sdid.post), color=groups[c(treated, control)])
+        did.points = data.frame(x     =        c(pre.time,    pre.time,     post.time,     post.time),  
+                                y     =        c(treated.pre, control.pre,  control.post,  treated.post),    
+                                color = groups[c(treated,     control,      control,       treated)])   
+        did.segments = data.frame(x    =        c(pre.time,     pre.time),      
+                                  xend =        c(post.time,    post.time),      
+                                  y    =        c(control.pre,  treated.pre),  
+                                  yend =        c(control.post, treated.post),   
+                                  color= groups[c(control, treated)])
+        hallucinated.segments = data.frame(x = pre.time, xend = post.time, y = treated.pre, yend = sdid.post)
+        guide.segments = data.frame(x    = c(pre.time,    post.time),    
+                                    xend = c(pre.time,    post.time),    
+                                    y    = c(control.pre, control.post), 
+                                    yend = c(treated.pre, sdid.post))   
+        arrows = data.frame(x=post.time, xend=post.time, y=sdid.post, yend=treated.post, xscale=max(time)-post.time, color=groups[control])
         
         T0s = attr(est, 'T0s')
         if(!is.null(T0s)) {
@@ -359,49 +364,59 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
         }
 
         if(lambda.comparable) { 
-            height = max(c(obs.trajectory))-min(c(obs.trajectory))
+            height = (max(c(obs.trajectory))-min(c(obs.trajectory)))/lambda.plot.scale
             bottom = min(c(obs.trajectory)) - height
-            ribbons = data.frame(x=time[1:T0], ymin = rep(bottom,T0), ymax= bottom + height*lambda.synth[1:T0])
+            ribbons = data.frame(x=time[1:T0], ymin = rep(bottom,T0), ymax= bottom + height*lambda.synth[1:T0], color=groups[control])
         } else { 
-            height = (max(c(obs.trajectory,syn.trajectory))-min(c(obs.trajectory, syn.trajectory)))/4
+            height = (max(c(obs.trajectory,syn.trajectory))-min(c(obs.trajectory, syn.trajectory)))/lambda.plot.scale
             bottom = min(c(obs.trajectory, syn.trajectory)) - height
-            ribbons = data.frame(x=time[1:T0], ymin = rep(bottom,T0), ymax= bottom + height*lambda.synth[1:T0]/max(lambda.synth))
+            ribbons = data.frame(x=time[1:T0], ymin = rep(bottom,T0), ymax= bottom + height*lambda.synth[1:T0]/max(lambda.synth), color=groups[control])
         }
-        list(lines=lines, points=points, segments=segments, 
-             constructed.points=constructed.points, constructed.segments=constructed.segments, faint.segments=faint.segments,
+        elements = list(lines=lines, points=points, did.segments=did.segments, did.points=did.points, 
+	     hallucinated.segments=hallucinated.segments, guide.segments=guide.segments,
              arrows=arrows, vlines=vlines, ribbons=ribbons)
+	lapply(elements, function(x) { 
+	    x$frame = over
+	    x$is.sc = is.sc
+	    x$estimate = estimate.factors[grid$estimate[row]+1] # offset because the treated pseudo-estimate factor is first
+	    x
+	})
     })
     
 
+    one.per.facet = length(unique(facet_factors)) == length(facet_factors) 
     concatenate.field = function(field) {
-        do.call(rbind, mapply(function(desc, estimate_factor) { 
+        do.call(rbind, lapply(plot.descriptions, function(desc) {
                 element = desc[[field]]
-                element$facet = facet_factors[as.integer(estimate_factor)]
-                element$estimate = if(is.null(facet)) { factor(1) } else { estimate_factor }
-                if(field == 'lines') { 
-                    element$group = interaction(element$color, element$estimate)
-                }
-                if(field == 'ribbons') {
-                    element$group = element$estimate
-                }
-                element
-            }, plot.descriptions, estimate_factors, SIMPLIFY=FALSE))
+		estimate.factor = element$estimate[1]
+                element$facet = facet_factors[as.integer(estimate.factor)-1]    # offset because the treated pseudo-estimate factor is first
+		element$show = alpha.multiplier[as.integer(element$estimate)-1] # "
+		element$show[element$color == groups[treated]] = 1              # show treated observations
+		# if there are multiple plots per facet, color by estimator rather than by treatment/control
+		# make all treated observations the same color, assuming that we're using only one treated observation per facet
+		if(!one.per.facet && 'color' %in% colnames(element)) {
+		    color = element$estimate
+		    color[element$color == groups[treated]] = estimate.factors[1] # treated `estimate factor'
+		    element$color = color
+		}
+		# if there are multiple plots per facet, curve treatment effect arrows so they don't lie on top of one another
+		element
+            }))
     }
     conc = lapply(names(plot.descriptions[[1]]), concatenate.field)
     names(conc) = names(plot.descriptions[[1]])
+    no.sc = function(x) { x[!x$is.sc,] }
 
     p=ggplot() +
-        geom_line(aes(x=x,y=y,color=color,group=group),  data=conc$lines, linetype=3) +
-        geom_point(aes(x=x,y=y,color=color), data=conc$points) +
-        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,color=color, group=estimate), data=conc$segments) +
-        geom_point(aes(x=x,y=y,color=color), data=conc$constructed.points, shape=21) + 
-        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,color=color), data=conc$constructed.segments, linetype=2) +
-        geom_segment(aes(x=x,xend=xend,y=y,yend=yend), data=conc$faint.segments, alpha=.1, linetype=2) +
-        geom_segment(aes(x=x,xend=xend,y=y,yend=yend), data=conc$arrows, color='black', alpha=.2, size=1, arrow=arrow(length=unit(.2, 'cm'))) +
-        geom_vline(aes(xintercept=xintercept), data=conc$vlines, color='black', alpha=.4) + 
-        geom_ribbon(aes(x=x,ymin=ymin,ymax=ymax, group=group), data = conc$ribbons, color='black', fill='orange', alpha=.4) + 
-        xlab('') + ylab('') + labs(color='') + 
-        theme_light() + theme(legend.direction = "horizontal", legend.position = "top") 
+        geom_line(aes(x=x,y=y,color=color,frame=frame, alpha=trajectory.alpha*show),  data=conc$lines, linetype=trajectory.linetype) + 
+        geom_point(aes(x=x,y=y,color=color,frame=frame, alpha=diagram.alpha*show), data=conc$points, shape=21) +
+        geom_point(aes(x=x,y=y,color=color,frame=frame, alpha=diagram.alpha*show), data=no.sc(conc$did.points)) +
+        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,color=color, frame=frame, alpha=diagram.alpha*show), data=no.sc(conc$did.segments)) +
+        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,frame=frame, group=estimate, alpha=.5*diagram.alpha*show), data=no.sc(conc$hallucinated.segments), linetype=2,  color='black') +
+        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,frame=frame, group=estimate, alpha=.3*diagram.alpha*show), data=no.sc(conc$guide.segments), linetype=2, color='black') +
+        geom_vline(aes(xintercept=xintercept, alpha=.2*show), data=conc$vlines, color='black') + 
+        geom_ribbon(aes(x=x,ymin=ymin,ymax=ymax, group=color, fill=color, alpha=.5*diagram.alpha*show), color='black', data = conc$ribbons) +
+      	geom_curve(aes(x=x,xend=xend,y=y,yend=yend, alpha=effect.alpha*show),  data=conc$arrows, curvature=effect.curvature, color='black', arrow=arrow(length=unit(.2, 'cm')))
     # facet if we want multiple facets
     if(!all(conc$lines$facet == conc$lines$facet[1])) { 
         if(facet.vertical) { p = p + facet_grid(facet ~ ., scales='free_y') }
@@ -414,8 +429,9 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
         as.Date(colnames(Y))
         p + scale_x_continuous(labels=function(time) { as.Date(time, origin='1970-01-01') })
     }, error = function(e) { p })
-        
-    p
+
+    p + xlab('') + ylab('') + labs(color='',fill='') + scale_fill_discrete(guide='none') + scale_alpha(range = c(0,1), guide='none') +
+     theme_light() + theme(legend.direction = "horizontal", legend.position = "top")
 }
 plot.synthdid = synthdid_plot
 
@@ -430,6 +446,30 @@ synthdid_placebo_plot = function(estimate, overlay=FALSE, treated.fraction=NULL)
    estimates = list(estimate=estimate, placebo=synthdid_placebo(estimate, treated.fraction=treated.fraction))
    synthdid_plot(estimates, facet=if(overlay) { c(1,1) } else { NULL })
 } 
+
+
+synthdid_time_plot = function(estimate) { 
+    library(ggplot2)
+    stopifnot(class(estimate) == 'synthdid') 
+    
+    setup = attr(estimate, 'setup')
+    weights = attr(estimate, 'weights')
+    Y = setup$Y - contract3(setup$X, weights$beta)
+    N0 = setup$N0; N1 = nrow(Y)-N0
+    T0 = setup$T0; T1 = ncol(Y)-T0
+        
+    lambda.did   = c(rep(1/T0, T0),  rep(0,T1))
+    lambda.synth = c(weights$lambda, rep(0, T1)) 
+    lambda.target = c(rep(0,T0), rep(1/T1, T1))
+    omega.synth  = c(weights$omega,  rep(0, N1))
+    omega.target = c(rep(0,N0),  rep(1/N1, N1))
+
+    points = data.frame(y=c(Y %*% lambda.target, Y %*% lambda.synth, Y %*% lambda.did),
+	                x=rep(Y %*% lambda.target, 3),
+	                color=rep(factor(c('target', 'synth', 'did')), each=N0+N1))
+    ggplot(points) + geom_point(aes(x=x,y=y,color=color)) 
+}
+
 
 #' A diagnostic plot for sc.weight.fw.covariates. Plots the objective function, regularized RMSE,
 #' as a function of the number of Frank-Wolfe / Gradient steps taken.

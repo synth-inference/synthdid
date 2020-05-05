@@ -1,59 +1,102 @@
+source('setup.R')
 source('../../R/synthdid.R')
-data.raw = read.table("MLAB_data.txt")
+library(viridis)
+sdid = synthdid_estimate(Y, N0, T0)
+sc = sc_estimate(Y, N0, T0)
+did = did_estimate(Y, N0, T0)
+# wi: with intercept. Makes plots remove a fraction i in [0,1] of the SDID pre/post difference. i=0 means plot as usual, i=1 means plot overlaid (without parallelogram).
+wi = function(est, i) { attr(est,'intercept') = i; est } 
 
-STATE.NAME = c("Alabama", "Arkansas", "Colorado", "Connecticut", "Delaware",
-               "Georgia", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas",
-               "Kentucky", "Louisiana", "Maine", "Minnesota", "Mississippi",
-               "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
-               "New Mexico", "North Carolina", "North Dakota", "Ohio", "Oklahoma",
-               "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
-               "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "West Virginia",
-               "Wisconsin", "Wyoming", "California")
+# set up the box we zoom in on in plot 5
+time = as.integer(colnames(Y))
+lambda = attr(sdid,'weights')$lambda
+xbox.ind = c(which(lambda > .01)[1], T0+4)
+xbox = time[xbox.ind] + c(-1,1)
+ybox = range(Y[N0+1, min(xbox.ind):(max(xbox.ind))]) + c(-4,4)
 
-STATE = data.raw[1,]
-X.attr = t(data.raw[2:8,])
-Y = t(data.raw[9:39,])
-colnames(Y) = 1969 + 1:31 
-rownames(Y) = STATE.NAME
-calif = which(STATE.NAME == "California")
-Y = Y[c(setdiff(1:nrow(Y), calif), calif), ]
-T0 = 19
-N0 = nrow(Y)-1
-
-X.noise = rnorm(50*length(Y)); dim(X.noise)=c(dim(Y), 50)
-beta.noise = rnorm(50)
-estimates = list(synthdid_estimate(Y, N0, T0),
-                 synthdid_estimate(Y+contract3(X.noise[,,1:2], 5*beta.noise[1:2]), N0, T0, X.noise[,,1]))
-names(estimates) = c('no covariates', 'ten noise covariates')
-
-synthdid_rmse_plot(estimates)
-synthdid_plot(estimates[[3]], sc.plot=TRUE)
-source('../../R/synthdid.R')
-
-indices=which(rownames(Y) %in% c('Alabama', 'Arkansas', 'Mississippi', 'Louisiana', 'Georgia', 'Kentucky', 'Tennesee','Florida'))
-estimates = list(synthdid_estimate(Y[c(indices, nrow(Y)),], length(indices), T0), synthdid_estimate(Y, N0, T0), synthdid_estimate(Y, N0, T0, omega.intercept=FALSE))
-attr(estimates[[3]], 'weights')$lambda = rep(1/T0,T0)
-names(estimates) = c('southeast control states', 'all control states', 'sc')
-synthdid_plot(estimates, facet.vertical=FALSE)
-synthdid_plot(estimates[[1]], treated.name='california', control.name='synth. california') + theme(legend.position=c(.9,.9)
+synthdid_plot(list(sdid=sdid,sc=sc,junk=sdid), facet=c(1,1,1), trajectory.linetype=1, lambda.comparable=TRUE,
+    trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0))
+p1=synthdid_plot(list(sdid=wi(sdid, 0), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) + 
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+p2=synthdid_plot(list(sdid=wi(sdid, .75), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) +
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+p3=synthdid_plot(list(sdid=wi(sdid, 1), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) +
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+p4=synthdid_plot(list(sdid=wi(sdid,  1), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,1,0), effect.curvature=-.4) + 
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+p4.zoom = p4 + coord_cartesian(xlim=xbox, ylim=ybox) + xlab('') + ylab('') + 
+    theme(axis.ticks.x= element_blank(), axis.text.x = element_text(color='grey'), axis.ticks.y=element_blank(), axis.text.y=element_blank())
+p5 = p4 + annotation_custom(ggplotGrob(p4.zoom), xmin = 1968.5, xmax = 1984.7,   ymin=0, ymax=95) # manually adjusted zoom box location
 
 
-Y.offset = Y[,6:ncol(Y)]
-Y.offset[1:N0,] = Y[1:N0, 1:(ncol(Y)-5)]
-estimates = list(synthdid_estimate(Y.offset, N0, T0-5), synthdid_estimate(Y, N0, T0))
-synthdid_plot(estimates)
+ggsave('figures/smoking-parallel-diagram.pdf',    plot=p1, width=7, height=4)
+ggsave('figures/smoking-parallel-close.pdf',      plot=p2, width=7, height=4)
+ggsave('figures/smoking-overlay-diagram.pdf',     plot=p3, width=7, height=4)
+ggsave('figures/smoking-overlay-vs-sc.pdf',       plot=p4, width=7, height=4)
+ggsave('figures/smoking-overlay-vs-sc-inset.pdf', plot=p5, width=7, height=4)
 
-Y.offset = Y[,6:ncol(Y)]
-Y.offset[1:N0,] = Y[1:N0, 1:(ncol(Y)-5)]
-estimates = synthdid_estimate(Y.offset, N0, T0-5)
-plot(estimates)
+## compare using time weights vs not 
+sdid.notw = synthdid_estimate(Y,N0,T0,weights=list(lambda=rep(1/T0,T0)))
+synthdid_plot(list(sdid=wi(sdid, 0), sdid.notw=wi(sdid.notw, 0)), facet=c(1,1), lambda.comparable=TRUE, facet.vertical=FALSE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, alpha.multiplier=c(1,1,1), effect.curvature=-.4) + 
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+ggsave('figures/timeweights-vs-not.pdf', width=7, height=4)
 
-summary(estimates[[1]])
-synthdid_placebo_plot(estimates[[1]])
-synthdid_placebo_plot(estimates[[1]])
-synthdid_placebo_plot(estimates[[1]], overlay=TRUE)
+sdid.noi = synthdid_estimate(Y,N0,T0, omega.intercept=FALSE)
+sdid.notwnoi = synthdid_estimate(Y,N0,T0,weights=list(lambda=rep(1/T0,T0)), omega.intercept=FALSE)
+synthdid_plot(list(sdid=wi(sdid,0), sdid.noi=wi(sdid.noi, 0), sdid.notwnoi=wi(sdid.notwnoi, 0)), facet=c(1,1,1), lambda.comparable=TRUE, facet.vertical=FALSE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, alpha.multiplier=c(1,1,1), effect.curvature=-.4) + 
+    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+ggsave('figures/timeweights-vs-not-nointercept.pdf', width=7, height=4)
 
-synthdid = estimates[[1]]
-did = synthdid_estimate(Y, N0, T0, weights=list(lambda=rep(1/T0,T0), omega=rep(1/N0,N0)))
-synthdid_plot(list(synthdid=synthdid, did=did)) 
-synthdid_plot(list(synthdid=synthdid, did=did), lambda.comparable=TRUE) + facet_grid(. ~ facet)
+##
+
+estimate = sdid
+setup = attr(estimate, 'setup')
+weights = attr(estimate, 'weights')
+Y = setup$Y - contract3(setup$X, weights$beta)
+N0 = setup$N0; N1 = nrow(Y)-N0
+T0 = setup$T0; T1 = ncol(Y)-T0
+    
+lambda.did   = c(rep(1/T0, T0),  rep(0,T1))
+lambda.sdid = c(weights$lambda, rep(0, T1)) 
+lambda.post = c(rep(0,T0), rep(1/T1, T1))
+omega.did   = c(rep(1/N0, N0),  rep(0,N1))
+omega.sdid  = c(weights$omega,  rep(0, N1))
+omega.post = c(rep(0,N0),  rep(1/N1, N1))
+intercept.did = c(omega.did %*% Y %*% (lambda.post - lambda.did))
+intercept.sdid = c(omega.sdid %*% Y %*% (lambda.post - lambda.sdid))
+
+points = data.frame(y=c(Y %*% lambda.post, Y %*% lambda.sdid + intercept.sdid, Y %*% lambda.did + intercept.did),
+                    state=rep(factor(rownames(Y)),3),
+		    ypost = rep(Y %*% lambda.post, 3),
+                    estimate=rep(factor(c('post', 'sdid', 'did')), each=nrow(Y)),
+		    treated=rep(rownames(Y) == 'California', 3))
+ggplot(points) + geom_point(aes(x=state,y=y,color=estimate, shape=treated)) + 
+    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+ggsave('figures/all-time-parallel.pdf', width=7, height=4)
+ggplot(points[points$estimate != 'post', ]) + geom_point(aes(x=state,y=y-ypost,color=estimate, shape=treated)) + geom_hline(yintercept=0, alpha=.5) +
+    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+ggsave('figures/all-time-parallel-relative.pdf', width=7, height=4)
+ggplot(points[points$estimator != 'post' & points$state != 'California', ]) + geom_boxplot(aes(x=estimate, y=y-ypost)) + theme_light()
+ggsave('figures/all-time-parallel-boxplot.pdf', width=7, height=4)
+
+Y = Y[omega.sdid+omega.post > .02, ]
+points = data.frame(y=c(Y %*% lambda.post, Y %*% lambda.sdid + intercept.sdid, Y %*% lambda.did + intercept.did),
+                    state=rep(factor(rownames(Y)),3),
+		    ypost = rep(Y %*% lambda.post, 3),
+                    estimate=rep(factor(c('post', 'sdid', 'did')), each=nrow(Y)),
+		    treated=rep(rownames(Y) == 'California', 3))
+ggplot(points) + geom_point(aes(x=state,y=y,color=estimate, shape=treated)) + 
+    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+ggsave('figures/sc-time-parallel.pdf', width=7, height=4)
+ggplot(points[points$estimate != 'post', ]) + geom_point(aes(x=state,y=y-ypost,color=estimate, shape=treated)) +  geom_hline(yintercept=0, alpha=.5) +
+    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+ggsave('figures/sc-time-parallel-relative.pdf', width=7, height=4)
+ggplot(points[points$estimator != 'post' & points$state != 'California', ]) + geom_boxplot(aes(x=estimate, y=y-ypost)) + theme_light()
+ggsave('figures/sc-time-parallel-boxplot.pdf', width=7, height=4)
+
