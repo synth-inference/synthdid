@@ -11,7 +11,7 @@ wi = function(est, i) { attr(est,'intercept') = i; est }
 time = as.integer(colnames(Y))
 lambda = attr(sdid,'weights')$lambda
 xbox.ind = c(which(lambda > .01)[1], T0+4)
-xbox = time[xbox.ind] + c(-1,1)
+xbox = time[xbox.ind] + c(-.5,.5)
 ybox = range(Y[N0+1, min(xbox.ind):(max(xbox.ind))]) + c(-4,4)
 
 synthdid_plot(list(sdid=sdid,sc=sc,junk=sdid), facet=c(1,1,1), trajectory.linetype=1, lambda.comparable=TRUE,
@@ -30,7 +30,8 @@ p4=synthdid_plot(list(sdid=wi(sdid,  1), sc=sc, junk=sdid), facet=c(1,1,1), lamb
     theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
 p4.zoom = p4 + coord_cartesian(xlim=xbox, ylim=ybox) + xlab('') + ylab('') + 
     theme(axis.ticks.x= element_blank(), axis.text.x = element_text(color='grey'), axis.ticks.y=element_blank(), axis.text.y=element_blank())
-p5 = p4 + annotation_custom(ggplotGrob(p4.zoom), xmin = 1968.5, xmax = 1984.7,   ymin=0, ymax=95) # manually adjusted zoom box location
+p5 = p4 + annotation_custom(ggplotGrob(p4.zoom), xmin = 1968.5, xmax = 1984.7,   ymin=0, ymax=95) + # manually adjusted zoom box location
+	  geom_rect(aes(xmin=min(xbox), xmax=max(xbox), ymin=min(ybox), ymax=max(ybox)), color=alpha('black', .25), size=.3, fill=NA)
 
 
 ggsave('figures/smoking-parallel-diagram.pdf',    plot=p1, width=7, height=4)
