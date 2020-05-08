@@ -10,7 +10,7 @@ This applies, in particular, to the case of a single treated unit.
 To install this package in R, run the following commands:
 ```R
 library(devtools) 
-install_github("davidahirshberg/synthdid", ref="v1")
+install_github("synth-inference/synthdid")
 ```
 Example usage:
 
