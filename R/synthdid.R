@@ -451,8 +451,7 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
     p + xlab('') + ylab('') + labs(color='',fill='') + scale_alpha(guide='none') +
      theme_light() + theme(legend.direction = "horizontal", legend.position = "top")
 }
-#' @export plot.synthdid
-plot.synthdid = synthdid_plot
+
 
 
 #' For our estimator and a placebo, plots treated and synthetic control trajectories and overlays a 2x2 diff-in-diff diagram.
@@ -533,6 +532,12 @@ synthdid_controls = function(estimates, sort.by=1, digits=3, mass=.9) {
     tab[1:tab.len, ]
 }
 
+## Export Methods
+
+#' @export plot.synthdid
+plot.synthdid = synthdid_plot
+
+#' @export summary.synthdid
 summary.synthdid = function(estimate) {
     list(estimate = c(estimate), 
          se = synthdid_se(estimate),

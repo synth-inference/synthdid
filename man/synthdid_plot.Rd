@@ -18,7 +18,7 @@ synthdid_plot(
   lambda.comparable = !is.null(facet),
   overlay = 0,
   lambda.plot.scale = 3,
-  trajectory.linetype = 3,
+  trajectory.linetype = 1,
   effect.curvature = 0,
   trajectory.alpha = 0.4,
   diagram.alpha = 0.95,
