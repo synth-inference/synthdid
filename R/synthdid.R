@@ -451,6 +451,7 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
     p + xlab('') + ylab('') + labs(color='',fill='') + scale_alpha(guide='none') +
      theme_light() + theme(legend.direction = "horizontal", legend.position = "top")
 }
+#' @export plot.synthdid
 plot.synthdid = synthdid_plot
 
 
