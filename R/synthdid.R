@@ -302,7 +302,7 @@ synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
 #' @export synthdid_plot
 synthdid_plot = function(estimates, treated.name='treated', control.name='synthetic control', force.sc=FALSE, 
 			 facet=NULL, facet.vertical=TRUE, lambda.comparable = !is.null(facet), overlay=0, 
-			 lambda.plot.scale=3, trajectory.linetype=3, effect.curvature = 0,
+			 lambda.plot.scale=3, trajectory.linetype=1, effect.curvature = 0,
 			 trajectory.alpha=.4, diagram.alpha = .95, effect.alpha=.95, onset.alpha = .3, alpha.multiplier = NULL) {
     library(ggplot2)
     if(class(estimates) == 'synthdid') { estimates = list(estimates) } 
