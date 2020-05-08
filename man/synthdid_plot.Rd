@@ -12,13 +12,27 @@ synthdid_plot(
   estimates,
   treated.name = "treated",
   control.name = "synthetic control",
+  force.sc = FALSE,
   facet = NULL,
   facet.vertical = TRUE,
-  lambda.comparable = FALSE
+  lambda.comparable = !is.null(facet),
+  overlay = 0,
+  lambda.plot.scale = 3,
+  trajectory.linetype = 3,
+  effect.curvature = 0,
+  trajectory.alpha = 0.4,
+  diagram.alpha = 0.95,
+  effect.alpha = 0.95,
+  onset.alpha = 0.3,
+  alpha.multiplier = NULL
 )
 }
 \arguments{
-\item{estimates, }{a list of estimates output by synthdid_estimate. Or a single estimate.}
+\item{estimates, }{a list of estimates output by synthdid_estimate. Or a single estimate.
+If estimates have attribute 'intercept' set (scalar in [0,1]), then plot after subtracting
+that fraction of the SDID adjustment for the difference between pre-treatment treated and sc curves.
+With intercept of almost one, this makes it easier to assess parallel-ness by making trajectories closer
+With intercept of one, this overlays curves, and plotting a diagram is suppressed as in the case of a SC estimate.}
 
 \item{treated.name, }{the name of the treated curve that appears in the legend. Defaults to 'treated'}
 
@@ -29,12 +43,35 @@ The values of the elements of the list are used to label the facets.
 If NULL, plot each estimate in a different facet. Defaults to NULL.}
 
 \item{lambda.comparable, }{TRUE if the weights lambda should be plotted in such a way that the ribbons
-have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side plots. Defaults to FALSE.}
+     have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots. 
+Defaults to FALSE if facet is not passed, TRUE if passed.}
+
+\item{overlay}{specifies a value of 'intercept' for all SDID estimates. Defaults to 0.
+If a vector is passed, plots at different intercept levels indicated by the 'frame' aesthetic. ggplotly will interpret this as an animation.}
+
+\item{lambda.plot.scale}{determines the scale of the plot of the weights lambda.}
+
+\item{trajectory.linetype, }{the linetype of the treated and synthetic control trajectories}
+
+\item{effect.curvature, }{the curvature of the arrows indicating the treatment effect. Defaults to zero. 
+Nonzero values help avoid overplotting when plotting multiple estimates in one facet.}
+
+\item{trajectory.alpha}{determines transparency of trajectories}
+
+\item{diagram.alpha}{determines transparency of diff-in-diff diagram}
+
+\item{effect.alpha}{determines transparency of effect arrows}
+
+\item{onset.alpha}{determines transparency of vertical lines indicating onset of treatment}
+
+\item{alpha.multiplier, }{a vector of the same length as estimates, is useful for comparing multiple estimates in
+one facet but highlighting one or several. All plot elements associated with the estimate are displayed
+with alpha multiplied by the corresponding element of alpha.multiplier. Defaults to a vector of ones.}
 }
 \description{
-If passed a synthetic control estimate, overlays a diff-in-diff diagram for synthetic diff-in-diff with equal time weights,
-but plots an arrow indicating the synthetic control treatment effect estimate.
+For SC estimates (lambda=[0,0,...]), plots the trajectories and SC estimate of the effect, but no diagram.
 }
 \details{
 Requires ggplot2
+Due to differences between ggplot and ggplotly, this will warn about an unknown aesthetic frame.
 }

@@ -4,8 +4,17 @@ library(viridis)
 sdid = synthdid_estimate(Y, N0, T0)
 sc = sc_estimate(Y, N0, T0)
 did = did_estimate(Y, N0, T0)
+
+### Parallel Trends Plots
+
 # wi: with intercept. Makes plots remove a fraction i in [0,1] of the SDID pre/post difference. i=0 means plot as usual, i=1 means plot overlaid (without parallelogram).
 wi = function(est, i) { attr(est,'intercept') = i; est } 
+
+synthdid_plot(list(did=did, sdid=sdid), facet.vertical=FALSE, control.name='control', lambda.comparable=TRUE, 
+    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, effect.curvature=-.4, onset.alpha=.7) + 
+    theme(legend.position=c(.90,.90), legend.direction='vertical', legend.key=element_blank(), legend.background=element_blank())
+ggsave('figures/sdid-vs-did.pdf', width=7, height=4.5)
+
 
 # set up the box we zoom in on in plot 5
 time = as.integer(colnames(Y))
@@ -13,48 +22,39 @@ lambda = attr(sdid,'weights')$lambda
 xbox.ind = c(which(lambda > .01)[1], T0+4)
 xbox = time[xbox.ind] + c(-.5,.5)
 ybox = range(Y[N0+1, min(xbox.ind):(max(xbox.ind))]) + c(-4,4)
-
-synthdid_plot(list(sdid=sdid,sc=sc,junk=sdid), facet=c(1,1,1), trajectory.linetype=1, lambda.comparable=TRUE,
-    trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0))
-p1=synthdid_plot(list(sdid=wi(sdid, 0), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
-    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) + 
-    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
-p2=synthdid_plot(list(sdid=wi(sdid, .75), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
-    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) +
-    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
-p3=synthdid_plot(list(sdid=wi(sdid, 1), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
-    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,.1,0), effect.curvature=-.4) +
-    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
-p4=synthdid_plot(list(sdid=wi(sdid,  1), sc=sc, junk=sdid), facet=c(1,1,1), lambda.comparable=TRUE, 
-    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, alpha.multiplier=c(1,1,0), effect.curvature=-.4) + 
-    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+estimators = function(i) { l = list(wi(sdid,i), sc, sdid); names(l)=c('sdid', 'sc', ''); l }
+plot.estimators = function(ests, alpha.multiplier) {
+    synthdid_plot(ests, alpha.multiplier=alpha.multiplier, facet=rep(1,length(ests)),
+	trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1, effect.curvature=-.4) + 
+	scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE) + scale_alpha(range=c(0,1), guide='none') 
+}
+plot.theme = theme(legend.position=c(.9,.85), legend.direction='vertical', legend.key=element_blank(), legend.background=element_blank())
+p1 = plot.estimators(estimators(0),   alpha.multiplier=c(1,.1,0)) + plot.theme
+p2 = plot.estimators(estimators(.75), alpha.multiplier=c(1,.1,0)) + plot.theme
+p3 = plot.estimators(estimators(1),   alpha.multiplier=c(1,.1,0)) + plot.theme
+p4 = plot.estimators(estimators(1),   alpha.multiplier=c(1, 1,0)) + plot.theme
 p4.zoom = p4 + coord_cartesian(xlim=xbox, ylim=ybox) + xlab('') + ylab('') + 
-    theme(axis.ticks.x= element_blank(), axis.text.x = element_text(color='grey'), axis.ticks.y=element_blank(), axis.text.y=element_blank())
-p5 = p4 + annotation_custom(ggplotGrob(p4.zoom), xmin = 1968.5, xmax = 1984.7,   ymin=0, ymax=95) + # manually adjusted zoom box location
+    theme(axis.ticks.x= element_blank(), axis.text.x = element_blank(), axis.ticks.y=element_blank(), axis.text.y=element_blank(), legend.position='off')
+p5 = p4 + annotation_custom(ggplotGrob(p4.zoom), xmin = 1968, xmax = 1984.7,   ymin=2, ymax=95) + # manually adjusted zoom box location
 	  geom_rect(aes(xmin=min(xbox), xmax=max(xbox), ymin=min(ybox), ymax=max(ybox)), color=alpha('black', .25), size=.3, fill=NA)
 
-
-ggsave('figures/smoking-parallel-diagram.pdf',    plot=p1, width=7, height=4)
-ggsave('figures/smoking-parallel-close.pdf',      plot=p2, width=7, height=4)
-ggsave('figures/smoking-overlay-diagram.pdf',     plot=p3, width=7, height=4)
-ggsave('figures/smoking-overlay-vs-sc.pdf',       plot=p4, width=7, height=4)
-ggsave('figures/smoking-overlay-vs-sc-inset.pdf', plot=p5, width=7, height=4)
+ggsave('figures/smoking-parallel-diagram.pdf',    plot=p1, width=7, height=4.5)
+ggsave('figures/smoking-parallel-close.pdf',      plot=p2, width=7, height=4.5)
+ggsave('figures/smoking-overlay-diagram.pdf',     plot=p3, width=7, height=4.5)
+ggsave('figures/smoking-overlay-vs-sc.pdf',       plot=p4, width=7, height=4.5)
+ggsave('figures/smoking-overlay-vs-sc-inset.pdf', plot=p5, width=7, height=4.5)
 
 ## compare using time weights vs not 
 sdid.notw = synthdid_estimate(Y,N0,T0,weights=list(lambda=rep(1/T0,T0)))
-synthdid_plot(list(sdid=wi(sdid, 0), sdid.notw=wi(sdid.notw, 0)), facet=c(1,1), lambda.comparable=TRUE, facet.vertical=FALSE, 
-    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, alpha.multiplier=c(1,1,1), effect.curvature=-.4) + 
-    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+plot.estimators(list(sdid=wi(sdid, 0), sdid.notw=wi(sdid.notw, 0)), alpha.multiplier=c(1,1)) + plot.theme
 ggsave('figures/timeweights-vs-not.pdf', width=7, height=4)
 
 sdid.noi = synthdid_estimate(Y,N0,T0, omega.intercept=FALSE)
 sdid.notwnoi = synthdid_estimate(Y,N0,T0,weights=list(lambda=rep(1/T0,T0)), omega.intercept=FALSE)
-synthdid_plot(list(sdid=wi(sdid,0), sdid.noi=wi(sdid.noi, 0), sdid.notwnoi=wi(sdid.notwnoi, 0)), facet=c(1,1,1), lambda.comparable=TRUE, facet.vertical=FALSE, 
-    trajectory.linetype = 1, trajectory.alpha=.5, effect.alpha=.5, alpha.multiplier=c(1,1,1), effect.curvature=-.4) + 
-    theme(legend.position='off') + scale_color_viridis_d(drop=FALSE) + scale_fill_viridis_d(drop=FALSE)
+plot.estimators(list(sdid=wi(sdid,0), sdid.noi=wi(sdid.noi, 0), sdid.notwnoi=wi(sdid.notwnoi, 0)), alpha.multiplier=c(1,1,1)) + plot.theme
 ggsave('figures/timeweights-vs-not-nointercept.pdf', width=7, height=4)
 
-##
+### State Plots (Time Weighting vs Not)
 
 estimate = sdid
 setup = attr(estimate, 'setup')
@@ -83,7 +83,7 @@ ggsave('figures/all-time-parallel.pdf', width=7, height=4)
 ggplot(points[points$estimate != 'post', ]) + geom_point(aes(x=state,y=y-ypost,color=estimate, shape=treated)) + geom_hline(yintercept=0, alpha=.5) +
     xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
 ggsave('figures/all-time-parallel-relative.pdf', width=7, height=4)
-ggplot(points[points$estimator != 'post' & points$state != 'California', ]) + geom_boxplot(aes(x=estimate, y=y-ypost)) + theme_light()
+ggplot(points[points$estimate != 'post' & points$state != 'California', ]) + geom_boxplot(aes(x=estimate, y=y-ypost)) + theme_light()
 ggsave('figures/all-time-parallel-boxplot.pdf', width=7, height=4)
 
 Y = Y[omega.sdid+omega.post > .02, ]
@@ -98,6 +98,6 @@ ggsave('figures/sc-time-parallel.pdf', width=7, height=4)
 ggplot(points[points$estimate != 'post', ]) + geom_point(aes(x=state,y=y-ypost,color=estimate, shape=treated)) +  geom_hline(yintercept=0, alpha=.5) +
     xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
 ggsave('figures/sc-time-parallel-relative.pdf', width=7, height=4)
-ggplot(points[points$estimator != 'post' & points$state != 'California', ]) + geom_boxplot(aes(x=estimate, y=y-ypost)) + theme_light()
+ggplot(points[points$estimate != 'post' & points$state != 'California', ]) + geom_boxplot(aes(x=estimate, y=y-ypost)) + theme_light()
 ggsave('figures/sc-time-parallel-boxplot.pdf', width=7, height=4)
 
