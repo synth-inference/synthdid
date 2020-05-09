@@ -15,7 +15,10 @@ synthdid_estimate(
   lambda.intercept = TRUE,
   omega.intercept = TRUE,
   weights = list(lambda = NULL, omega = NULL, vals = NULL),
-  min.step.length = 0
+  update.lambda = is.null(weights$lambda),
+  update.omega = is.null(weights$omega),
+  min.decrease = 0.001,
+  max.iter = 10000
 )
 }
 \arguments{
@@ -35,6 +38,16 @@ synthdid_estimate(
 
 \item{weights:}{a list with fields lambda and omega. If non-null weights$lambda is passed, 
 we use them instead of estimating lambda weights. Same for weights$omega.}
+
+\item{update.lambda.}{If true, solve for lambda using the passed value of weights$lambda only as an initialization. 
+If false, use it exactly as passed. Defaults to false if a non-null value of weights$lambda is passed.}
+
+\item{update.omega.}{Analogous.}
+
+\item{min.decrease.}{Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease 
+in penalized MSE smaller than min.decrease^2.}
+
+\item{max.iter.}{A fallback stopping criterion for our weight estimator. Stop after this number of iterations.}
 }
 \value{
 An average treatment effect estimate, 'weights' and 'setup' attached as attributes.

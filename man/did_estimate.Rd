@@ -15,7 +15,8 @@ did_estimate(
   lambda.intercept = FALSE,
   omega.intercept = FALSE,
   weights = list(lambda = rep(1/T0, T0), omega = rep(1/N0, N0), vals = NULL),
-  min.step.length = 0
+  min.decrease = 0.001,
+  max.iter = 10000
 )
 }
 \description{

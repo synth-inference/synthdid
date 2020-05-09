@@ -16,7 +16,8 @@ sc_estimate(
   lambda.intercept = FALSE,
   omega.intercept = FALSE,
   weights = list(lambda = rep(0, T0), omega = NULL, vals = NULL),
-  min.step.length = 0
+  min.decrease = 0.001,
+  max.iter = 10000
 )
 }
 \description{

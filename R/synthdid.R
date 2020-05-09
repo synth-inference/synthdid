@@ -28,7 +28,7 @@ fw.step = function(A, x, b, eta, alpha=NULL) {
 }
 
 # a Frank-Wolfe solver for synthetic control weights using exact line search
-sc.weight.fw = function(Y, zeta, intercept=TRUE, lambda=NULL, min.step.length=1e-3, max.iter=1000) {
+sc.weight.fw = function(Y, zeta, intercept=TRUE, lambda=NULL, min.decrease=1e-3, max.iter=1000) {
     T0 = ncol(Y)-1
     N0 = nrow(Y)-1
     if(is.null(lambda)) { lambda=rep(1/T0,T0) }  
@@ -37,15 +37,14 @@ sc.weight.fw = function(Y, zeta, intercept=TRUE, lambda=NULL, min.step.length=1e
     }
 
     t=0
-    squared.step.length = Inf
+    squared.decrease = Inf
     vals = rep(NA, max.iter)
     A = Y[1:N0, 1:T0]
     b = Y[1:N0,T0+1]
     eta = N0*Re(zeta^2)
-    while(t < max.iter && squared.step.length > min.step.length^2) {
+    while(t < max.iter && (t < 2 || vals[t-1] - vals[t] > min.decrease^2)) {
         t=t+1   
         lambda.p = fw.step(A, lambda, b, eta)
-        squared.step.length = sum((lambda-lambda.p)^2)
         lambda = lambda.p
         err = Y[1:N0,] %*% c(lambda, -1) 
         vals[t] = Re(zeta^2)*sum(lambda^2) + sum(err^2)/N0 
@@ -58,7 +57,7 @@ sc.weight.fw = function(Y, zeta, intercept=TRUE, lambda=NULL, min.step.length=1e
 # pass update.lambda=FALSE/update.omega=FALSE to fix those weights at initial values, defaulting to uniform 1/T0 and 1/N0
 sc.weight.fw.covariates = function(Y, X=array(0,dim=c(dim(Y),0)), zeta.lambda = 0, zeta.omega=0,
                                    lambda.intercept=TRUE, omega.intercept=TRUE,
-                                   min.step.length=1e-3, max.iter=1000,
+                                   min.decrease=1e-3, max.iter=1000,
                                    lambda=NULL, omega=NULL, beta = NULL, update.lambda=TRUE, update.omega=TRUE) {
     stopifnot(length(dim(Y))==2, length(dim(X)) == 3, all(dim(Y)==dim(X)[1:2]), all(is.finite(Y)), all(is.finite(X)))
     T0 = ncol(Y)-1
@@ -83,11 +82,10 @@ sc.weight.fw.covariates = function(Y, X=array(0,dim=c(dim(Y),0)), zeta.lambda = 
 
     vals = rep(NA, max.iter)
     t=0
-    squared.step.length = Inf
     Y.beta = Y - contract3(X,beta)
     weights = update.weights(Y.beta, lambda, omega)
     # state is kept in weights$lambda, weights$omega, beta
-    while(t < max.iter && squared.step.length > min.step.length^2) {
+    while(t < max.iter && (t < 2 || vals[t-1] - vals[t] > min.decrease^2)) {
         t=t+1
         grad.beta = if(dim(X)[3]==0) { c() } else {
             apply(X, 3, function(Xi) { 
@@ -108,10 +106,23 @@ sc.weight.fw.covariates = function(Y, X=array(0,dim=c(dim(Y),0)), zeta.lambda = 
     list(lambda=weights$lambda, omega=weights$omega, beta=beta, vals=vals)
 }
 
+# collapse Y to an N0+1 x T0+1 vector by averaging the last N1=nrow(Y)-N0 rows and T1=ncol(Y)-T0 columns
 collapsed.form = function(Y, N0, T0) {
     N = nrow(Y); T=ncol(Y)
     rbind(cbind(  Y[1:N0,1:T0, drop=FALSE],                    rowMeans(Y[1:N0,(T0+1):T, drop=FALSE])),
           cbind(  t(colMeans(Y[(N0+1):N,1:T0, drop=FALSE])),   mean(Y[(N0+1):N,(T0+1):T, drop=FALSE])))
+}
+
+# return the component-wise sum of decreasing vectors in which NA is taken to mean that the vector has stopped decreasing
+# and we can use the last non-na element. Where both are NA, leave as NA.
+pairwise.sum.decreasing = function(x,y) {
+    na.x = is.na(x)
+    na.y = is.na(y)
+    x[is.na(x)] = min(x[!na.x])
+    y[is.na(y)] = min(y[!na.y])
+    pairwise.sum = x+y
+    pairwise.sum[na.x & na.y] = NA
+    pairwise.sum
 }
 
 #' Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block.
@@ -125,6 +136,12 @@ collapsed.form = function(Y, N0, T0) {
 #' @param lambda.intercept/omega.intercept. Binary. Use an intercept when estimating lambda/omega.
 #' @param weights: a list with fields lambda and omega. If non-null weights$lambda is passed, 
 #'        we use them instead of estimating lambda weights. Same for weights$omega.
+#' @param update.lambda. If true, solve for lambda using the passed value of weights$lambda only as an initialization. 
+#'        If false, use it exactly as passed. Defaults to false if a non-null value of weights$lambda is passed.
+#' @param update.omega.  Analogous.
+#' @param min.decrease. Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease 
+#'		        in penalized MSE smaller than min.decrease^2.
+#' @param max.iter. A fallback stopping criterion for our weight estimator. Stop after this number of iterations.
 #' @return An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
 #'         Weights contains the estimated weights lambda and omega and corresponding intercepts.
 #'         If covariates X are passedas well as regression coefficients beta if X is passed
@@ -133,9 +150,12 @@ collapsed.form = function(Y, N0, T0) {
 synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
                               zeta.lambda=0, zeta.omega=sd(apply(Y,1,diff)),
                               lambda.intercept=TRUE, omega.intercept=TRUE, 
-                              weights = list(lambda=NULL, omega=NULL, vals=NULL), min.step.length=0) {
-    stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2,3), dim(X)[1:2] == dim(Y), 
-              is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0)
+                              weights = list(lambda=NULL, omega=NULL, vals=NULL), 
+			      update.lambda=is.null(weights$lambda), update.omega = is.null(weights$omega),
+			      min.decrease=1e-3, max.iter=1e4) {
+    stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2,3), dim(X)[1:2] == dim(Y), is.list(weights),
+              is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0,
+	      !is.null(weights$lambda) || update.lambda, !is.null(weights$omega) || update.omega)
     if(length(dim(X)) == 2) { dim(X) = c(dim(X),1) }
     N1 = nrow(Y)-N0
     T1 = ncol(Y)-T0
@@ -143,23 +163,24 @@ synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
     Yc=collapsed.form(Y, N0, T0)
     if(dim(X)[3] == 0) {
         weights$vals = NULL
-        if(is.null(weights$lambda)) { 
-            lambda.opt = sc.weight.fw(Yc, zeta = zeta.lambda, intercept=lambda.intercept, min.step.length=min.step.length)
+        if(update.lambda) { 
+            lambda.opt = sc.weight.fw(Yc, zeta = zeta.lambda, intercept=lambda.intercept, min.decrease=min.decrease, max.iter=max.iter)
             weights$lambda = lambda.opt$lambda
             weights$vals =   lambda.opt$vals
         }
-        if(is.null(weights$omega)) {
-            omega.opt  = sc.weight.fw(t(Yc), zeta = zeta.omega,  intercept=omega.intercept, min.step.length=min.step.length)
+        if(update.omega) {
+            omega.opt  = sc.weight.fw(t(Yc), zeta = zeta.omega,  intercept=omega.intercept, min.decrease=min.decrease, max.iter=max.iter)
             weights$omega = omega.opt$lambda
             if(is.null(weights$vals)) { weights$vals = omega.opt$vals }
-            else { weights$vals = weights$vals + omega.opt$vals }                
+            else { weights$vals = pairwise.sum.decreasing(weights$vals, omega.opt$vals) } 
         }
     } else {
         Xc=apply(X, 3, function(Xi) { collapsed.form(Xi, N0, T0) })
         dim(Xc) = c(dim(Yc), dim(X)[3])
         weights = sc.weight.fw.covariates(Yc, Xc, zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
-                                          lambda.intercept=lambda.intercept, omega.intercept=omega.intercept, min.step.length=min.step.length,
-                                          lambda=weights$lambda, omega=weights$omega, update.lambda=is.null(weights$lambda), update.omega=is.null(weights$omega))
+                                          lambda.intercept=lambda.intercept, omega.intercept=omega.intercept, 
+					  min.decrease=min.decrease, max.iter=max.iter,
+                                          lambda=weights$lambda, omega=weights$omega, update.lambda=update.lambda, update.omega=update.omega)
     }
     
     X.beta = contract3(X, weights$beta)
@@ -180,11 +201,12 @@ synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
 sc_estimate = function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
                        zeta.lambda=0, zeta.omega=sd(apply(Y,1,diff)),
                        lambda.intercept=FALSE, omega.intercept=FALSE, 
-                       weights = list(lambda=rep(0,T0), omega=NULL, vals=NULL), min.step.length=0) {
+                       weights = list(lambda=rep(0,T0), omega=NULL, vals=NULL), 
+		       min.decrease=1e-3, max.iter=1e4) {
     synthdid_estimate(Y, N0, T0, X=X,
                        zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
                        lambda.intercept=lambda.intercept, omega.intercept=omega.intercept,
-                       weights = weights, min.step.length=min.step.length) 
+                       weights = weights, min.decrease=1e-3, max.iter=1e4) 
 }
 
 #' synthdid_estimate for diff-in-diff estimates.
@@ -193,11 +215,12 @@ sc_estimate = function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
 did_estimate = function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
                        zeta.lambda=0, zeta.omega=sd(apply(Y,1,diff)),
                        lambda.intercept=FALSE, omega.intercept=FALSE, 
-                       weights = list(lambda=rep(1/T0,T0), omega=rep(1/N0,N0), vals=NULL), min.step.length=0) {
+                       weights = list(lambda=rep(1/T0,T0), omega=rep(1/N0,N0), vals=NULL), 
+		       min.decrease=1e-3, max.iter=1e4) {
     synthdid_estimate(Y, N0, T0, X=X,
                        zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
                        lambda.intercept=lambda.intercept, omega.intercept=omega.intercept,
-                       weights = weights, min.step.length=min.step.length) 
+                       weights = weights, min.decrease=1e-3, max.iter=1e4) 
 }
 
 #' Computes a placebo variant of our estimator using pre-treatment data only
@@ -476,7 +499,7 @@ synthdid_time_plot = function(estimate) {
     N0 = setup$N0; N1 = nrow(Y)-N0
     T0 = setup$T0; T1 = ncol(Y)-T0
         
-    lambda.did   = c(rep(1/T0, T0),  rep(0,T1))
+    lambda.did  = c(rep(1/T0, T0),  rep(0,T1))
     lambda.synth = c(weights$lambda, rep(0, T1)) 
     lambda.target = c(rep(0,T0), rep(1/T1, T1))
     omega.synth  = c(weights$omega,  rep(0, N1))
@@ -502,7 +525,7 @@ synthdid_rmse_plot = function(estimates) { # pass an estimate or list of estimat
     plot.data = data.frame(rmse = unlist(rmse),         
                            iteration=unlist(lapply(rmse, function(vals) { 1:length(vals) })),
                            method = unlist(mapply(function(vals, name) { rep(factor(name), length(vals)) }, rmse, names(estimates), SIMPLIFY=FALSE)))
-    ggplot(plot.data) + geom_line(aes(x=iteration, y=rmse, color=method)) + scale_y_log10() + 
+    ggplot(plot.data[!is.na(plot.data$rmse), ]) + geom_line(aes(x=iteration, y=rmse, color=method)) + scale_y_log10() + 
         theme_light() + theme(legend.direction = "horizontal", legend.position = "top") + labs(color='')
 }
 
@@ -544,4 +567,15 @@ summary.synthdid = function(estimate) {
          controls = synthdid_controls(estimate))
 }
 
+#' @export print.synthdid
+print.synthdid = function(x, ...) { cat(format(x, ...), "\n") }
+
+#' @export format.synthdid
+format.synthdid = function(estimate) {
+    setup = attr(estimate, 'setup')
+    weights = attr(estimate, 'weights')
+    sprintf('synthdid estimate: %1.3f. Effective N0/N0 = %1.1f/%d. Effective T0/T0 = %1.1f/%d. N1,T1 = %d,%d.', 
+	c(estimate), 1/sum(weights$omega^2), setup$N0, 1/sum(weights$lambda^2), setup$T0,
+	nrow(setup$Y)-setup$N0, ncol(setup$Y) - setup$T0)
+}
 
