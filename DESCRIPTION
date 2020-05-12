@@ -14,5 +14,5 @@ Depends:
     R (>= 3.4.4),
     ggplot2,
     bootstrap
-License: none
+License: GPL (>= 2) | BSD_3_clause + file LICENSE
 RoxygenNote: 7.0.2
