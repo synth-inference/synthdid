@@ -13,3 +13,4 @@
 !literature/*.pdf
 !IRB/*.pdf
 !old_files/*.pdf
+.Rproj.user
