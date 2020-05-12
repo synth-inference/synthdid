@@ -6,10 +6,11 @@ Author: Dmitry Arkhangelsky [aut]
         David A. Hirshberg [aut, cre]
         Guido W. Imbens [aut]
         Stefan Wager [aut]
+Maintainer: David A. Hirshberg <david.a.hirshberg@gmail.com>
 Description: A package for estimating average treatment effects in panel data.
     synthdid currently provides methods only for the case that all treated units
     adopt treatment at the same time. This package is currently in beta.
-Depends: 
+Depends:
     R (>= 3.4.4)
 License: none
 RoxygenNote: 7.0.2
