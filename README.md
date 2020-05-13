@@ -7,9 +7,11 @@ is a matrix of indicators for treatment.  All treated units must begin treatment
 so W indicates a treated block, i.e. `W[i,j] = 1` for `i > N_0, j > T_0` and is zero otherwise.
 This applies, in particular, to the case of a single treated unit.
 
+This package is currently in beta and the functionality and interface is subject to change.
+
 To install this package in R, run the following commands:
 ```R
-library(devtools) 
+library(devtools)
 install_github("synth-inference/synthdid")
 ```
 Example usage:
@@ -19,7 +21,7 @@ library(synthdid)
 library(mvtnorm)
 
 n_0 <- 100
-n_1 <- 10 
+n_1 <- 10
 T_0 <- 120
 T_1 <- 20
 n <- n_0 + n_1
@@ -37,7 +39,7 @@ alpha <- outer(10*(1:n)/n, rep(1,T))
 beta <-  outer(rep(1,n), 10*(1:T)/T)
 mu <- U %*% t(V) + alpha + beta
 error <- rmvnorm(n, sigma = var, method = "chol")
-Y <- mu + tau * W  + sigma * error 
+Y <- mu + tau * W  + sigma * error
 rownames(Y) = 1:n
 colnames(Y) = 1:T
 
