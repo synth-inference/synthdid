@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/synth-inference/synthdid.svg?branch=master)](https://travis-ci.com/synth-inference/synthdid)
+
 # synthdid: Synthetic Difference in Differences Estimation
 
 This package implements the synthetic difference in difference estimator (SDID) for the
