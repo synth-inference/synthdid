@@ -16,5 +16,6 @@ Depends:
     bootstrap
 License: GPL (>= 2) | BSD_3_clause + file LICENSE
 RoxygenNote: 7.0.2
-Suggests: 
-    testthat
+Suggests:
+    testthat,
+    mvtnorm
