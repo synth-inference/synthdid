@@ -1,0 +1,25 @@
+language: R
+cache: packages
+warnings_are_errors: false # Set to true later
+r_check_args: --as-cran --run-donttest
+
+# Vignettes and online documentation
+# r_binary_packages:
+#   - knitr
+#   - rmarkdown
+# r_packages:
+#   - pkgdown
+
+branches:
+  only:
+    - master
+
+# before_deploy:
+#   - cp releases/CHANGELOG.md .
+#   - Rscript -e 'install.packages(getwd(), repos = NULL, type = "source"); pkgdown::build_site()'
+#   - cp pkgdown/favicon/* docs/
+# deploy:
+#   provider: pages
+#   local_dir: docs/
+#   skip_cleanup: true
+#   github-token: $GH_TOKEN
