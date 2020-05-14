@@ -160,21 +160,23 @@ synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
     N1 = nrow(Y)-N0
     T1 = ncol(Y)-T0
 
-    Yc=collapsed.form(Y, N0, T0)
     if(dim(X)[3] == 0) {
         weights$vals = NULL
         if(update.lambda) { 
+            Yc=collapsed.form(Y, N0, T0)
             lambda.opt = sc.weight.fw(Yc, zeta = zeta.lambda, intercept=lambda.intercept, min.decrease=min.decrease, max.iter=max.iter)
             weights$lambda = lambda.opt$lambda
             weights$vals =   lambda.opt$vals
         }
         if(update.omega) {
+            Yc=collapsed.form(Y, N0, T0)
             omega.opt  = sc.weight.fw(t(Yc), zeta = zeta.omega,  intercept=omega.intercept, min.decrease=min.decrease, max.iter=max.iter)
             weights$omega = omega.opt$lambda
             if(is.null(weights$vals)) { weights$vals = omega.opt$vals }
             else { weights$vals = pairwise.sum.decreasing(weights$vals, omega.opt$vals) } 
         }
     } else {
+        Yc=collapsed.form(Y, N0, T0)
         Xc=apply(X, 3, function(Xi) { collapsed.form(Xi, N0, T0) })
         dim(Xc) = c(dim(Yc), dim(X)[3])
         weights = sc.weight.fw.covariates(Yc, Xc, zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
