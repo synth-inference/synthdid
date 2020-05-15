@@ -329,7 +329,6 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
 			 facet=NULL, facet.vertical=TRUE, lambda.comparable = !is.null(facet), overlay=0, 
 			 lambda.plot.scale=3, trajectory.linetype=1, effect.curvature = 0,
 			 trajectory.alpha=.4, diagram.alpha = .95, effect.alpha=.95, onset.alpha = .3, alpha.multiplier = NULL) {
-    library(ggplot2)
     if(class(estimates) == 'synthdid') { estimates = list(estimates) } 
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
     if(is.null(alpha.multiplier)) { alpha.multiplier = rep(1, length(estimates)) }
@@ -492,7 +491,6 @@ synthdid_placebo_plot = function(estimate, overlay=FALSE, treated.fraction=NULL)
 
 
 synthdid_time_plot = function(estimate) { 
-    library(ggplot2)
     stopifnot(class(estimate) == 'synthdid') 
     
     setup = attr(estimate, 'setup')
@@ -520,7 +518,6 @@ synthdid_time_plot = function(estimate) {
 #' @param estimates, a list of estimates output by synthdid_estimate. Or a single estimate.
 #' @export synthdid_rmse_plot
 synthdid_rmse_plot = function(estimates) { # pass an estimate or list of estimates
-    library(ggplot2)
     if(class(estimates) == 'synthdid') { estimates = list(estimates) } 
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
     rmse = lapply(estimates, function(est) { sqrt(attr(est, 'weights')$vals) })
