@@ -558,23 +558,35 @@ synthdid_controls = function(estimates, sort.by=1, digits=3, mass=.9) {
 
 ## Export Methods
 
-#' @export plot.synthdid
-plot.synthdid = function(x, ...) {
+#' Plot a synthdid object
+#' @param x The object to plot
+#' @method plot synthdid_estimate
+#' @export
+plot.synthdid_estimate = function(x, ...) {
  synthdid_plot(x, ...)
 }
 
-#' @export summary.synthdid
-summary.synthdid = function(object, ...) {
+#' Summarize a synthdid object
+#' @param object The object to summarize
+#' @method summary synthdid_estimate
+#' @export
+summary.synthdid_estimate = function(object, ...) {
     list(estimate = c(object), 
          se = synthdid_se(object),
          controls = synthdid_controls(object))
 }
 
-#' @export print.synthdid
-print.synthdid = function(x, ...) { cat(format(x, ...), "\n") }
+#' Print a synthdid object
+#' @param x The object to print
+#' @method print synthdid_estimate
+#' @export
+print.synthdid_estimate = function(x, ...) { cat(format(x, ...), "\n") }
 
-#' @export format.synthdid
-format.synthdid = function(x, ...) {
+#' Format a synthdid object
+#' @param x The object to format
+#' @method format synthdid_estimate
+#' @export
+format.synthdid_estimate = function(x, ...) {
     setup = attr(x, 'setup')
     weights = attr(x, 'weights')
     sprintf('synthdid x: %1.3f. Effective N0/N0 = %1.1f/%d. Effective T0/T0 = %1.1f/%d. N1,T1 = %d,%d.', 
