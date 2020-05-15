@@ -341,9 +341,11 @@ synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
 #'          With intercept of one, this overlays curves, and plotting a diagram is suppressed as in the case of a SC estimate.
 #' @param treated.name, the name of the treated curve that appears in the legend. Defaults to 'treated'
 #' @param control.name, the name of the control curve that appears in the legend. Defaults to 'synthetic control'
+#' @param force.sc, TOADD
 #' @param facet, a list of the same length as estimates indicating the facet in which to plot each estimate.
 #'        The values of the elements of the list are used to label the facets.
 #'        If NULL, plot each estimate in a different facet. Defaults to NULL.
+#' @param facet.vertical, TOADD
 #' @param lambda.comparable, TRUE if the weights lambda should be plotted in such a way that the ribbons
 #'        have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots. 
 #'	  Defaults to FALSE if facet is not passed, TRUE if passed.
