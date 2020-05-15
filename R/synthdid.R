@@ -1,3 +1,15 @@
+# Jackknife standard error of function `theta` at samples `x`.
+jackknife = function(x, theta) {
+  n = length(x)
+  u = rep(0, n)
+  for (i in 1:n) {
+    u[i] = theta(x[-i])
+  }
+  jack.se = sqrt(((n - 1)/n) * (n - 1) * var(u))
+  
+  jack.se
+}
+
 contract3 = function(X,v) {
     stopifnot(length(dim(X)) == 3, dim(X)[3] == length(v))
     out = array(0, dim=dim(X)[1:2])
@@ -305,7 +317,6 @@ synthdid_effect_curve = function(estimate) {
 #' @param weights, like attr(estimate, 'weights') 
 #' @export synthdid_se
 synthdid_se = function(estimate, weights = attr(estimate, 'weights')) { 
-    library(bootstrap)
     setup = attr(estimate, 'setup')
     opts = attr(estimate, 'opts')
     if(setup$N0 == nrow(setup$Y)-1) { return(NA) }
@@ -319,7 +330,7 @@ synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
                                         lambda.intercept=opts$lambda.intercept, omega.intercept=opts$omega.intercept,
                                         weights = weights.jk)
     }
-    jackknife(1:nrow(setup$Y), theta)$jack.se
+    jackknife(1:nrow(setup$Y), theta)
 }
 
 

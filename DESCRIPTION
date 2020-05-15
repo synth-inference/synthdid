@@ -13,8 +13,7 @@ Description: Estimate average treatment effects in panel data.
 Depends:
     R (>= 3.4),
     ggplot2,
-    methods,
-    bootstrap
+    methods
 License: GPL (>= 2) | BSD_3_clause + file LICENSE
 RoxygenNote: 7.0.2
 Suggests:
