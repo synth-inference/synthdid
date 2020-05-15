@@ -12,8 +12,7 @@ Description: Estimate average treatment effects in panel data.
     adopt treatment at the same time.
 Depends:
     R (>= 3.4),
-    ggplot2,
-    methods
+    ggplot2
 License: GPL (>= 2) | BSD_3_clause + file LICENSE
 RoxygenNote: 7.0.2
 Suggests:
