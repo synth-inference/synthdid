@@ -38,9 +38,13 @@ With intercept of one, this overlays curves, and plotting a diagram is suppresse
 
 \item{control.name, }{the name of the control curve that appears in the legend. Defaults to 'synthetic control'}
 
+\item{force.sc, }{TOADD}
+
 \item{facet, }{a list of the same length as estimates indicating the facet in which to plot each estimate.
 The values of the elements of the list are used to label the facets.
 If NULL, plot each estimate in a different facet. Defaults to NULL.}
+
+\item{facet.vertical, }{TOADD}
 
 \item{lambda.comparable, }{TRUE if the weights lambda should be plotted in such a way that the ribbons
      have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots. 

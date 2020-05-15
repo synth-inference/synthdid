@@ -127,26 +127,28 @@ pairwise.sum.decreasing = function(x,y) {
 
 #' Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block.
 #' See Section 4.1 of the paper. 
-#' @param Y, the observation matrix.
-#' @param N0, the number of control units. Rows 1-N0 of Y correspond to the control units.
-#' @param T0, the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.
-#' @param X, an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.
-#' @param zeta.lambda. Its square is weight of the ridge penalty relative to MSE. Defaults to 0.
-#' @param zeta.omega. Analogous for omega. Defaults to the standard deviation of first differences of Y.
-#' @param lambda.intercept/omega.intercept. Binary. Use an intercept when estimating lambda/omega.
-#' @param weights: a list with fields lambda and omega. If non-null weights$lambda is passed, 
+#' @param Y the observation matrix.
+#' @param N0 the number of control units. Rows 1-N0 of Y correspond to the control units.
+#' @param T0 the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.
+#' @param X an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.
+#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to 0.
+#' @param zeta.omega Analogous for omega. Defaults to the standard deviation of first differences of Y.
+#' @param lambda.intercept Binary. Use an intercept when estimating lambda.
+#' @param omega.intercept Binary. Use an intercept when estimating omega.
+#' @param weights a list with fields lambda and omega. If non-null weights$lambda is passed, 
 #'        we use them instead of estimating lambda weights. Same for weights$omega.
-#' @param update.lambda. If true, solve for lambda using the passed value of weights$lambda only as an initialization. 
+#' @param update.lambda If true, solve for lambda using the passed value of weights$lambda only as an initialization. 
 #'        If false, use it exactly as passed. Defaults to false if a non-null value of weights$lambda is passed.
-#' @param update.omega.  Analogous.
-#' @param min.decrease. Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease 
+#' @param update.omega  Analogous.
+#' @param min.decrease Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease 
 #'		        in penalized MSE smaller than min.decrease^2.
-#' @param max.iter. A fallback stopping criterion for our weight estimator. Stop after this number of iterations.
+#' @param max.iter A fallback stopping criterion for our weight estimator. Stop after this number of iterations.
 #' @return An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
 #'         Weights contains the estimated weights lambda and omega and corresponding intercepts.
 #'         If covariates X are passedas well as regression coefficients beta if X is passed
 #'         Setup is a list describing the problem passed in: Y, N0, T0, X. 
 #' @export synthdid_estimate
+#' @importFrom stats sd
 synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
                               zeta.lambda=0, zeta.omega=sd(apply(Y,1,diff)),
                               lambda.intercept=TRUE, omega.intercept=TRUE, 
@@ -199,6 +201,23 @@ synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
 #' synthdid_estimate for synthetic control estimates.
 #' Takes all the same parameters, but default, passes options for synthetic control
 #' with no intercept and a penalty term that defaults to the standard deviation of first differences of Y.
+#' @param Y the observation matrix.
+#' @param N0 the number of control units. Rows 1-N0 of Y correspond to the control units.
+#' @param T0 the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.
+#' @param X an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.
+#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to 0.
+#' @param zeta.omega Analogous for omega. Defaults to the standard deviation of first differences of Y.
+#' @param lambda.intercept Binary. Use an intercept when estimating lambda.
+#' @param omega.intercept Binary. Use an intercept when estimating omega.
+#' @param weights a list with fields lambda and omega. If non-null weights$lambda is passed, 
+#'        we use them instead of estimating lambda weights. Same for weights$omega.
+#' @param min.decrease Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease 
+#'		        in penalized MSE smaller than min.decrease^2.
+#' @param max.iter A fallback stopping criterion for our weight estimator. Stop after this number of iterations.
+#' @return An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
+#'         Weights contains the estimated weights lambda and omega and corresponding intercepts.
+#'         If covariates X are passedas well as regression coefficients beta if X is passed
+#'         Setup is a list describing the problem passed in: Y, N0, T0, X. 
 #' @export sc_estimate
 sc_estimate = function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
                        zeta.lambda=0, zeta.omega=sd(apply(Y,1,diff)),
@@ -213,6 +232,23 @@ sc_estimate = function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
 
 #' synthdid_estimate for diff-in-diff estimates.
 #' Takes all the same parameters, but default, uses constant weights lambda and omega
+#' @param Y the observation matrix.
+#' @param N0 the number of control units. Rows 1-N0 of Y correspond to the control units.
+#' @param T0 the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.
+#' @param X an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.
+#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to 0.
+#' @param zeta.omega Analogous for omega. Defaults to the standard deviation of first differences of Y.
+#' @param lambda.intercept Binary. Use an intercept when estimating lambda.
+#' @param omega.intercept Binary. Use an intercept when estimating omega.
+#' @param weights a list with fields lambda and omega. If non-null weights$lambda is passed, 
+#'        we use them instead of estimating lambda weights. Same for weights$omega.
+#' @param min.decrease Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease 
+#'		        in penalized MSE smaller than min.decrease^2.
+#' @param max.iter A fallback stopping criterion for our weight estimator. Stop after this number of iterations.
+#' @return An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
+#'         Weights contains the estimated weights lambda and omega and corresponding intercepts.
+#'         If covariates X are passedas well as regression coefficients beta if X is passed
+#'         Setup is a list describing the problem passed in: Y, N0, T0, X. 
 #' @export did_estimate
 did_estimate = function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
                        zeta.lambda=0, zeta.omega=sd(apply(Y,1,diff)),
@@ -305,9 +341,11 @@ synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
 #'          With intercept of one, this overlays curves, and plotting a diagram is suppressed as in the case of a SC estimate.
 #' @param treated.name, the name of the treated curve that appears in the legend. Defaults to 'treated'
 #' @param control.name, the name of the control curve that appears in the legend. Defaults to 'synthetic control'
+#' @param force.sc, TOADD
 #' @param facet, a list of the same length as estimates indicating the facet in which to plot each estimate.
 #'        The values of the elements of the list are used to label the facets.
 #'        If NULL, plot each estimate in a different facet. Defaults to NULL.
+#' @param facet.vertical, TOADD
 #' @param lambda.comparable, TRUE if the weights lambda should be plotted in such a way that the ribbons
 #'        have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots. 
 #'	  Defaults to FALSE if facet is not passed, TRUE if passed.
@@ -325,11 +363,11 @@ synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
 #'        one facet but highlighting one or several. All plot elements associated with the estimate are displayed
 #'        with alpha multiplied by the corresponding element of alpha.multiplier. Defaults to a vector of ones.
 #' @export synthdid_plot
+#' @import ggplot2
 synthdid_plot = function(estimates, treated.name='treated', control.name='synthetic control', force.sc=FALSE, 
 			 facet=NULL, facet.vertical=TRUE, lambda.comparable = !is.null(facet), overlay=0, 
 			 lambda.plot.scale=3, trajectory.linetype=1, effect.curvature = 0,
 			 trajectory.alpha=.4, diagram.alpha = .95, effect.alpha=.95, onset.alpha = .3, alpha.multiplier = NULL) {
-    library(ggplot2)
     if(class(estimates) == 'synthdid') { estimates = list(estimates) } 
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
     if(is.null(alpha.multiplier)) { alpha.multiplier = rep(1, length(estimates)) }
@@ -492,7 +530,6 @@ synthdid_placebo_plot = function(estimate, overlay=FALSE, treated.fraction=NULL)
 
 
 synthdid_time_plot = function(estimate) { 
-    library(ggplot2)
     stopifnot(class(estimate) == 'synthdid') 
     
     setup = attr(estimate, 'setup')
@@ -520,7 +557,6 @@ synthdid_time_plot = function(estimate) {
 #' @param estimates, a list of estimates output by synthdid_estimate. Or a single estimate.
 #' @export synthdid_rmse_plot
 synthdid_rmse_plot = function(estimates) { # pass an estimate or list of estimates
-    library(ggplot2)
     if(class(estimates) == 'synthdid') { estimates = list(estimates) } 
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
     rmse = lapply(estimates, function(est) { sqrt(attr(est, 'weights')$vals) })
@@ -559,25 +595,43 @@ synthdid_controls = function(estimates, sort.by=1, digits=3, mass=.9) {
 
 ## Export Methods
 
-#' @export plot.synthdid
-plot.synthdid = synthdid_plot
-
-#' @export summary.synthdid
-summary.synthdid = function(estimate) {
-    list(estimate = c(estimate), 
-         se = synthdid_se(estimate),
-         controls = synthdid_controls(estimate))
+#' Plot a synthdid object
+#' @param x The object to plot
+#' @param ... Additional arguments (currently ignored).
+#' @method plot synthdid_estimate
+#' @export
+plot.synthdid_estimate = function(x, ...) {
+ synthdid_plot(x, ...)
 }
 
-#' @export print.synthdid
-print.synthdid = function(x, ...) { cat(format(x, ...), "\n") }
+#' Summarize a synthdid object
+#' @param object The object to summarize
+#' @param ... Additional arguments (currently ignored).
+#' @method summary synthdid_estimate
+#' @export
+summary.synthdid_estimate = function(object, ...) {
+    list(estimate = c(object), 
+         se = synthdid_se(object),
+         controls = synthdid_controls(object))
+}
 
-#' @export format.synthdid
-format.synthdid = function(estimate) {
-    setup = attr(estimate, 'setup')
-    weights = attr(estimate, 'weights')
-    sprintf('synthdid estimate: %1.3f. Effective N0/N0 = %1.1f/%d. Effective T0/T0 = %1.1f/%d. N1,T1 = %d,%d.', 
-	c(estimate), 1/sum(weights$omega^2), setup$N0, 1/sum(weights$lambda^2), setup$T0,
+#' Print a synthdid object
+#' @param x The object to print
+#' @param ... Additional arguments (currently ignored).
+#' @method print synthdid_estimate
+#' @export
+print.synthdid_estimate = function(x, ...) { cat(format(x, ...), "\n") }
+
+#' Format a synthdid object
+#' @param x The object to format
+#' @param ... Additional arguments (currently ignored).
+#' @method format synthdid_estimate
+#' @export
+format.synthdid_estimate = function(x, ...) {
+    setup = attr(x, 'setup')
+    weights = attr(x, 'weights')
+    sprintf('synthdid x: %1.3f. Effective N0/N0 = %1.1f/%d. Effective T0/T0 = %1.1f/%d. N1,T1 = %d,%d.', 
+	c(x), 1/sum(weights$omega^2), setup$N0, 1/sum(weights$lambda^2), setup$T0,
 	nrow(setup$Y)-setup$N0, ncol(setup$Y) - setup$T0)
 }
 
