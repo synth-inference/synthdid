@@ -19,6 +19,40 @@ did_estimate(
   max.iter = 10000
 )
 }
+\arguments{
+\item{Y, }{the observation matrix.}
+
+\item{N0, }{the number of control units. Rows 1-N0 of Y correspond to the control units.}
+
+\item{T0, }{the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.}
+
+\item{X, }{an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.}
+
+\item{zeta.lambda.}{Its square is weight of the ridge penalty relative to MSE. Defaults to 0.}
+
+\item{zeta.omega.}{Analogous for omega. Defaults to the standard deviation of first differences of Y.}
+
+\item{lambda.intercept/omega.intercept.}{Binary. Use an intercept when estimating lambda/omega.}
+
+\item{weights:}{a list with fields lambda and omega. If non-null weights$lambda is passed, 
+we use them instead of estimating lambda weights. Same for weights$omega.}
+
+\item{update.lambda.}{If true, solve for lambda using the passed value of weights$lambda only as an initialization. 
+If false, use it exactly as passed. Defaults to false if a non-null value of weights$lambda is passed.}
+
+\item{update.omega.}{Analogous.}
+
+\item{min.decrease.}{Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease 
+in penalized MSE smaller than min.decrease^2.}
+
+\item{max.iter.}{A fallback stopping criterion for our weight estimator. Stop after this number of iterations.}
+}
+\value{
+An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
+        Weights contains the estimated weights lambda and omega and corresponding intercepts.
+        If covariates X are passedas well as regression coefficients beta if X is passed
+        Setup is a list describing the problem passed in: Y, N0, T0, X.
+}
 \description{
 synthdid_estimate for diff-in-diff estimates.
 Takes all the same parameters, but default, uses constant weights lambda and omega
