@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{x}{The object to print}
+
+\item{...}{Additional arguments (currently ignored).}
 }
 \description{
 Print a synthdid object

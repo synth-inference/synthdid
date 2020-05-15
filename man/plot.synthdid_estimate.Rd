@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{x}{The object to plot}
+
+\item{...}{Additional arguments (currently ignored).}
 }
 \description{
 Plot a synthdid object

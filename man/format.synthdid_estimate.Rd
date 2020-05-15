@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{x}{The object to format}
+
+\item{...}{Additional arguments (currently ignored).}
 }
 \description{
 Format a synthdid object

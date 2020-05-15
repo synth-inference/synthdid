@@ -579,6 +579,7 @@ synthdid_controls = function(estimates, sort.by=1, digits=3, mass=.9) {
 
 #' Plot a synthdid object
 #' @param x The object to plot
+#' @param ... Additional arguments (currently ignored).
 #' @method plot synthdid_estimate
 #' @export
 plot.synthdid_estimate = function(x, ...) {
@@ -587,6 +588,7 @@ plot.synthdid_estimate = function(x, ...) {
 
 #' Summarize a synthdid object
 #' @param object The object to summarize
+#' @param ... Additional arguments (currently ignored).
 #' @method summary synthdid_estimate
 #' @export
 summary.synthdid_estimate = function(object, ...) {
@@ -597,12 +599,14 @@ summary.synthdid_estimate = function(object, ...) {
 
 #' Print a synthdid object
 #' @param x The object to print
+#' @param ... Additional arguments (currently ignored).
 #' @method print synthdid_estimate
 #' @export
 print.synthdid_estimate = function(x, ...) { cat(format(x, ...), "\n") }
 
 #' Format a synthdid object
 #' @param x The object to format
+#' @param ... Additional arguments (currently ignored).
 #' @method format synthdid_estimate
 #' @export
 format.synthdid_estimate = function(x, ...) {

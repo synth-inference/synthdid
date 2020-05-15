@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{object}{The object to summarize}
+
+\item{...}{Additional arguments (currently ignored).}
 }
 \description{
 Summarize a synthdid object
