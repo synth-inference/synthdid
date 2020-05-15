@@ -1,4 +1,8 @@
-# Jackknife standard error of function `theta` at samples `x`.
+#' Jackknife standard error of function `theta` at samples `x`.
+#' @param x vector of samples
+#' @param theta a function which returns a scalar estimate
+#' @importFrom stats var
+#' @keywords internal
 jackknife = function(x, theta) {
   n = length(x)
   u = rep(0, n)
