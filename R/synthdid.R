@@ -558,24 +558,26 @@ synthdid_controls = function(estimates, sort.by=1, digits=3, mass=.9) {
 ## Export Methods
 
 #' @export plot.synthdid
-plot.synthdid = synthdid_plot
+plot.synthdid = function(x, ...) {
+ synthdid_plot(x, ...)
+}
 
 #' @export summary.synthdid
-summary.synthdid = function(estimate) {
-    list(estimate = c(estimate), 
-         se = synthdid_se(estimate),
-         controls = synthdid_controls(estimate))
+summary.synthdid = function(object, ...) {
+    list(estimate = c(object), 
+         se = synthdid_se(object),
+         controls = synthdid_controls(object))
 }
 
 #' @export print.synthdid
 print.synthdid = function(x, ...) { cat(format(x, ...), "\n") }
 
 #' @export format.synthdid
-format.synthdid = function(estimate) {
-    setup = attr(estimate, 'setup')
-    weights = attr(estimate, 'weights')
-    sprintf('synthdid estimate: %1.3f. Effective N0/N0 = %1.1f/%d. Effective T0/T0 = %1.1f/%d. N1,T1 = %d,%d.', 
-	c(estimate), 1/sum(weights$omega^2), setup$N0, 1/sum(weights$lambda^2), setup$T0,
+format.synthdid = function(x, ...) {
+    setup = attr(x, 'setup')
+    weights = attr(x, 'weights')
+    sprintf('synthdid x: %1.3f. Effective N0/N0 = %1.1f/%d. Effective T0/T0 = %1.1f/%d. N1,T1 = %d,%d.', 
+	c(x), 1/sum(weights$omega^2), setup$N0, 1/sum(weights$lambda^2), setup$T0,
 	nrow(setup$Y)-setup$N0, ncol(setup$Y) - setup$T0)
 }
 
