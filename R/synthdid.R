@@ -5,7 +5,7 @@ jackknife = function(x, theta) {
   for (i in 1:n) {
     u[i] = theta(x[-i])
   }
-  jack.se = sqrt(((n - 1)/n) * sum((u - mean(u))^2))
+  jack.se = sqrt(((n - 1)/n) * (n - 1) * var(u))
   
   jack.se
 }
