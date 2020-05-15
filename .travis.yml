@@ -1,14 +1,7 @@
 language: R
 cache: packages
-warnings_are_errors: false # Set to true later
+warnings_are_errors: true
 r_check_args: --as-cran --run-donttest
-
-# Vignettes and online documentation
-# r_binary_packages:
-#   - knitr
-#   - rmarkdown
-# r_packages:
-#   - pkgdown
 
 branches:
   only:
@@ -16,8 +9,10 @@ branches:
 
 # before_deploy:
 #   - cp releases/CHANGELOG.md .
-#   - Rscript -e 'install.packages(getwd(), repos = NULL, type = "source"); pkgdown::build_site()'
-#   - cp pkgdown/favicon/* docs/
+#   - Rscript -e 'install.packages("pkgdown");
+#   - Rscript -e 'install.packages(getwd(), repos = NULL, type = "source");
+#   - pkgdown::build_site()'
+
 # deploy:
 #   provider: pages
 #   local_dir: docs/
