@@ -206,7 +206,7 @@ synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
     X.beta = contract3(X, weights$beta)
     estimate = t(c(-weights$omega, rep(1/N1,N1))) %*% (Y - X.beta) %*% c(-weights$lambda, rep(1/T1, T1))
 
-    class(estimate) = 'synthdid'
+    class(estimate) = 'synthdid_estimate'
     attr(estimate, 'weights') = weights
     attr(estimate, 'setup') = list(Y=Y, X=X, N0=N0, T0=T0)
     attr(estimate, 'opts') =  list(zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
@@ -383,7 +383,7 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
 			 facet=NULL, facet.vertical=TRUE, lambda.comparable = !is.null(facet), overlay=0, 
 			 lambda.plot.scale=3, trajectory.linetype=1, effect.curvature = 0,
 			 trajectory.alpha=.4, diagram.alpha = .95, effect.alpha=.95, onset.alpha = .3, alpha.multiplier = NULL) {
-    if(class(estimates) == 'synthdid') { estimates = list(estimates) } 
+    if(class(estimates) == 'synthdid_estimate') { estimates = list(estimates) } 
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
     if(is.null(alpha.multiplier)) { alpha.multiplier = rep(1, length(estimates)) }
     treated = 1
@@ -545,7 +545,7 @@ synthdid_placebo_plot = function(estimate, overlay=FALSE, treated.fraction=NULL)
 
 
 synthdid_time_plot = function(estimate) { 
-    stopifnot(class(estimate) == 'synthdid') 
+    stopifnot(class(estimate) == 'synthdid_estimate') 
     
     setup = attr(estimate, 'setup')
     weights = attr(estimate, 'weights')
@@ -572,7 +572,7 @@ synthdid_time_plot = function(estimate) {
 #' @param estimates, a list of estimates output by synthdid_estimate. Or a single estimate.
 #' @export synthdid_rmse_plot
 synthdid_rmse_plot = function(estimates) { # pass an estimate or list of estimates
-    if(class(estimates) == 'synthdid') { estimates = list(estimates) } 
+    if(class(estimates) == 'synthdid_estimate') { estimates = list(estimates) } 
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
     rmse = lapply(estimates, function(est) { sqrt(attr(est, 'weights')$vals) })
     plot.data = data.frame(rmse = unlist(rmse),         
@@ -591,7 +591,7 @@ synthdid_rmse_plot = function(estimates) { # pass an estimate or list of estimat
 #' @param mass, which controls the length of the table. Defaults to 0.9.
 #' @export synthdid_controls
 synthdid_controls = function(estimates, sort.by=1, digits=3, mass=.9) { 
-    if(class(estimates) == 'synthdid') { estimates = list(estimates) } 
+    if(class(estimates) == 'synthdid_estimate') { estimates = list(estimates) } 
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
     
     omegas = do.call(cbind, lapply(estimates, function(est) { attr(est, 'weights')$omega }))
