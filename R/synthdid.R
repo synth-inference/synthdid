@@ -112,7 +112,7 @@ sc.weight.fw.covariates = function(Y, X=array(0,dim=c(dim(Y),0)), zeta.lambda = 
         
         alpha = 1/t
         beta = beta - alpha * grad.beta
-        Y.beta = Y + contract3(X,beta)
+        Y.beta = Y - contract3(X,beta)
         old.weights = weights
         weights = update.weights(Y.beta, weights$lambda, weights$omega)
 
