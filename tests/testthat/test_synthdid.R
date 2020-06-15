@@ -1,4 +1,4 @@
-test_that("a simple workflow works", {
+random.low.rank = function() {
   library(mvtnorm)
 
   n_0 <- 100
@@ -23,8 +23,12 @@ test_that("a simple workflow works", {
   Y <- mu + tau * W  + sigma * error
   rownames(Y) = 1:n
   colnames(Y) = 1:T
+  list(Y=Y, L=mu, N0=n_0, T0=T_0)
+}
 
-  tau.hat = synthdid_estimate(Y,n_0,T_0)
+test_that("a simple workflow doesn't error", {
+  setup = random.low.rank()
+  tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
   se = synthdid_se(tau.hat)
 
   print(paste("true tau:", tau))
@@ -34,3 +38,18 @@ test_that("a simple workflow works", {
 
   expect_equal(1, 1)
 })
+
+test_that("adjustment for covariates works: random noise less influential if passed as covariate", {
+  setup = random.low.rank()
+  X = setup$Y - setup$L
+
+  tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
+  tau.hat.noise = synthdid_estimate(setup$Y+X,setup$N0,setup$T0)
+  tau.hat.cov = synthdid_estimate(setup$Y+X,setup$N0,setup$T0,X)
+  se = synthdid_se(tau.hat)
+
+  expect_lt(abs(tau.hat - tau.hat.cov), abs(tau.hat - tau.hat.noise))
+})
+
+
+

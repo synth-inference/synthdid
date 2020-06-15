@@ -641,7 +641,7 @@ print.synthdid_estimate = function(x, ...) { cat(format(x, ...), "\n") }
 format.synthdid_estimate = function(x, ...) {
     setup = attr(x, 'setup')
     weights = attr(x, 'weights')
-    sprintf('synthdid x: %1.3f. Effective N0/N0 = %1.1f/%d. Effective T0/T0 = %1.1f/%d. N1,T1 = %d,%d.', 
+    sprintf('synthdid: %1.3f. Effective N0/N0 = %1.1f/%d. Effective T0/T0 = %1.1f/%d. N1,T1 = %d,%d.', 
 	c(x), 1/sum(weights$omega^2), setup$N0, 1/sum(weights$lambda^2), setup$T0,
 	nrow(setup$Y)-setup$N0, ncol(setup$Y) - setup$T0)
 }
