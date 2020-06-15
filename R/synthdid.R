@@ -53,7 +53,6 @@ sc.weight.fw = function(Y, zeta, intercept=TRUE, lambda=NULL, min.decrease=1e-3,
     }
 
     t=0
-    squared.decrease = Inf
     vals = rep(NA, max.iter)
     A = Y[1:N0, 1:T0]
     b = Y[1:N0,T0+1]
@@ -103,7 +102,7 @@ sc.weight.fw.covariates = function(Y, X=array(0,dim=c(dim(Y),0)), zeta.lambda = 
     # state is kept in weights$lambda, weights$omega, beta
     while(t < max.iter && (t < 2 || vals[t-1] - vals[t] > min.decrease^2)) {
         t=t+1
-        grad.beta = if(dim(X)[3]==0) { c() } else {
+        grad.beta = -if(dim(X)[3]==0) { c() } else {
             apply(X, 3, function(Xi) { 
                 t(weights$err.lambda) %*% Xi[1:N0,]    %*% c(weights$lambda,-1) / N0  + 
                 t(weights$err.omega)  %*% t(Xi[,1:T0]) %*% c(weights$omega, -1) / T0 
@@ -113,10 +112,7 @@ sc.weight.fw.covariates = function(Y, X=array(0,dim=c(dim(Y),0)), zeta.lambda = 
         alpha = 1/t
         beta = beta - alpha * grad.beta
         Y.beta = Y - contract3(X,beta)
-        old.weights = weights
         weights = update.weights(Y.beta, weights$lambda, weights$omega)
-
-        squared.step.length = alpha^2*sum(grad.beta^2) + sum((old.weights$lambda-weights$lambda)^2)/N0 + sum((old.weights$omega - weights$omega)^2)/T0
         vals[t] = weights$val
     }
     list(lambda=weights$lambda, omega=weights$omega, beta=beta, vals=vals)
