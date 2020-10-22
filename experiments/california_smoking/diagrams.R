@@ -78,63 +78,10 @@ ggsave('figures/timeweights-vs-not-nointercept.pdf', width=7, height=4)
 
 ### State Plots (Time Weighting vs Not)
 
-setup = attr(sdid, 'setup')
-weights = attr(sdid, 'weights')
-weights.sc = attr(sc, 'weights')
-weights.did = attr(did, 'weights')
-Y = setup$Y - contract3(setup$X, weights$beta)
-N0 = setup$N0; N1 = nrow(Y)-N0
-T0 = setup$T0; T1 = ncol(Y)-T0
-    
-lambda.did   = c(rep(1/T0, T0),  rep(0,T1))
-lambda.sdid = c(weights$lambda, rep(0, T1)) 
-lambda.post = c(rep(0,T0), rep(1/T1, T1))
-omega.did   = c(rep(1/N0, N0),  rep(0,N1))
-omega.sdid  = c(weights$omega,  rep(0, N1))
-omega.post = c(rep(0,N0),  rep(1/N1, N1))
-difs.weighted =    as.vector(t(omega.post) %*% Y %*% (lambda.post - lambda.sdid)) -  as.vector(Y[1:N0,] %*% (lambda.post - lambda.sdid))
-difs.unweighted =  as.vector((omega.post) %*% Y %*% (lambda.post - lambda.did))   -  as.vector(Y[1:N0,] %*% (lambda.post - lambda.did))
-difs.sc         =  as.vector((omega.post) %*% Y %*% lambda.post)   -  as.vector(Y[1:N0,] %*% lambda.post)
-points = data.frame(y=c(difs.weighted, difs.unweighted, difs.sc),
-                    state=rep(factor(rownames(Y))[1:N0] ,3),
-		    estimate = rep(c(sum(weights$omega * difs.weighted), sum(weights.did$omega * difs.unweighted), sum(weights.sc$omega * difs.sc)), each=N0),
-                    estimator=rep(factor(c('sdid', 'did', 'sc')), each=N0),
-		    weight = c(weights$omega, weights.did$omega, weights.sc$omega))
-ggplot(points[points$state != 'California', ]) + geom_point(aes(x=state,y=y,color=estimator, size=weight)) + 
-    geom_hline(aes(yintercept=estimate, color=estimator)) +
-    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
-ggsave('figures/individual-differences-all.pdf', width=7, height=4)
-ggplot(points[points$state != 'California' & points$estimator %in% c('sdid', 'sc'), ]) + geom_point(aes(x=state,y=y,color=estimator, size=weight)) + 
-    geom_hline(aes(yintercept=estimate, color=estimator)) +
-    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
-ggsave('figures/individual-differences-sc.pdf', width=7, height=4)
 
-
-ggplot(points[points$state != 'California', ]) + geom_point(aes(x=state,y=y,size=weight,)) + facet_grid(.~estimator) +
-    geom_hline(aes(yintercept=estimate)) + scale_size(range=c(0,5)) +
-    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1), 
-    legend.background=element_blank(), legend.title = element_blank(), legend.direction='horizontal', legend.position=c(.17,.07))
-    #legend.background=element_blank(), legend.direction='horizontal', legend.position=c(.16,.07))
-ggsave('figures/individual-differences-horiz.pdf', width=15, height=5)
-
-
-
-ggplot(points[points$state != 'California', ]) + 
-    geom_point(aes(x=state,y=y,size=weight), data=points[points$state != 'California' & points$weight > .001, ]) +
-    geom_point(aes(x=state,y=y,size=weight), data=points[points$state != 'California' & points$weight <= .001, ], shape=1) +
-    geom_hline(aes(yintercept=estimate)) + facet_grid(.~estimator) + 
-    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1), 
-    legend.background=element_blank(), legend.title = element_blank(), legend.direction='horizontal', legend.position=c(.17,.07))
-    #legend.background=element_blank(), legend.direction='horizontal', legend.position=c(.16,.07))
-ggsave('figures/individual-differences-horiz-nofillzero.pdf', width=15, height=5)
-
-ggplot(points[points$state != 'California', ]) + 
-    geom_point(aes(x=state,y=y,size=weight), data=points[points$state != 'California' & points$weight > .001, ]) +
-    geom_point(aes(x=state,y=y,size=weight), data=points[points$state != 'California' & points$weight <= .001, ], shape=4, show.legend=FALSE) +
-    geom_hline(aes(yintercept=estimate), size=.75) + facet_grid(.~estimator) + 
-    xlab('') + ylab('') + guides(shape=FALSE) + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1), 
-    legend.background=element_blank(), legend.title = element_blank(), legend.direction='horizontal', legend.position=c(.17,.07), 
-    strip.background=element_blank(), strip.text.x = element_blank())
+source('../../R/synthdid.R')
+synthdid_units_plot(estimators) + 
+    theme(legend.background=element_blank(), legend.title = element_blank(), legend.direction='horizontal', legend.position=c(.17,.07), 
+	  strip.background=element_blank(), strip.text.x = element_blank())
 ggsave('figures/individual-differences-horiz-xzero.pdf', width=15, height=5)
-
 

@@ -20,6 +20,7 @@ synthdid_plot(
   lambda.plot.scale = 3,
   trajectory.linetype = 1,
   effect.curvature = 0,
+  line.width = 0.5,
   trajectory.alpha = 0.4,
   diagram.alpha = 0.95,
   effect.alpha = 0.95,
