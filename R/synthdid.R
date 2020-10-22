@@ -539,26 +539,43 @@ synthdid_placebo_plot = function(estimate, overlay=FALSE, treated.fraction=NULL)
    synthdid_plot(estimates, facet=if(overlay) { c(1,1) } else { NULL })
 } 
 
-
-synthdid_time_plot = function(estimate) { 
-    stopifnot(class(estimate) == 'synthdid_estimate') 
+#' Plots unit by unit difference-in-differences 
+#' Requires ggplot2
+#' @param estimates, as output by synthdid_estimate. Can be a single one or a list of them. 
+#' @param show.ci.   If TRUE, plots horizontal lines for 95% CI as well as the point estimate. Defaults to FALSE.
+#' @param negligible.threshold. Unit weight threshold below which units are plotted as small, transparent xs instead of circles. Defaults to .001.
+#' @param negligble.alpha. Determines transparency of those xs.
+#' @export synthdid_units_plot
+synthdid_units_plot = function(estimates, show.ci=FALSE, negligible.threshold = .001, negligible.alpha = .3) { 
+    if(class(estimates) == 'synthdid_estimate') { estimates = list(estimates) } 
+    if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
+    plot.data = do.call(rbind, lapply(1:length(estimates), function(ee) {
+	estimate = estimates[[ee]]
+	setup = attr(estimate, 'setup')
+	weights = attr(estimate, 'weights')
+	Y = setup$Y - contract3(setup$X, weights$beta)
+	N0 = setup$N0; N1 = nrow(Y)-N0
+	T0 = setup$T0; T1 = ncol(Y)-T0
     
-    setup = attr(estimate, 'setup')
-    weights = attr(estimate, 'weights')
-    Y = setup$Y - contract3(setup$X, weights$beta)
-    N0 = setup$N0; N1 = nrow(Y)-N0
-    T0 = setup$T0; T1 = ncol(Y)-T0
-        
-    lambda.did  = c(rep(1/T0, T0),  rep(0,T1))
-    lambda.synth = c(weights$lambda, rep(0, T1)) 
-    lambda.target = c(rep(0,T0), rep(1/T1, T1))
-    omega.synth  = c(weights$omega,  rep(0, N1))
-    omega.target = c(rep(0,N0),  rep(1/N1, N1))
-
-    points = data.frame(y=c(Y %*% lambda.target, Y %*% lambda.synth, Y %*% lambda.did),
-	                x=rep(Y %*% lambda.target, 3),
-	                color=rep(factor(c('target', 'synth', 'did')), each=N0+N1))
-    ggplot(points) + geom_point(aes(x=x,y=y,color=color)) 
+	lambda.pre = c(weights$lambda, rep(0, T1)) 
+	lambda.post = c(rep(0,T0), rep(1/T1, T1))
+	omega.control  = c(weights$omega,  rep(0, N1))
+	omega.treat = c(rep(0,N0),  rep(1/N1, N1))
+	difs = as.vector(t(omega.treat) %*% Y %*% (lambda.post - lambda.pre)) -  as.vector(Y[1:N0,] %*% (lambda.post - lambda.pre))
+	se = if(show.ci) { synthdid_se(estimate) } else { NA }
+	data.frame(y=difs, unit=rownames(Y)[1:N0], weight = omega.control[1:N0],
+	           estimate = c(estimate), se = se, estimator = names(estimates)[[ee]])
+    }))
+    p = ggplot(plot.data) + 
+	geom_point(aes(x=unit,y=y,size=weight), data=plot.data[plot.data$weight >  negligible.threshold, ]) +
+	geom_point(aes(x=unit,y=y,size=weight), data=plot.data[plot.data$weight <= negligible.threshold, ], alpha=negligible.alpha, shape=4,  show.legend=FALSE) +
+	geom_hline(aes(yintercept=estimate), size=.75) 
+    if(show.ci) {
+	p = p + geom_hline(aes(yintercept=estimate-1.96*se), size=.5, alpha=.5) + 
+		geom_hline(aes(yintercept=estimate+1.96*se), size=.5, alpha=.5)
+    }
+    p + facet_grid(.~estimator) + xlab('') + ylab('') + guides(shape=FALSE) + 
+	theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 }
 
 
