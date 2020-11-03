@@ -366,6 +366,7 @@ synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
 #' @param trajectory.linetype, the linetype of the treated and synthetic control trajectories
 #' @param effect.curvature, the curvature of the arrows indicating the treatment effect. Defaults to zero. 
 #'        Nonzero values help avoid overplotting when plotting multiple estimates in one facet.
+#' @param line.width the line width.
 #' @param trajectory.alpha determines transparency of trajectories
 #' @param diagram.alpha determines transparency of diff-in-diff diagram
 #' @param effect.alpha determines transparency of effect arrows
