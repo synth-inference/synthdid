@@ -13,13 +13,13 @@ synthdid_units_plot(
 )
 }
 \arguments{
-\item{estimates, }{as output by synthdid_estimate. Can be a single one or a list of them.}
+\item{estimates}{as output by synthdid_estimate. Can be a single one or a list of them.}
 
-\item{show.ci.}{If TRUE, plots horizontal lines for 95\% CI as well as the point estimate. Defaults to FALSE.}
+\item{show.ci}{If TRUE, plots horizontal lines for 95\% CI as well as the point estimate. Defaults to FALSE.}
 
-\item{negligible.threshold.}{Unit weight threshold below which units are plotted as small, transparent xs instead of circles. Defaults to .001.}
+\item{negligible.threshold}{Unit weight threshold below which units are plotted as small, transparent xs instead of circles. Defaults to .001.}
 
-\item{negligble.alpha.}{Determines transparency of those xs.}
+\item{negligible.alpha}{Determines transparency of those xs.}
 }
 \description{
 Plots unit by unit difference-in-differences 
