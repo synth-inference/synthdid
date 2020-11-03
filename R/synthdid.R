@@ -366,6 +366,7 @@ synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
 #' @param trajectory.linetype, the linetype of the treated and synthetic control trajectories
 #' @param effect.curvature, the curvature of the arrows indicating the treatment effect. Defaults to zero. 
 #'        Nonzero values help avoid overplotting when plotting multiple estimates in one facet.
+#' @param line.width the line width.
 #' @param trajectory.alpha determines transparency of trajectories
 #' @param diagram.alpha determines transparency of diff-in-diff diagram
 #' @param effect.alpha determines transparency of effect arrows
@@ -541,10 +542,10 @@ synthdid_placebo_plot = function(estimate, overlay=FALSE, treated.fraction=NULL)
 
 #' Plots unit by unit difference-in-differences 
 #' Requires ggplot2
-#' @param estimates, as output by synthdid_estimate. Can be a single one or a list of them. 
-#' @param show.ci.   If TRUE, plots horizontal lines for 95% CI as well as the point estimate. Defaults to FALSE.
-#' @param negligible.threshold. Unit weight threshold below which units are plotted as small, transparent xs instead of circles. Defaults to .001.
-#' @param negligble.alpha. Determines transparency of those xs.
+#' @param estimates as output by synthdid_estimate. Can be a single one or a list of them. 
+#' @param show.ci If TRUE, plots horizontal lines for 95\% CI as well as the point estimate. Defaults to FALSE.
+#' @param negligible.threshold Unit weight threshold below which units are plotted as small, transparent xs instead of circles. Defaults to .001.
+#' @param negligible.alpha Determines transparency of those xs.
 #' @export synthdid_units_plot
 synthdid_units_plot = function(estimates, show.ci=FALSE, negligible.threshold = .001, negligible.alpha = .3) { 
     if(class(estimates) == 'synthdid_estimate') { estimates = list(estimates) } 

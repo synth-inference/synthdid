@@ -14,7 +14,7 @@ Depends:
     R (>= 3.4),
     ggplot2
 License: GPL (>= 2) | BSD_3_clause + file LICENSE
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1
 Suggests:
     testthat,
     mvtnorm

@@ -61,6 +61,8 @@ If a vector is passed, plots at different intercept levels indicated by the 'fra
 \item{effect.curvature, }{the curvature of the arrows indicating the treatment effect. Defaults to zero. 
 Nonzero values help avoid overplotting when plotting multiple estimates in one facet.}
 
+\item{line.width}{the line width.}
+
 \item{trajectory.alpha}{determines transparency of trajectories}
 
 \item{diagram.alpha}{determines transparency of diff-in-diff diagram}
