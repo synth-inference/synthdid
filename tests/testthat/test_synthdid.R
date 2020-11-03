@@ -31,7 +31,6 @@ test_that("a simple workflow doesn't error", {
   tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
   se = synthdid_se(tau.hat)
 
-  print(paste("true tau:", tau))
   print(paste0("point estimate: ", round(tau.hat, 2)))
   print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * se, 2), ", ", round(tau.hat + 1.96 * se, 2), ")"))
   plot(tau.hat)
@@ -50,6 +49,3 @@ test_that("adjustment for covariates works: random noise less influential if pas
 
   expect_lt(abs(tau.hat - tau.hat.cov), abs(tau.hat - tau.hat.noise))
 })
-
-
-
