@@ -166,7 +166,7 @@ synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
                               lambda.intercept=TRUE, omega.intercept=TRUE, 
                               weights = list(lambda=NULL, omega=NULL, vals=NULL), 
 			      update.lambda=is.null(weights$lambda), update.omega = is.null(weights$omega),
-			      min.decrease=1e-3, max.iter=1e4) {
+			      min.decrease=1e-3*sd(apply(Y,1,diff)), max.iter=1e4) {
     stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2,3), dim(X)[1:2] == dim(Y), is.list(weights),
               is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0,
 	      !is.null(weights$lambda) || update.lambda, !is.null(weights$omega) || update.omega)
@@ -378,7 +378,7 @@ synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
 #' @import ggplot2
 synthdid_plot = function(estimates, treated.name='treated', control.name='synthetic control', force.sc=FALSE, 
 			 facet=NULL, facet.vertical=TRUE, lambda.comparable = !is.null(facet), overlay=0, 
-			 lambda.plot.scale=3, trajectory.linetype=1, effect.curvature = 0, line.width=.5,
+			 lambda.plot.scale=3, trajectory.linetype=1, effect.curvature = 0, line.width=.5, guide.linetype=2, point.size=.5,
 			 trajectory.alpha=.4, diagram.alpha = .95, effect.alpha=.95, onset.alpha = .3, alpha.multiplier = NULL) {
     if(class(estimates) == 'synthdid_estimate') { estimates = list(estimates) } 
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
@@ -502,11 +502,11 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
 
     p=ggplot() +
         geom_line(aes(x=x,y=y,color=color,frame=frame, alpha=trajectory.alpha*show),  data=conc$lines, linetype=trajectory.linetype, size=line.width) + 
-        geom_point(aes(x=x,y=y,color=color,frame=frame, alpha=diagram.alpha*show), data=conc$points, shape=21) +
-        geom_point(aes(x=x,y=y,color=color,frame=frame, alpha=diagram.alpha*show), data=no.sc(conc$did.points)) +
+        geom_point(aes(x=x,y=y,color=color,frame=frame, alpha=diagram.alpha*show), data=conc$points, shape=21, size=point.size) +
+        geom_point(aes(x=x,y=y,color=color,frame=frame, alpha=diagram.alpha*show), data=no.sc(conc$did.points), size=point.size) +
         geom_segment(aes(x=x,xend=xend,y=y,yend=yend,color=color, frame=frame, alpha=diagram.alpha*show), data=no.sc(conc$did.segments), size=line.width) +
-        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,frame=frame, group=estimate, alpha=.5*diagram.alpha*show), data=no.sc(conc$hallucinated.segments), linetype=2,  size=line.width, color='black') +
-        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,frame=frame, group=estimate, alpha=.4*diagram.alpha*show), data=no.sc(conc$guide.segments), size=line.width, linetype=2, color='black') +
+        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,frame=frame, group=estimate, alpha=.6*diagram.alpha*show), data=no.sc(conc$hallucinated.segments), linetype=guide.linetype,  size=line.width, color='black') +
+        geom_segment(aes(x=x,xend=xend,y=y,yend=yend,frame=frame, group=estimate, alpha=.5*diagram.alpha*show), data=no.sc(conc$guide.segments), size=line.width, linetype=guide.linetype, color='black') +
         geom_vline(aes(xintercept=xintercept, alpha=onset.alpha*show), data=conc$vlines, size=line.width, color='black') + 
         geom_ribbon(aes(x=x,ymin=ymin,ymax=ymax, group=color, fill=color, alpha=.5*diagram.alpha*show), color='black', data = conc$ribbons, size=line.width, show.legend=FALSE) +
       	geom_curve(aes(x=x,xend=xend,y=y,yend=yend, alpha=effect.alpha*show),  data=conc$arrows, curvature=effect.curvature, color='black', size=line.width, arrow=arrow(length=unit(.2, 'cm')))
