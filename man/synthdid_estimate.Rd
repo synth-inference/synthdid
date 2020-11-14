@@ -17,7 +17,7 @@ synthdid_estimate(
   weights = list(lambda = NULL, omega = NULL, vals = NULL),
   update.lambda = is.null(weights$lambda),
   update.omega = is.null(weights$omega),
-  min.decrease = 0.001,
+  min.decrease = 0.001 * sd(apply(Y, 1, diff)),
   max.iter = 10000
 )
 }
@@ -38,15 +38,15 @@ synthdid_estimate(
 
 \item{omega.intercept}{Binary. Use an intercept when estimating omega.}
 
-\item{weights}{a list with fields lambda and omega. If non-null weights$lambda is passed, 
+\item{weights}{a list with fields lambda and omega. If non-null weights$lambda is passed,
 we use them instead of estimating lambda weights. Same for weights$omega.}
 
-\item{update.lambda}{If true, solve for lambda using the passed value of weights$lambda only as an initialization. 
+\item{update.lambda}{If true, solve for lambda using the passed value of weights$lambda only as an initialization.
 If false, use it exactly as passed. Defaults to false if a non-null value of weights$lambda is passed.}
 
 \item{update.omega}{Analogous.}
 
-\item{min.decrease}{Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease 
+\item{min.decrease}{Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease
 in penalized MSE smaller than min.decrease^2.}
 
 \item{max.iter}{A fallback stopping criterion for our weight estimator. Stop after this number of iterations.}

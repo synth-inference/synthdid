@@ -36,10 +36,10 @@ did_estimate(
 
 \item{omega.intercept}{Binary. Use an intercept when estimating omega.}
 
-\item{weights}{a list with fields lambda and omega. If non-null weights$lambda is passed, 
+\item{weights}{a list with fields lambda and omega. If non-null weights$lambda is passed,
 we use them instead of estimating lambda weights. Same for weights$omega.}
 
-\item{min.decrease}{Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease 
+\item{min.decrease}{Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease
 in penalized MSE smaller than min.decrease^2.}
 
 \item{max.iter}{A fallback stopping criterion for our weight estimator. Stop after this number of iterations.}
