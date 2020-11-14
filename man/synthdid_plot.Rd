@@ -21,6 +21,8 @@ synthdid_plot(
   trajectory.linetype = 1,
   effect.curvature = 0,
   line.width = 0.5,
+  guide.linetype = 2,
+  point.size = 0.5,
   trajectory.alpha = 0.4,
   diagram.alpha = 0.95,
   effect.alpha = 0.95,
@@ -48,7 +50,7 @@ If NULL, plot each estimate in a different facet. Defaults to NULL.}
 \item{facet.vertical, }{TOADD}
 
 \item{lambda.comparable, }{TRUE if the weights lambda should be plotted in such a way that the ribbons
-     have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots. 
+     have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots.
 Defaults to FALSE if facet is not passed, TRUE if passed.}
 
 \item{overlay}{specifies a value of 'intercept' for all SDID estimates. Defaults to 0.
@@ -58,10 +60,14 @@ If a vector is passed, plots at different intercept levels indicated by the 'fra
 
 \item{trajectory.linetype, }{the linetype of the treated and synthetic control trajectories}
 
-\item{effect.curvature, }{the curvature of the arrows indicating the treatment effect. Defaults to zero. 
+\item{effect.curvature, }{the curvature of the arrows indicating the treatment effect. Defaults to zero.
 Nonzero values help avoid overplotting when plotting multiple estimates in one facet.}
 
 \item{line.width}{the line width.}
+
+\item{guide.linetype}{(undocumented for now)}
+
+\item{point.size}{(undocumented for now)}
 
 \item{trajectory.alpha}{determines transparency of trajectories}
 

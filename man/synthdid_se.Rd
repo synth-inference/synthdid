@@ -4,7 +4,7 @@
 \alias{synthdid_se}
 \title{An estimate of the standard error of our estimator via unit-wise jackknife.
 Should not be trusted when the number of treated units is small, and returns NA if there is only one treated unit.
-By default, does not recompute the weights omega and lambda. Instead, weights$lambda and weights$beta will be used unchanged and 
+By default, does not recompute the weights omega and lambda. Instead, weights$lambda and weights$beta will be used unchanged and
 weights$omega will have jackknifed-out units removed then be renormalized to sum to one.
 Pass weights=NULL to recompute weights for each jackknife replication.
 Requires bootstrap}
@@ -19,7 +19,7 @@ synthdid_se(estimate, weights = attr(estimate, "weights"))
 \description{
 An estimate of the standard error of our estimator via unit-wise jackknife.
 Should not be trusted when the number of treated units is small, and returns NA if there is only one treated unit.
-By default, does not recompute the weights omega and lambda. Instead, weights$lambda and weights$beta will be used unchanged and 
+By default, does not recompute the weights omega and lambda. Instead, weights$lambda and weights$beta will be used unchanged and
 weights$omega will have jackknifed-out units removed then be renormalized to sum to one.
 Pass weights=NULL to recompute weights for each jackknife replication.
 Requires bootstrap

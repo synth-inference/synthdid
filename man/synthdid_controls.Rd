@@ -3,7 +3,7 @@
 \name{synthdid_controls}
 \alias{synthdid_controls}
 \title{Outputs a table of important synthetic controls and their corresponding weights omega, sorted by weight.
-The table is truncated to exclude synthetic controls that do not matter for any estimate --- 
+The table is truncated to exclude synthetic controls that do not matter for any estimate ---
 for each estimate, the truncated controls may have total weight no larger that 1-mass.}
 \usage{
 synthdid_controls(estimates, sort.by = 1, digits = 3, mass = 0.9)
@@ -19,6 +19,6 @@ synthdid_controls(estimates, sort.by = 1, digits = 3, mass = 0.9)
 }
 \description{
 Outputs a table of important synthetic controls and their corresponding weights omega, sorted by weight.
-The table is truncated to exclude synthetic controls that do not matter for any estimate --- 
+The table is truncated to exclude synthetic controls that do not matter for any estimate ---
 for each estimate, the truncated controls may have total weight no larger that 1-mass.
 }

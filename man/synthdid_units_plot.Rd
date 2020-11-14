@@ -2,7 +2,7 @@
 % Please edit documentation in R/synthdid.R
 \name{synthdid_units_plot}
 \alias{synthdid_units_plot}
-\title{Plots unit by unit difference-in-differences 
+\title{Plots unit by unit difference-in-differences
 Requires ggplot2}
 \usage{
 synthdid_units_plot(
@@ -22,6 +22,6 @@ synthdid_units_plot(
 \item{negligible.alpha}{Determines transparency of those xs.}
 }
 \description{
-Plots unit by unit difference-in-differences 
+Plots unit by unit difference-in-differences
 Requires ggplot2
 }
