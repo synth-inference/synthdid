@@ -1,6 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^experiments
+^vignettes
 ^\.travis\.yml$
 ^_pkgdown\.yml$
 ^docs$
