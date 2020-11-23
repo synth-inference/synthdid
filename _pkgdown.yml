@@ -1,0 +1,16 @@
+navbar:
+  type: default
+  left:
+  - text: "Get started"
+    href: articles/synthdid.html
+  - text: "Reference"
+    href: reference/index.html
+  right:
+  - icon: fa-github fa-lg
+    href: https://github.com/synth-inference/synthdid
+
+reference:
+  - title: Synthetic Difference in Differences Estimation
+    contents:
+      - synthdid_estimate
+      - synthdid_se
