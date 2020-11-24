@@ -287,9 +287,10 @@ synthdid_rmse_plot = function(estimates) { # pass an estimate or list of estimat
 #' @method plot synthdid_estimate
 #' @export
 plot.synthdid_estimate = function(x, ...) {
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    warning("Plotting requires the package `ggplot2`, printing synthdid summary output instead.")
-	return(print(x))
-  }
+	if (requireNamespace("ggplot2", quietly = TRUE)) {
+			.ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
+	} else {
+			stop("Plotting is an optional synthdid funtionality which requires the package `ggplot2`.")
+	}
   synthdid_plot(x, ...)
 }
