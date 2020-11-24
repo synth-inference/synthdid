@@ -48,7 +48,7 @@ synthdid_plot = function(estimates, treated.name='treated', control.name='synthe
 	if (requireNamespace("ggplot2", quietly = TRUE)) {
 		.ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
 	} else {
-		stop("Plotting is an optional synthdid funtionality which requires the package `ggplot2`.")
+		stop("Plotting requires the package `ggplot2`. Install it to use this function")
 	}
     if(class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
@@ -209,7 +209,7 @@ synthdid_placebo_plot = function(estimate, overlay=FALSE, treated.fraction=NULL)
     if (requireNamespace("ggplot2", quietly = TRUE)) {
 	    .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
 	} else {
-	    stop("Plotting is an optional synthdid funtionality which requires the package `ggplot2`.")
+	    stop("Plotting requires the package `ggplot2`. Install it to use this function")
     }
    estimates = list(estimate=estimate, placebo=synthdid_placebo(estimate, treated.fraction=treated.fraction))
    synthdid_plot(estimates, facet=if(overlay) { c(1,1) } else { NULL })
@@ -226,7 +226,7 @@ synthdid_units_plot = function(estimates, show.ci=FALSE, negligible.threshold = 
 	if (requireNamespace("ggplot2", quietly = TRUE)) {
 		.ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
 	} else {
-	    stop("Plotting is an optional synthdid funtionality which requires the package `ggplot2`.")
+	    stop("Plotting requires the package `ggplot2`. Install it to use this function")
 	}
     if(class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
@@ -269,7 +269,7 @@ synthdid_rmse_plot = function(estimates) { # pass an estimate or list of estimat
 	if (requireNamespace("ggplot2", quietly = TRUE)) {
 	    .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
 	} else {
-	    stop("Plotting is an optional synthdid funtionality which requires the package `ggplot2`.")
+	    stop("Plotting requires the package `ggplot2`. Install it to use this function")
 	}
     if(class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
     if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
@@ -290,7 +290,7 @@ plot.synthdid_estimate = function(x, ...) {
 	if (requireNamespace("ggplot2", quietly = TRUE)) {
 			.ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
 	} else {
-			stop("Plotting is an optional synthdid funtionality which requires the package `ggplot2`.")
+			stop("Plotting requires the package `ggplot2`. Install it to use this function")
 	}
   synthdid_plot(x, ...)
 }
