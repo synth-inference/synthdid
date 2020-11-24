@@ -46,6 +46,11 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
                          facet = NULL, facet.vertical = TRUE, lambda.comparable = !is.null(facet), overlay = 0,
                          lambda.plot.scale = 3, trajectory.linetype = 1, effect.curvature = 0, line.width = .5, guide.linetype = 2, point.size = .5,
                          trajectory.alpha = .4, diagram.alpha = .95, effect.alpha = .95, onset.alpha = .3, alpha.multiplier = NULL) {
+  if (requireNamespace("ggplot2", quietly = TRUE)) {
+    .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
+  } else {
+    stop("Plotting requires the package `ggplot2`. Install it to use this function.")
+  }
   if (class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
   if (is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
   if (is.null(alpha.multiplier)) { alpha.multiplier = rep(1, length(estimates)) }
@@ -202,6 +207,11 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
 #' @param treated.fraction as in synthdid_placebo
 #' @export synthdid_placebo_plot
 synthdid_placebo_plot = function(estimate, overlay = FALSE, treated.fraction = NULL) {
+  if (requireNamespace("ggplot2", quietly = TRUE)) {
+    .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
+  } else {
+    stop("Plotting requires the package `ggplot2`. Install it to use this function.")
+  }
   estimates = list(estimate = estimate, placebo = synthdid_placebo(estimate, treated.fraction = treated.fraction))
   synthdid_plot(estimates, facet = if (overlay) { c(1, 1) } else { NULL })
 }
@@ -214,6 +224,11 @@ synthdid_placebo_plot = function(estimate, overlay = FALSE, treated.fraction = N
 #' @param negligible.alpha Determines transparency of those xs.
 #' @export synthdid_units_plot
 synthdid_units_plot = function(estimates, show.ci = FALSE, negligible.threshold = .001, negligible.alpha = .3) {
+  if (requireNamespace("ggplot2", quietly = TRUE)) {
+    .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
+  } else {
+    stop("Plotting requires the package `ggplot2`. Install it to use this function.")
+  }
   if (class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
   if (is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
   plot.data = do.call(rbind, lapply(1:length(estimates), function(ee) {
@@ -252,6 +267,11 @@ synthdid_units_plot = function(estimates, show.ci = FALSE, negligible.threshold 
 #' @param estimates, a list of estimates output by synthdid_estimate. Or a single estimate.
 #' @export synthdid_rmse_plot
 synthdid_rmse_plot = function(estimates) { # pass an estimate or list of estimates
+  if (requireNamespace("ggplot2", quietly = TRUE)) {
+    .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
+  } else {
+    stop("Plotting requires the package `ggplot2`. Install it to use this function.")
+  }
   if (class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
   if (is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
   rmse = lapply(estimates, function(est) { sqrt(attr(est, 'weights')$vals) })
@@ -268,5 +288,10 @@ synthdid_rmse_plot = function(estimates) { # pass an estimate or list of estimat
 #' @method plot synthdid_estimate
 #' @export
 plot.synthdid_estimate = function(x, ...) {
+  if (requireNamespace("ggplot2", quietly = TRUE)) {
+    .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
+  } else {
+    stop("Plotting requires the package `ggplot2`. Install it to use this function.")
+  }
   synthdid_plot(x, ...)
 }
