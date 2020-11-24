@@ -16,7 +16,7 @@ sc_estimate(
   lambda.intercept = FALSE,
   omega.intercept = FALSE,
   weights = list(lambda = rep(0, T0), omega = NULL, vals = NULL),
-  min.decrease = 0.001,
+  min.decrease = 0.001 * sd(apply(Y, 1, diff)),
   max.iter = 10000
 )
 }
