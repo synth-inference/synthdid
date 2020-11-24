@@ -6,22 +6,22 @@
 #' @param digits,  the number of digits of weight to display. Defaults to 3.
 #' @param mass, which controls the length of the table. Defaults to 0.9.
 #' @export synthdid_controls
-synthdid_controls = function(estimates, sort.by=1, digits=3, mass=.9) {
-    if(class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
-    if(is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
+synthdid_controls = function(estimates, sort.by = 1, digits = 3, mass = .9) {
+  if (class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
+  if (is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
 
-    omegas = do.call(cbind, lapply(estimates, function(est) { attr(est, 'weights')$omega }))
-    if(is.null(dim(omegas))) { dim(omegas) = c(length(omegas), 1) }
+  omegas = do.call(cbind, lapply(estimates, function(est) { attr(est, 'weights')$omega }))
+  if (is.null(dim(omegas))) { dim(omegas) = c(length(omegas), 1) }
 
-    Y = attr(estimates[[1]], 'setup')$Y
-    o = rev(order(omegas[,sort.by]))
-    tab = round(omegas[o,,drop=FALSE], digits=digits)
-    rownames(tab) = rownames(Y)[o]
-    colnames(tab) = names(estimates)
+  Y = attr(estimates[[1]], 'setup')$Y
+  o = rev(order(omegas[, sort.by]))
+  tab = round(omegas[o, , drop = FALSE], digits = digits)
+  rownames(tab) = rownames(Y)[o]
+  colnames(tab) = names(estimates)
 
-    # truncate table to retain a weight sum of at least mass for each unit
-    tab.len = max(apply(tab, 2, function(col) { Position(function(x){ x >= mass }, cumsum(col)) }))
-    tab[1:tab.len, ]
+  # truncate table to retain a weight sum of at least mass for each unit
+  tab.len = max(apply(tab, 2, function(col) { Position(function(x) { x >= mass }, cumsum(col)) }))
+  tab[1:tab.len, ]
 }
 
 #' Summarize a synthdid object
@@ -30,7 +30,7 @@ synthdid_controls = function(estimates, sort.by=1, digits=3, mass=.9) {
 #' @method summary synthdid_estimate
 #' @export
 summary.synthdid_estimate = function(object, ...) {
-    list(estimate = c(object),
-         se = synthdid_se(object),
-         controls = synthdid_controls(object))
+  list(estimate = c(object),
+    se = synthdid_se(object),
+    controls = synthdid_controls(object))
 }
