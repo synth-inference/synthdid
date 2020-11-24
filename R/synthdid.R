@@ -37,16 +37,20 @@ synthdid_estimate <- function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
 
     if(dim(X)[3] == 0) {
         weights$vals = NULL
+	weights$lambda.vals = NULL
+	weights$omega.vals = NULL
         if(update.lambda) {
             Yc=collapsed.form(Y, N0, T0)
             lambda.opt = sc.weight.fw(Yc, zeta = zeta.lambda, intercept=lambda.intercept, min.decrease=min.decrease, max.iter=max.iter)
             weights$lambda = lambda.opt$lambda
+	    weights$lambda.vals = lambda.opt$vals
             weights$vals =   lambda.opt$vals
         }
         if(update.omega) {
             Yc=collapsed.form(Y, N0, T0)
             omega.opt  = sc.weight.fw(t(Yc), zeta = zeta.omega,  intercept=omega.intercept, min.decrease=min.decrease, max.iter=max.iter)
             weights$omega = omega.opt$lambda
+	    weights$omega.vals = omega.opt$vals
             if(is.null(weights$vals)) { weights$vals = omega.opt$vals }
             else { weights$vals = pairwise.sum.decreasing(weights$vals, omega.opt$vals) }
         }
@@ -96,11 +100,11 @@ sc_estimate = function(Y, N0, T0, X=array(dim=c(dim(Y),0)),
                        zeta.lambda=0, zeta.omega=sd(apply(Y,1,diff)),
                        lambda.intercept=FALSE, omega.intercept=FALSE,
                        weights = list(lambda=rep(0,T0), omega=NULL, vals=NULL),
-		       min.decrease=1e-3, max.iter=1e4) {
+		       min.decrease=1e-3*sd(apply(Y,1,diff)), max.iter=1e4) {
     synthdid_estimate(Y, N0, T0, X=X,
                        zeta.lambda=zeta.lambda, zeta.omega=zeta.omega,
                        lambda.intercept=lambda.intercept, omega.intercept=omega.intercept,
-                       weights = weights, min.decrease=1e-3, max.iter=1e4)
+                       weights = weights, min.decrease=min.decrease, max.iter=max.iter)
 }
 
 #' synthdid_estimate for diff-in-diff estimates.
