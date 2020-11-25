@@ -48,7 +48,7 @@ pairwise.sum.decreasing = function(x, y) {
 #' z <- sdid_rmvnorm(10000, sigma)
 #' cor(z)
 #' }
-#' @export
+#' @keywords internal
 sdid_rmvnorm = function(n, sigma) {
   K = ncol(sigma)
   A = chol(sigma)

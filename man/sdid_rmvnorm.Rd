@@ -26,3 +26,4 @@ z <- sdid_rmvnorm(10000, sigma)
 cor(z)
 }
 }
+\keyword{internal}
