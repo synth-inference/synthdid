@@ -65,13 +65,13 @@ test_that("invariances hold with default options", {
 
   # 2. Invariance to row fixed effect (exception: "SC")
   # Re-mapping Yit <- Yit + ai for arbitrary ai doesn't change anything
-  at = 2.5 * matrix(1:nrow(setup$Y), nrow(setup$Y), ncol(setup$Y), byrow = FALSE)
+  ai = 2.5 * matrix(1:nrow(setup$Y), nrow(setup$Y), ncol(setup$Y), byrow = FALSE)
   for (estimator in estimators[-1]) {
     estimate = estimator(setup$Y,
                          setup$N0,
                          setup$T0)
     estimate.se = synthdid_se(estimate)
-    estimate.row.scaled = estimator(setup$Y + bt,
+    estimate.row.scaled = estimator(setup$Y + ai,
                                     setup$N0,
                                     setup$T0)
     estimate.se.row.scaled = synthdid_se(estimate.row.scaled)
