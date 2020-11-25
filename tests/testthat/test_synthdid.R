@@ -83,7 +83,7 @@ test_that("invariances hold with default options", {
   # Re-mapping Yit <- c * Yit for c > 0 doesn't change weights and scales tau by c
   # 3.1: c is very large
   c = 10^6
-  for (estimator in estimators[-1]) {
+  for (estimator in estimators) {
     estimate = estimator(setup$Y,
                          setup$N0,
                          setup$T0)
@@ -100,7 +100,7 @@ test_that("invariances hold with default options", {
   }
   # 3.2: c is very small
   c = 10^-6
-  for (estimator in estimators[-1]) {
+  for (estimator in estimators) {
     estimate = estimator(setup$Y,
                          setup$N0,
                          setup$T0)
