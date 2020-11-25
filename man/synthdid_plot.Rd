@@ -50,7 +50,7 @@ If NULL, plot each estimate in a different facet. Defaults to NULL.}
 \item{facet.vertical, }{TOADD}
 
 \item{lambda.comparable, }{TRUE if the weights lambda should be plotted in such a way that the ribbons
-     have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots.
+ have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots.
 Defaults to FALSE if facet is not passed, TRUE if passed.}
 
 \item{overlay}{specifies a value of 'intercept' for all SDID estimates. Defaults to 0.
