@@ -49,7 +49,7 @@ test_that("invariances hold with default options", {
 
   # 1. Invariance to column fixed effect (all)
   # Re-mapping Yit <- Yit + bt for arbitrary bt doesn't change anything
-  bt = 2 * matrix(1:ncol(setup$Y), nrow(setup$Y), ncol(setup$Y), byrow = T)
+  bt = 2 * matrix(1:ncol(setup$Y), nrow(setup$Y), ncol(setup$Y), byrow = TRUE)
   for (estimator in estimators) {
     estimate = estimator(setup$Y,
                          setup$N0,
