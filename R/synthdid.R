@@ -22,6 +22,7 @@
 #'         Setup is a list describing the problem passed in: Y, N0, T0, X.
 #' @export synthdid_estimate
 #' @importFrom stats sd
+#' @importFrom mvtnorm rmvnorm
 synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
                               zeta.lambda = 0, zeta.omega = sd(apply(Y, 1, diff)),
                               lambda.intercept = TRUE, omega.intercept = TRUE,

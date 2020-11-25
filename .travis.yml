@@ -12,7 +12,7 @@ before_deploy:
   - Rscript -e 'install.packages(c("fs", "highlight", "httr", "memoise", "openssl", "rmarkdown", "whisker", "xml2", "purrr"))'
   - Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/pkgdown/pkgdown_1.5.1.tar.gz", repos = NULL, type = "source")'
   # Install packages for the vignettes
-  - Rscript -e 'install.packages(c("ggplot2", "mvtnorm"))'
+  - Rscript -e 'install.packages("ggplot2")'
   - Rscript -e 'install.packages(getwd(), repos = NULL, type = "source")'
   - Rscript -e 'pkgdown::build_site()'
 deploy:

@@ -32,20 +32,3 @@ pairwise.sum.decreasing = function(x, y) {
   pairwise.sum[na.x & na.y] = NA
   pairwise.sum
 }
-
-#' Simulate correlated mean zero normal variables
-#'
-#' Simulate correlated mean zero normal variables with covariance matrix
-#' `sigma` using the Cholesky decomposition. A simple convenience
-#' function to simulate synthetic data with.
-#'
-#' @param n The number of samples.
-#' @param sigma The covariance matrix.
-#' @return A n X ncol(sigma) matrix of draws.
-#' @keywords internal
-sdid_rmvnorm = function(n, sigma) {
-  K = ncol(sigma)
-  A = chol(sigma)
-  z = matrix(rnorm(n * K), n, K)
-  z %*% A
-}
