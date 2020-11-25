@@ -20,7 +20,6 @@ Example usage:
 
 ```R
 library(synthdid)
-library(mvtnorm)
 
 n_0 <- 100
 n_1 <- 10
@@ -40,7 +39,7 @@ V <- matrix(rpois(rank * T, sqrt(1:T) / sqrt(T)), T, rank)
 alpha <- outer(10*(1:n)/n, rep(1,T))
 beta <-  outer(rep(1,n), 10*(1:T)/T)
 mu <- U %*% t(V) + alpha + beta
-error <- rmvnorm(n, sigma = var, method = "chol")
+error <- sdid_rmvnorm(n, sigma = var)
 Y <- mu + tau * W  + sigma * error
 rownames(Y) = 1:n
 colnames(Y) = 1:T
