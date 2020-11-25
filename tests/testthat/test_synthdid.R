@@ -74,29 +74,29 @@ test_that("invariances hold with default options", {
   # 3. Invariance to scaling (all)
   # Re-mapping Yit <- c * Yit for c > 0 doesn't change weights and scales tau by c
   # 3.1: c is very large
-  const = 10^6
+  c.small = 10^6
   for (estimator in estimators) {
     estimate = estimator(setup$Y, setup$N0, setup$T0)
     estimate.se = synthdid_se(estimate)
     weights = attr(estimate, "weights")
-    estimate.scaled = estimator(const * setup$Y, setup$N0, setup$T0)
+    estimate.scaled = estimator(c.small * setup$Y, setup$N0, setup$T0)
     estimate.se.scaled = synthdid_se(estimate.scaled)
     weights.scaled = attr(estimate.scaled, "weights")
-    expect_equal(c(const * estimate), c(estimate.scaled))
-    expect_equal(const * estimate.se, estimate.se.scaled)
+    expect_equal(c(c.small * estimate), c(estimate.scaled))
+    expect_equal(c.small * estimate.se, estimate.se.scaled)
     expect_equal(weights[c("lambda", "omega")], weights.scaled[c("lambda", "omega")])
   }
   # 3.2: c is very small
-  const = 10^-6
+  c.large = 10^-6
   for (estimator in estimators) {
     estimate = estimator(setup$Y, setup$N0, setup$T0)
     estimate.se = synthdid_se(estimate)
     weights = attr(estimate, "weights")
-    estimate.scaled = estimator(const * setup$Y, setup$N0, setup$T0)
+    estimate.scaled = estimator(c.large * setup$Y, setup$N0, setup$T0)
     estimate.se.scaled = synthdid_se(estimate.scaled)
     weights.scaled = attr(estimate.scaled, "weights")
-    expect_equal(c(const * estimate), c(estimate.scaled))
-    expect_equal(const * estimate.se, estimate.se.scaled)
+    expect_equal(c(c.large * estimate), c(estimate.scaled))
+    expect_equal(c.large * estimate.se, estimate.se.scaled)
     expect_equal(weights[c("lambda", "omega")], weights.scaled[c("lambda", "omega")])
   }
 })
