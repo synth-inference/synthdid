@@ -49,3 +49,22 @@ test_that("adjustment for covariates works: random noise less influential if pas
 
   expect_lt(abs(tau.hat - tau.hat.cov), abs(tau.hat - tau.hat.noise))
 })
+
+test_that("default synthdid behavior has not changed", {
+  setup = readRDS("setup.Rds")
+  estimate = synthdid_estimate(setup$Y,setup$N0,setup$T0)
+  weights = attr(estimate, 'weights')
+  coef = c(estimate)
+
+  weights.expected = readRDS("weights.expected.Rds")
+  coef.expected = readRDS("coef.expected.Rds")
+
+  expect_equal(coef, coef.expected)
+  expect_equal(weights, weights.expected)
+
+  # To update this test:
+  # setup = random.low.rank()
+  # saveRDS(setup, "setup.Rds")
+  # saveRDS(coef, "coef.expected.Rds")
+  # saveRDS(weights, "weights.expected.Rds")
+})
