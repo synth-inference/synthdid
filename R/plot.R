@@ -41,7 +41,6 @@
 #'        one facet but highlighting one or several. All plot elements associated with the estimate are displayed
 #'        with alpha multiplied by the corresponding element of alpha.multiplier. Defaults to a vector of ones.
 #' @export synthdid_plot
-#' @import ggplot2
 synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'synthetic control', force.sc = FALSE,
                          facet = NULL, facet.vertical = TRUE, lambda.comparable = !is.null(facet), overlay = 0,
                          lambda.plot.scale = 3, trajectory.linetype = 1, effect.curvature = 0, line.width = .5, guide.linetype = 2, point.size = .5,
