@@ -19,11 +19,4 @@ Simulate correlated mean zero normal variables with covariance matrix
 `sigma` using the Cholesky decomposition. A simple convenience
 function to simulate synthetic data with.
 }
-\examples{
-\donttest{
-sigma <- cbind(c(1, -0.5), c(-0.5, 1))
-z <- sdid_rmvnorm(10000, sigma)
-cor(z)
-}
-}
 \keyword{internal}

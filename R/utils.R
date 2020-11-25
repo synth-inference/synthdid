@@ -42,12 +42,6 @@ pairwise.sum.decreasing = function(x, y) {
 #' @param n The number of samples.
 #' @param sigma The covariance matrix.
 #' @return A n X ncol(sigma) matrix of draws.
-#' @examples
-#' \donttest{
-#' sigma <- cbind(c(1, -0.5), c(-0.5, 1))
-#' z <- sdid_rmvnorm(10000, sigma)
-#' cor(z)
-#' }
 #' @keywords internal
 sdid_rmvnorm = function(n, sigma) {
   K = ncol(sigma)
