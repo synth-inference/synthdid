@@ -12,9 +12,10 @@ Description: Estimate average treatment effects in panel data.
     adopt treatment at the same time.
 Depends:
     R (>= 3.4)
+Imports:
+    mvtnorm
 License: GPL (>= 2) | BSD_3_clause + file LICENSE
 RoxygenNote: 7.1.1
 Suggests:
     testthat,
-    ggplot2,
-    mvtnorm
+    ggplot2

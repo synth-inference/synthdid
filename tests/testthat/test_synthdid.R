@@ -1,6 +1,4 @@
 random.low.rank = function() {
-  library(mvtnorm)
-
   n_0 <- 100
   n_1 <- 10
   T_0 <- 120
@@ -19,7 +17,7 @@ random.low.rank = function() {
   alpha <- outer(10*(1:n)/n, rep(1,T))
   beta <-  outer(rep(1,n), 10*(1:T)/T)
   mu <- U %*% t(V) + alpha + beta
-  error <- rmvnorm(n, sigma = var, method = "chol")
+  error <- mvtnorm::rmvnorm(n, sigma = var, method = "chol")
   Y <- mu + tau * W  + sigma * error
   rownames(Y) = 1:n
   colnames(Y) = 1:T
