@@ -59,8 +59,8 @@ test_that("default synthdid behavior has not changed", {
   coef = c(estimate)
 
   # To update this test:
-  # saveRDS(coef, "coef.Rds")
-  # saveRDS(weights, "weights.Rds")
+  # saveRDS(coef, "coef.expected.Rds")
+  # saveRDS(weights, "weights.expected.Rds")
   weights.expected = readRDS("weights.Rds")
   coef.expected = readRDS("coef.Rds")
 
