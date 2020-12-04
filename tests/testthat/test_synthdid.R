@@ -1,29 +1,3 @@
-random.low.rank = function() {
-  n_0 <- 100
-  n_1 <- 10
-  T_0 <- 120
-  T_1 <- 20
-  n <- n_0 + n_1
-  T <- T_0 + T_1
-  tau <- 1
-  sigma <- .5
-  rank <- 2
-  rho <- 0.7
-  var <- outer(1:T, 1:T, FUN=function(x, y) rho^(abs(x-y)))
-
-  W <- (1:n > n_0) %*% t(1:T > T_0)
-  U <- matrix(rpois(rank * n, sqrt(1:n) / sqrt(n)), n, rank)
-  V <- matrix(rpois(rank * T, sqrt(1:T) / sqrt(T)), T, rank)
-  alpha <- outer(10*(1:n)/n, rep(1,T))
-  beta <-  outer(rep(1,n), 10*(1:T)/T)
-  mu <- U %*% t(V) + alpha + beta
-  error <- mvtnorm::rmvnorm(n, sigma = var, method = "chol")
-  Y <- mu + tau * W  + sigma * error
-  rownames(Y) = 1:n
-  colnames(Y) = 1:T
-  list(Y=Y, L=mu, N0=n_0, T0=T_0)
-}
-
 test_that("a simple workflow doesn't error", {
   setup = random.low.rank()
   tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
@@ -65,4 +39,64 @@ test_that("default synthdid behavior has not changed", {
   # saveRDS(setup, "setup.Rds")
   # saveRDS(coef, "coef.expected.Rds")
   # saveRDS(weights, "weights.expected.Rds")
+})
+
+test_that("invariances hold with default options", {
+  # Test that three types of invariances hold, for details see
+  # https://github.com/synth-inference/synthdid/issues/38
+  estimators = list(sc_estimate, did_estimate, synthdid_estimate)
+  setup = random.low.rank()
+
+  # 1. Invariance to column fixed effect (all)
+  # Re-mapping Yit <- Yit + bt for arbitrary bt doesn't change anything
+  bt = 2 * matrix(1:ncol(setup$Y), nrow(setup$Y), ncol(setup$Y), byrow = TRUE)
+  for (estimator in estimators) {
+    estimate = estimator(setup$Y, setup$N0, setup$T0)
+    estimate.se = synthdid_se(estimate)
+    estimate.col.scaled = estimator(setup$Y + bt, setup$N0, setup$T0)
+    estimate.se.col.scaled = synthdid_se(estimate.col.scaled)
+    expect_equal(c(estimate), c(estimate.col.scaled))
+    expect_equal(estimate.se, estimate.se.col.scaled)
+  }
+
+  # 2. Invariance to row fixed effect (exception: "SC")
+  # Re-mapping Yit <- Yit + ai for arbitrary ai doesn't change anything
+  ai = 2.5 * matrix(1:nrow(setup$Y), nrow(setup$Y), ncol(setup$Y), byrow = FALSE)
+  for (estimator in estimators[-1]) {
+    estimate = estimator(setup$Y, setup$N0, setup$T0)
+    estimate.se = synthdid_se(estimate)
+    estimate.row.scaled = estimator(setup$Y + ai, setup$N0, setup$T0)
+    estimate.se.row.scaled = synthdid_se(estimate.row.scaled)
+    expect_equal(c(estimate), c(estimate.row.scaled))
+    expect_equal(estimate.se, estimate.se.row.scaled)
+  }
+
+  # 3. Invariance to scaling (all)
+  # Re-mapping Yit <- c * Yit for c > 0 doesn't change weights and scales tau by c
+  # 3.1: c is very small
+  c.small = 10^-6
+  for (estimator in estimators) {
+    estimate = estimator(setup$Y, setup$N0, setup$T0)
+    estimate.se = synthdid_se(estimate)
+    weights = attr(estimate, "weights")
+    estimate.scaled = estimator(c.small * setup$Y, setup$N0, setup$T0)
+    estimate.se.scaled = synthdid_se(estimate.scaled)
+    weights.scaled = attr(estimate.scaled, "weights")
+    expect_equal(c(c.small * estimate), c(estimate.scaled))
+    expect_equal(c.small * estimate.se, estimate.se.scaled)
+    expect_equal(weights[c("lambda", "omega")], weights.scaled[c("lambda", "omega")])
+  }
+  # 3.2: c is very large
+  c.large = 10^6
+  for (estimator in estimators) {
+    estimate = estimator(setup$Y, setup$N0, setup$T0)
+    estimate.se = synthdid_se(estimate)
+    weights = attr(estimate, "weights")
+    estimate.scaled = estimator(c.large * setup$Y, setup$N0, setup$T0)
+    estimate.se.scaled = synthdid_se(estimate.scaled)
+    weights.scaled = attr(estimate.scaled, "weights")
+    expect_equal(c(c.large * estimate), c(estimate.scaled))
+    expect_equal(c.large * estimate.se, estimate.se.scaled)
+    expect_equal(weights[c("lambda", "omega")], weights.scaled[c("lambda", "omega")])
+  }
 })

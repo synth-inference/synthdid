@@ -32,3 +32,30 @@ pairwise.sum.decreasing = function(x, y) {
   pairwise.sum[na.x & na.y] = NA
   pairwise.sum
 }
+
+# A convenience function for generating data for unit tests.
+random.low.rank = function() {
+  n_0 <- 100
+  n_1 <- 10
+  T_0 <- 120
+  T_1 <- 20
+  n <- n_0 + n_1
+  T <- T_0 + T_1
+  tau <- 1
+  sigma <- .5
+  rank <- 2
+  rho <- 0.7
+  var <- outer(1:T, 1:T, FUN=function(x, y) rho^(abs(x-y)))
+
+  W <- (1:n > n_0) %*% t(1:T > T_0)
+  U <- matrix(rpois(rank * n, sqrt(1:n) / sqrt(n)), n, rank)
+  V <- matrix(rpois(rank * T, sqrt(1:T) / sqrt(T)), T, rank)
+  alpha <- outer(10*(1:n)/n, rep(1,T))
+  beta <-  outer(rep(1,n), 10*(1:T)/T)
+  mu <- U %*% t(V) + alpha + beta
+  error <- mvtnorm::rmvnorm(n, sigma = var, method = "chol")
+  Y <- mu + tau * W  + sigma * error
+  rownames(Y) = 1:n
+  colnames(Y) = 1:T
+  list(Y=Y, L=mu, N0=n_0, T0=T_0)
+}
