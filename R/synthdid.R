@@ -187,14 +187,11 @@ synthdid_effect_curve = function(estimate) {
 #' @param method, the CI method
 #' @param weights, like attr(estimate, 'weights')
 #' @param repetitions, the number of bootstrap repetitions
-#' @param treated.fraction, the fraction of pre-treatment data to use as a placebo treatment period
-#'        Defaults to NULL, which indicates that it should be the fraction of post-treatment to pre-treatment data
 #' @export synthdid_se
 synthdid_se = function(estimate,
                        method = c("jackknife", "bootstrap", "placebo"),
                        weights = attr(estimate, 'weights'),
-                       repetitions = 25,
-                       treated.fraction = NULL) {
+                       repetitions = 200) {
   method = match.arg(method)
   setup = attr(estimate, 'setup')
   opts = attr(estimate, 'opts')
@@ -231,20 +228,18 @@ synthdid_se = function(estimate,
       setup.bs$X = X_b
       do.call(estimator, c(setup.bs, opts))
     }
-    return (bootstrap(repetitions, nrow(setup$Y), nrow(setup$Y), estimate, theta))
+    return (bootstrap(repetitions, nrow(setup$Y), estimate, theta))
   } else if (method == "placebo") {
-    if (is.null(treated.fraction)) { treated.fraction = 1 - setup$T0 / ncol(setup$Y) }
-    n1 = floor(nrow(setup$Y) * treated.fraction)
     setup.bs = setup
+    N1 = nrow(setup$Y) - setup$N0
     theta = function(ind) {
-      Y_b = rbind(setup$Y[-ind,], setup$Y[ind,])
-      # X_b = rbind(setup$X[-ind, ,], setup$X[ind, ,])
-      n_0 = nrow(setup$Y) - n1
+      Y_b = setup$Y[ind, ]
+      X_b = setup$X[ind, ,]
       setup.bs$Y = Y_b
-      setup.bs$N0 = n_0
-      # setup.bs$X = X_b
+      setup.bs$N0 = nrow(Y_b) - N1
+      setup.bs$X = X_b
       do.call(estimator, c(setup.bs, opts))
     }
-    return (bootstrap(repetitions, nrow(setup$Y), n1, 0, theta, FALSE))
+    return (subsample(repetitions, setup$N0, theta))
   }
 }

@@ -13,8 +13,7 @@ synthdid_se(
   estimate,
   method = c("jackknife", "bootstrap", "placebo"),
   weights = attr(estimate, "weights"),
-  repetitions = 25,
-  treated.fraction = NULL
+  repetitions = 200
 )
 }
 \arguments{
@@ -25,9 +24,6 @@ synthdid_se(
 \item{weights, }{like attr(estimate, 'weights')}
 
 \item{repetitions, }{the number of bootstrap repetitions}
-
-\item{treated.fraction, }{the fraction of pre-treatment data to use as a placebo treatment period
-Defaults to NULL, which indicates that it should be the fraction of post-treatment to pre-treatment data}
 }
 \description{
 An estimate of the standard error of our estimator via unit-wise jackknife.

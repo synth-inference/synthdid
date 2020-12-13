@@ -14,23 +14,24 @@ jackknife = function(x, theta) {
   jack.se
 }
 
-#' Bootstrap standard error of function `theta` at samples `n`.
-#' @param B repetitions
-#' @param n number of samples
-#' @param k number of draws
-#' @param estimate estimate
-#' @param theta a function which returns a scalar estimate
-#' @keywords internal
-bootstrap = function(B, n, k, estimate, theta, replace = TRUE) {
+bootstrap = function(B, n, estimate, theta) {
   u = rep(0, B)
   for (i in 1:B) {
-    ind = sample(1:n, k, replace = replace)
+    ind = sample(1:n, replace = TRUE)
     u[i] = theta(ind)
   }
-  boot.se = sqrt(mean((c(estimate) - u)^2, na.rm = TRUE))
-  # boot.se=sqrt(var(u, na.rm = TRUE))
 
-  boot.se
+  sqrt(mean((c(estimate) - u)^2, na.rm = TRUE))
+}
+
+subsample = function(B, k, theta) {
+  u = rep(0, B)
+  for (i in 1:B) {
+    ind = sample(1:k)
+    u[i] = theta(ind)
+  }
+
+  sd(u)
 }
 
 # collapse Y to an N0+1 x T0+1 vector by averaging the last N1=nrow(Y)-N0 rows and T1=ncol(Y)-T0 columns
