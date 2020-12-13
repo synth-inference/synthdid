@@ -68,6 +68,7 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
   estimate = t(c(-weights$omega, rep(1 / N1, N1))) %*% (Y - X.beta) %*% c(-weights$lambda, rep(1 / T1, T1))
 
   class(estimate) = 'synthdid_estimate'
+  attr(estimate, 'estimator') = synthdid_estimate
   attr(estimate, 'weights') = weights
   attr(estimate, 'setup') = list(Y = Y, X = X, N0 = N0, T0 = T0)
   attr(estimate, 'opts') = list(zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
@@ -101,10 +102,12 @@ sc_estimate = function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
                        lambda.intercept = FALSE, omega.intercept = FALSE,
                        weights = list(lambda = rep(0, T0), omega = NULL, vals = NULL),
                        min.decrease = 1e-3 * sd(apply(Y, 1, diff)), max.iter = 1e4) {
-  synthdid_estimate(Y, N0, T0, X = X,
+  estimate = synthdid_estimate(Y, N0, T0, X = X,
     zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
     lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,
     weights = weights, min.decrease = min.decrease, max.iter = max.iter)
+  attr(estimate, 'estimator') = sc_estimate
+  estimate
 }
 
 #' synthdid_estimate for diff-in-diff estimates.
@@ -132,10 +135,12 @@ did_estimate = function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
                         lambda.intercept = FALSE, omega.intercept = FALSE,
                         weights = list(lambda = rep(1 / T0, T0), omega = rep(1 / N0, N0), vals = NULL),
                         min.decrease = 1e-3, max.iter = 1e4) {
-  synthdid_estimate(Y, N0, T0, X = X,
+  estimate = synthdid_estimate(Y, N0, T0, X = X,
     zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
     lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,
     weights = weights, min.decrease = 1e-3, max.iter = 1e4)
+  attr(estimate, 'estimator') = did_estimate
+  estimate
 }
 
 #' Computes a placebo variant of our estimator using pre-treatment data only
@@ -179,21 +184,67 @@ synthdid_effect_curve = function(estimate) {
 #' Pass weights=NULL to recompute weights for each jackknife replication.
 #' Requires bootstrap
 #' @param estimate, as output by synthdid_estimate
+#' @param method, the CI method
 #' @param weights, like attr(estimate, 'weights')
+#' @param repetitions, the number of bootstrap repetitions
+#' @param treated.fraction, the fraction of pre-treatment data to use as a placebo treatment period
+#'        Defaults to NULL, which indicates that it should be the fraction of post-treatment to pre-treatment data
 #' @export synthdid_se
-synthdid_se = function(estimate, weights = attr(estimate, 'weights')) {
+synthdid_se = function(estimate,
+                       method = c("jackknife", "bootstrap", "placebo"),
+                       weights = attr(estimate, 'weights'),
+                       repetitions = 25,
+                       treated.fraction = NULL) {
+  method = match.arg(method)
   setup = attr(estimate, 'setup')
   opts = attr(estimate, 'opts')
+  estimator = attr(estimate, 'estimator')
   if (setup$N0 == nrow(setup$Y) - 1) { return(NA) }
 
-  sum_normalize = function(x) { x / sum(x) }
-  theta = function(ind) {
-    weights.jk = weights
-    if (!is.null(weights)) { weights.jk$omega = sum_normalize(weights$omega[ind[ind <= setup$N0]]) }
-    estimate.jk = synthdid_estimate(setup$Y[ind, ], sum(ind <= setup$N0), setup$T0, X = setup$X[ind, , ],
-      zeta.lambda = opts$zeta.lambda, zeta.omega = opts$zeta.omega,
-      lambda.intercept = opts$lambda.intercept, omega.intercept = opts$omega.intercept,
-      weights = weights.jk)
+  if (method == "jackknife") {
+    sum_normalize = function(x) { x / sum(x) }
+    theta = function(ind) {
+      weights.jk = weights
+      if (!is.null(weights)) { weights.jk$omega = sum_normalize(weights$omega[ind[ind <= setup$N0]]) }
+      estimate.jk = synthdid_estimate(setup$Y[ind, ], sum(ind <= setup$N0), setup$T0, X = setup$X[ind, , ],
+        zeta.lambda = opts$zeta.lambda, zeta.omega = opts$zeta.omega,
+        lambda.intercept = opts$lambda.intercept, omega.intercept = opts$omega.intercept,
+        weights = weights.jk)
+    }
+    return (jackknife(1:nrow(setup$Y), theta))
+  } else if (method == "bootstrap") {
+    setup.bs = setup
+    treatment_ind = c(rep(0,setup$N0),rep(1,nrow(setup$Y) - setup$N0))
+    theta = function(ind) {
+      Y_init = setup$Y[ind,]
+      X_init = setup$X[ind, , ]
+      tr_stat = treatment_ind[ind]
+      tr_index = order(tr_stat)
+      Y_b = Y_init[tr_index,]
+      X_b = X_init[tr_index, , ]
+      n_0 = nrow(setup$Y)-sum(tr_stat)
+      if (sum(tr_stat) == 0 || sum(tr_stat) == nrow(setup$Y)) {
+        return (NA)
+      }
+      setup.bs$Y = Y_b
+      setup.bs$N0 = n_0
+      setup.bs$X = X_b
+      do.call(estimator, c(setup.bs, opts))
+    }
+    return (bootstrap(repetitions, nrow(setup$Y), nrow(setup$Y), estimate, theta))
+  } else if (method == "placebo") {
+    if (is.null(treated.fraction)) { treated.fraction = 1 - setup$T0 / ncol(setup$Y) }
+    n1 = floor(nrow(setup$Y) * treated.fraction)
+    setup.bs = setup
+    theta = function(ind) {
+      Y_b = rbind(setup$Y[-ind,], setup$Y[ind,])
+      # X_b = rbind(setup$X[-ind, ,], setup$X[ind, ,])
+      n_0 = nrow(setup$Y) - n1
+      setup.bs$Y = Y_b
+      setup.bs$N0 = n_0
+      # setup.bs$X = X_b
+      do.call(estimator, c(setup.bs, opts))
+    }
+    return (bootstrap(repetitions, nrow(setup$Y), n1, 0, theta, FALSE))
   }
-  jackknife(1:nrow(setup$Y), theta)
 }

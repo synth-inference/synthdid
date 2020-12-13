@@ -9,12 +9,25 @@ weights$omega will have jackknifed-out units removed then be renormalized to sum
 Pass weights=NULL to recompute weights for each jackknife replication.
 Requires bootstrap}
 \usage{
-synthdid_se(estimate, weights = attr(estimate, "weights"))
+synthdid_se(
+  estimate,
+  method = c("jackknife", "bootstrap", "placebo"),
+  weights = attr(estimate, "weights"),
+  repetitions = 25,
+  treated.fraction = NULL
+)
 }
 \arguments{
 \item{estimate, }{as output by synthdid_estimate}
 
+\item{method, }{the CI method}
+
 \item{weights, }{like attr(estimate, 'weights')}
+
+\item{repetitions, }{the number of bootstrap repetitions}
+
+\item{treated.fraction, }{the fraction of pre-treatment data to use as a placebo treatment period
+Defaults to NULL, which indicates that it should be the fraction of post-treatment to pre-treatment data}
 }
 \description{
 An estimate of the standard error of our estimator via unit-wise jackknife.
