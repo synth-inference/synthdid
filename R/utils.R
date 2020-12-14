@@ -14,26 +14,6 @@ jackknife = function(x, theta) {
   jack.se
 }
 
-bootstrap = function(B, n, estimate, theta) {
-  u = rep(0, B)
-  for (i in 1:B) {
-    ind = sample(1:n, replace = TRUE)
-    u[i] = theta(ind)
-  }
-
-  sqrt(mean((c(estimate) - u)^2, na.rm = TRUE))
-}
-
-subsample = function(B, k, theta) {
-  u = rep(0, B)
-  for (i in 1:B) {
-    ind = sample(1:k)
-    u[i] = theta(ind)
-  }
-
-  sd(u)
-}
-
 # collapse Y to an N0+1 x T0+1 vector by averaging the last N1=nrow(Y)-N0 rows and T1=ncol(Y)-T0 columns
 collapsed.form = function(Y, N0, T0) {
   N = nrow(Y); T = ncol(Y)

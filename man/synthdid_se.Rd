@@ -13,7 +13,7 @@ synthdid_se(
   estimate,
   method = c("jackknife", "bootstrap", "placebo"),
   weights = attr(estimate, "weights"),
-  repetitions = 200
+  replications = 200
 )
 }
 \arguments{
@@ -23,7 +23,7 @@ synthdid_se(
 
 \item{weights, }{like attr(estimate, 'weights')}
 
-\item{repetitions, }{the number of bootstrap repetitions}
+\item{replications, }{the number of bootstrap replications}
 }
 \description{
 An estimate of the standard error of our estimator via unit-wise jackknife.

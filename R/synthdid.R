@@ -186,12 +186,12 @@ synthdid_effect_curve = function(estimate) {
 #' @param estimate, as output by synthdid_estimate
 #' @param method, the CI method
 #' @param weights, like attr(estimate, 'weights')
-#' @param repetitions, the number of bootstrap repetitions
+#' @param replications, the number of bootstrap replications
 #' @export synthdid_se
 synthdid_se = function(estimate,
                        method = c("jackknife", "bootstrap", "placebo"),
                        weights = attr(estimate, 'weights'),
-                       repetitions = 200) {
+                       replications = 200) {
   method = match.arg(method)
   setup = attr(estimate, 'setup')
   opts = attr(estimate, 'opts')
@@ -210,36 +210,20 @@ synthdid_se = function(estimate,
     }
     return (jackknife(1:nrow(setup$Y), theta))
   } else if (method == "bootstrap") {
-    setup.bs = setup
-    treatment_ind = c(rep(0,setup$N0),rep(1,nrow(setup$Y) - setup$N0))
     theta = function(ind) {
-      Y_init = setup$Y[ind,]
-      X_init = setup$X[ind, , ]
-      tr_stat = treatment_ind[ind]
-      tr_index = order(tr_stat)
-      Y_b = Y_init[tr_index,]
-      X_b = X_init[tr_index, , ]
-      n_0 = nrow(setup$Y)-sum(tr_stat)
-      if (sum(tr_stat) == 0 || sum(tr_stat) == nrow(setup$Y)) {
-        return (NA)
-      }
-      setup.bs$Y = Y_b
-      setup.bs$N0 = n_0
-      setup.bs$X = X_b
-      do.call(estimator, c(setup.bs, opts))
+      if(all(ind <= setup$N0) || all(ind > setup$N0)) { NA }
+      else { synthdid_estimate(Y=setup$Y[sort(ind),], N0=sum(ind <= setup$N0), T0=setup$T0, X=setup$X[sort(ind), ,],
+         zeta.lambda = opts$zeta.lambda, zeta.omega = opts$zeta.omega,
+         lambda.intercept = opts$lambda.intercept, omega.intercept = opts$omega.intercept)}
     }
-    return (bootstrap(repetitions, nrow(setup$Y), estimate, theta))
+    return (sd(replicate(replications, theta(sample(1:nrow(setup$Y), replace=TRUE))), na.rm=TRUE))
   } else if (method == "placebo") {
-    setup.bs = setup
     N1 = nrow(setup$Y) - setup$N0
     theta = function(ind) {
-      Y_b = setup$Y[ind, ]
-      X_b = setup$X[ind, ,]
-      setup.bs$Y = Y_b
-      setup.bs$N0 = nrow(Y_b) - N1
-      setup.bs$X = X_b
-      do.call(estimator, c(setup.bs, opts))
+      synthdid_estimate(Y=setup$Y[ind,], N0=length(ind)-N1,  T0=setup$T0,  X=setup$X[ind, ,],
+      zeta.lambda = opts$zeta.lambda, zeta.omega = opts$zeta.omega,
+      lambda.intercept = opts$lambda.intercept, omega.intercept = opts$omega.intercept)
     }
-    return (subsample(repetitions, setup$N0, theta))
+    return (sd(replicate(replications, theta(sample(1:setup$N0)))))
   }
 }
