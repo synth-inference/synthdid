@@ -1,0 +1,36 @@
+#' Calculate Variance-Covariance Matrix for a Fitted Model Object
+#'
+#' Provides variance estimates based on the following three options
+#' \itemize{
+#'   \item The boostrap, Algorithm 2 in Arkhangelsky et al.
+#'   \item The jackknife, Algorithm 3 in Arkhangelsky et al.
+#'   \item Placebo, Algorithm 4 in Arkhangelsky et al.
+#' }
+#'
+#' The jackknife is not recommended for SC, see section 5 in Arkhangelsky et al.
+#'
+#' @param object A synthdid model
+#' @param method, the CI method
+#' @param replications, the number of bootstrap replications
+#' @param weights, like attr(estimate, 'weights')
+#' @param ... Additional arguments (currently ignored).
+#'
+#' @references Dmitry Arkhangelsky, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager.
+#'  "Synthetic Difference in Differences". arXiv preprint arXiv:1812.09970, 2019.
+#'
+#' @method vcov synthdid_estimate
+#' @export
+vcov.synthdid_estimate = function(
+  object,
+  method = c("bootstrap", "jackknife", "placebo"),
+  weights = attr(object, 'weights'),
+  replications = 200, ...) {
+    method = match.arg(method)
+    setup = attr(object, 'setup')
+    estimator = attr(object, 'estimator')
+    if (setup$N0 == nrow(setup$Y) - 1 && method != "placebo") { return(NA) }
+
+    out = synthdid_se(object, method, weights, replications)
+
+    matrix(out^2, dimnames = list(estimator, estimator))
+}

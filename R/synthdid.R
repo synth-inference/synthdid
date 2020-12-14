@@ -68,7 +68,7 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
   estimate = t(c(-weights$omega, rep(1 / N1, N1))) %*% (Y - X.beta) %*% c(-weights$lambda, rep(1 / T1, T1))
 
   class(estimate) = 'synthdid_estimate'
-  attr(estimate, 'estimator') = synthdid_estimate
+  attr(estimate, 'estimator') = "synthdid_estimate"
   attr(estimate, 'weights') = weights
   attr(estimate, 'setup') = list(Y = Y, X = X, N0 = N0, T0 = T0)
   attr(estimate, 'opts') = list(zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
@@ -106,7 +106,7 @@ sc_estimate = function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
     zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
     lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,
     weights = weights, min.decrease = min.decrease, max.iter = max.iter)
-  attr(estimate, 'estimator') = sc_estimate
+  attr(estimate, 'estimator') = "sc_estimate"
   estimate
 }
 
@@ -139,7 +139,7 @@ did_estimate = function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
     zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
     lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,
     weights = weights, min.decrease = 1e-3, max.iter = 1e4)
-  attr(estimate, 'estimator') = did_estimate
+  attr(estimate, 'estimator') = "did_estimate"
   estimate
 }
 
