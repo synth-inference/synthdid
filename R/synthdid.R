@@ -196,7 +196,7 @@ synthdid_se = function(estimate,
   setup = attr(estimate, 'setup')
   opts = attr(estimate, 'opts')
   estimator = attr(estimate, 'estimator')
-  if (setup$N0 == nrow(setup$Y) - 1) { return(NA) }
+  if (setup$N0 == nrow(setup$Y) - 1 && method != "placebo") { return(NA) }
 
   if (method == "jackknife") {
     sum_normalize = function(x) { x / sum(x) }
@@ -212,17 +212,13 @@ synthdid_se = function(estimate,
   } else if (method == "bootstrap") {
     theta = function(ind) {
       if(all(ind <= setup$N0) || all(ind > setup$N0)) { NA }
-      else { synthdid_estimate(Y=setup$Y[sort(ind),], N0=sum(ind <= setup$N0), T0=setup$T0, X=setup$X[sort(ind), ,],
-         zeta.lambda = opts$zeta.lambda, zeta.omega = opts$zeta.omega,
-         lambda.intercept = opts$lambda.intercept, omega.intercept = opts$omega.intercept)}
+      else {do.call(estimator, c(list(Y=setup$Y[sort(ind),], N0=sum(ind <= setup$N0), T0=setup$T0, X=setup$X[sort(ind), ,]), opts))}
     }
     return (sd(replicate(replications, theta(sample(1:nrow(setup$Y), replace=TRUE))), na.rm=TRUE))
   } else if (method == "placebo") {
     N1 = nrow(setup$Y) - setup$N0
     theta = function(ind) {
-      synthdid_estimate(Y=setup$Y[ind,], N0=length(ind)-N1,  T0=setup$T0,  X=setup$X[ind, ,],
-      zeta.lambda = opts$zeta.lambda, zeta.omega = opts$zeta.omega,
-      lambda.intercept = opts$lambda.intercept, omega.intercept = opts$omega.intercept)
+      do.call(estimator, c(list(Y=setup$Y[ind,], N0=length(ind)-N1,  T0=setup$T0,  X=setup$X[ind, ,]), opts))
     }
     return (sd(replicate(replications, theta(sample(1:setup$N0)))))
   }

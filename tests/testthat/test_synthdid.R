@@ -55,9 +55,9 @@ test_that("invariances hold with default options", {
   for (estimator in estimators) {
     for (CI.method in CI.methods) {
       estimate = estimator(setup$Y, setup$N0, setup$T0)
-      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, repetitions = 10)
+      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
       estimate.col.scaled = estimator(setup$Y + bt, setup$N0, setup$T0)
-      set.seed(seed); estimate.se.col.scaled = synthdid_se(estimate.col.scaled, method = CI.method, repetitions = 10)
+      set.seed(seed); estimate.se.col.scaled = synthdid_se(estimate.col.scaled, method = CI.method, replications = 10)
       expect_equal(c(estimate), c(estimate.col.scaled))
       expect_equal(estimate.se, estimate.se.col.scaled)
     }
@@ -69,9 +69,9 @@ test_that("invariances hold with default options", {
   for (estimator in estimators[-1]) {
     for (CI.method in CI.methods) {
       estimate = estimator(setup$Y, setup$N0, setup$T0)
-      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, repetitions = 10)
+      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
       estimate.row.scaled = estimator(setup$Y + ai, setup$N0, setup$T0)
-      set.seed(seed); estimate.se.row.scaled = synthdid_se(estimate.row.scaled, method = CI.method, repetitions = 10)
+      set.seed(seed); estimate.se.row.scaled = synthdid_se(estimate.row.scaled, method = CI.method, replications = 10)
       expect_equal(c(estimate), c(estimate.row.scaled))
       expect_equal(estimate.se, estimate.se.row.scaled)
     }
@@ -84,10 +84,10 @@ test_that("invariances hold with default options", {
   for (estimator in estimators) {
     for (CI.method in CI.methods) {
       estimate = estimator(setup$Y, setup$N0, setup$T0)
-      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, repetitions = 10)
+      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
       weights = attr(estimate, "weights")
       estimate.scaled = estimator(c.small * setup$Y, setup$N0, setup$T0)
-      set.seed(seed); estimate.se.scaled = synthdid_se(estimate.scaled, method = CI.method, repetitions = 10)
+      set.seed(seed); estimate.se.scaled = synthdid_se(estimate.scaled, method = CI.method, replications = 10)
       weights.scaled = attr(estimate.scaled, "weights")
       expect_equal(c(c.small * estimate), c(estimate.scaled))
       expect_equal(c.small * estimate.se, estimate.se.scaled)
@@ -99,10 +99,10 @@ test_that("invariances hold with default options", {
   for (estimator in estimators) {
     for (CI.method in CI.methods) {
       estimate = estimator(setup$Y, setup$N0, setup$T0)
-      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, repetitions = 10)
+      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
       weights = attr(estimate, "weights")
       estimate.scaled = estimator(c.large * setup$Y, setup$N0, setup$T0)
-      set.seed(seed); estimate.se.scaled = synthdid_se(estimate.scaled, method = CI.method, repetitions = 10)
+      set.seed(seed); estimate.se.scaled = synthdid_se(estimate.scaled, method = CI.method, replications = 10)
       weights.scaled = attr(estimate.scaled, "weights")
       expect_equal(c(c.large * estimate), c(estimate.scaled))
       expect_equal(c.large * estimate.se, estimate.se.scaled)
