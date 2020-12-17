@@ -177,19 +177,27 @@ synthdid_effect_curve = function(estimate) {
   tau.curve
 }
 
-#' An estimate of the standard error of our estimator via unit-wise jackknife.
-#' Should not be trusted when the number of treated units is small, and returns NA if there is only one treated unit.
-#' By default, does not recompute the weights omega and lambda. Instead, weights$lambda and weights$beta will be used unchanged and
-#' weights$omega will have jackknifed-out units removed then be renormalized to sum to one.
-#' Pass weights=NULL to recompute weights for each jackknife replication.
-#' Requires bootstrap
-#' @param estimate, as output by synthdid_estimate
+#' Calculate standard error for estimator
+#'
+#' Provides variance estimates based on the following three options
+#' \itemize{
+#'   \item The bootstrap, Algorithm 2 in Arkhangelsky et al.
+#'   \item The jackknife, Algorithm 3 in Arkhangelsky et al.
+#'   \item Placebo, Algorithm 4 in Arkhangelsky et al.
+#' }
+#'
+#' The jackknife is not recommended for SC, see section 5 in Arkhangelsky et al.
+#'
+#' @param object A synthdid model
 #' @param method, the CI method
 #' @param weights, like attr(estimate, 'weights')
 #' @param replications, the number of bootstrap replications
+#'
+#' @references Dmitry Arkhangelsky, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager.
+#'  "Synthetic Difference in Differences". arXiv preprint arXiv:1812.09970, 2019.
 #' @export synthdid_se
 synthdid_se = function(estimate,
-                       method = c("jackknife", "bootstrap", "placebo"),
+                       method = c("bootstrap", "jackknife", "placebo"),
                        weights = attr(estimate, 'weights'),
                        replications = 200) {
   method = match.arg(method)

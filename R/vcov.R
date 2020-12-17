@@ -2,7 +2,7 @@
 #'
 #' Provides variance estimates based on the following three options
 #' \itemize{
-#'   \item The boostrap, Algorithm 2 in Arkhangelsky et al.
+#'   \item The bootstrap, Algorithm 2 in Arkhangelsky et al.
 #'   \item The jackknife, Algorithm 3 in Arkhangelsky et al.
 #'   \item Placebo, Algorithm 4 in Arkhangelsky et al.
 #' }
@@ -11,8 +11,8 @@
 #'
 #' @param object A synthdid model
 #' @param method, the CI method
-#' @param replications, the number of bootstrap replications
 #' @param weights, like attr(estimate, 'weights')
+#' @param replications, the number of bootstrap replications
 #' @param ... Additional arguments (currently ignored).
 #'
 #' @references Dmitry Arkhangelsky, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager.

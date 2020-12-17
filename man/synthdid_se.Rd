@@ -2,34 +2,36 @@
 % Please edit documentation in R/synthdid.R
 \name{synthdid_se}
 \alias{synthdid_se}
-\title{An estimate of the standard error of our estimator via unit-wise jackknife.
-Should not be trusted when the number of treated units is small, and returns NA if there is only one treated unit.
-By default, does not recompute the weights omega and lambda. Instead, weights$lambda and weights$beta will be used unchanged and
-weights$omega will have jackknifed-out units removed then be renormalized to sum to one.
-Pass weights=NULL to recompute weights for each jackknife replication.
-Requires bootstrap}
+\title{Calculate standard error for estimator}
 \usage{
 synthdid_se(
   estimate,
-  method = c("jackknife", "bootstrap", "placebo"),
+  method = c("bootstrap", "jackknife", "placebo"),
   weights = attr(estimate, "weights"),
   replications = 200
 )
 }
 \arguments{
-\item{estimate, }{as output by synthdid_estimate}
-
 \item{method, }{the CI method}
 
 \item{weights, }{like attr(estimate, 'weights')}
 
 \item{replications, }{the number of bootstrap replications}
+
+\item{object}{A synthdid model}
 }
 \description{
-An estimate of the standard error of our estimator via unit-wise jackknife.
-Should not be trusted when the number of treated units is small, and returns NA if there is only one treated unit.
-By default, does not recompute the weights omega and lambda. Instead, weights$lambda and weights$beta will be used unchanged and
-weights$omega will have jackknifed-out units removed then be renormalized to sum to one.
-Pass weights=NULL to recompute weights for each jackknife replication.
-Requires bootstrap
+Provides variance estimates based on the following three options
+\itemize{
+  \item The bootstrap, Algorithm 2 in Arkhangelsky et al.
+  \item The jackknife, Algorithm 3 in Arkhangelsky et al.
+  \item Placebo, Algorithm 4 in Arkhangelsky et al.
+}
+}
+\details{
+The jackknife is not recommended for SC, see section 5 in Arkhangelsky et al.
+}
+\references{
+Dmitry Arkhangelsky, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager.
+ "Synthetic Difference in Differences". arXiv preprint arXiv:1812.09970, 2019.
 }
