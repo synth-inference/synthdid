@@ -12,13 +12,13 @@ synthdid_se(
 )
 }
 \arguments{
+\item{estimate}{A synthdid model}
+
 \item{method, }{the CI method}
 
 \item{weights, }{like attr(estimate, 'weights')}
 
 \item{replications, }{the number of bootstrap replications}
-
-\item{object}{A synthdid model}
 }
 \description{
 Provides variance estimates based on the following three options

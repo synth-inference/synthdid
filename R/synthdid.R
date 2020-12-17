@@ -188,7 +188,7 @@ synthdid_effect_curve = function(estimate) {
 #'
 #' The jackknife is not recommended for SC, see section 5 in Arkhangelsky et al.
 #'
-#' @param object A synthdid model
+#' @param estimate A synthdid model
 #' @param method, the CI method
 #' @param weights, like attr(estimate, 'weights')
 #' @param replications, the number of bootstrap replications
