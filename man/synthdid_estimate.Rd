@@ -11,13 +11,13 @@ synthdid_estimate(
   T0,
   X = array(dim = c(dim(Y), 0)),
   zeta.lambda = 0,
-  zeta.omega = sd(apply(Y, 1, diff)),
+  zeta.omega = sd(apply(Y[1:N0, 1:T0], 1, diff)),
   lambda.intercept = TRUE,
   omega.intercept = TRUE,
   weights = list(lambda = NULL, omega = NULL, vals = NULL),
   update.lambda = is.null(weights$lambda),
   update.omega = is.null(weights$omega),
-  min.decrease = 0.001 * sd(apply(Y, 1, diff)),
+  min.decrease = 0.001 * sd(apply(Y[1:N0, 1:T0], 1, diff)),
   max.iter = 10000
 )
 }
