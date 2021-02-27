@@ -2,7 +2,7 @@
 ^\.Rproj\.user$
 ^experiments
 ^vignettes
-^\.travis\.yml$
+^azure-pipelines\.yml$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
