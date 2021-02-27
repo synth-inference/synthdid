@@ -40,7 +40,7 @@ steps:
   - script: |
       set -e
       # Install a previous version of `pkgdown` and its dependencies, which appears less likely to break.
-      sudo Rscript -e "install.packages(c('fs', 'highlight', 'httr', 'memoise', 'openssl', 'purrr', 'rmarkdown', 'whisker', 'xml2', 'yaml'))"
+      # sudo Rscript -e "install.packages(c('fs', 'highlight', 'httr', 'memoise', 'openssl', 'purrr', 'rmarkdown', 'whisker', 'xml2', 'yaml'))"
       sudo Rscript -e "install.packages('https://cran.r-project.org/src/contrib/Archive/pkgdown/pkgdown_1.5.1.tar.gz', repos = NULL, type = 'source')"
       # Install synthdid, and optionally packages used for vignettes.
       R CMD INSTALL .
@@ -58,6 +58,6 @@ steps:
       git commit --allow-empty -m "Update gh-pages ***NO_CI***"
       git push --force https://$(GITHUB_PAT)@github.com/synth-inference/synthdid.git HEAD:gh-pages
     displayName: 'Publish GitHub Pages'
-    condition: |
-      and(not(eq(variables['Build.Reason'], 'PullRequest')),
-      eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    # condition: |
+      # and(not(eq(variables['Build.Reason'], 'PullRequest')),
+      # eq(variables['Build.SourceBranch'], 'refs/heads/master'))
