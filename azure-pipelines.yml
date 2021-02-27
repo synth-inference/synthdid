@@ -28,14 +28,11 @@ steps:
       curl -OLs https://eddelbuettel.github.io/r-ci/run.sh && chmod 0755 run.sh
       ./run.sh bootstrap
       ./run.sh install_deps
-    workingDirectory: r-package/policytree
     displayName: Setup R
   - script: ./run.sh run_tests
-    workingDirectory: r-package/policytree
     displayName: Test R package
   - script: ./run.sh dump_logs_by_extension "fail"
     condition: failed()
-    workingDirectory: r-package/policytree
     displayName: Print test failures
   # Final deploy step
   # Build the online docs and deploy to gh-pages - only done on master branch.
@@ -63,7 +60,6 @@ steps:
       git update-ref -d refs/heads/gh-pages
       git commit --allow-empty -m "Update gh-pages ***NO_CI***"
       git push --force https://$(GITHUB_PAT)@github.com/grf-labs/policytree.git HEAD:gh-pages
-    workingDirectory: r-package/policytree
     displayName: 'Publish GitHub Pages'
     condition: |
       and(not(eq(variables['Build.Reason'], 'PullRequest')),
