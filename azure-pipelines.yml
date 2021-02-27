@@ -1,4 +1,4 @@
-# The following pipeline tests policytree in the following way:
+# The following pipeline tests synthdid in the following way:
 # 1. With the latest R release (4.0) on Ubuntu.
 # The R setup here is based on https://eddelbuettel.github.io/r-ci/
 name: "R (release) - Ubuntu-latest"
