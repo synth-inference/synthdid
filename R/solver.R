@@ -30,7 +30,7 @@ fw.step = function(A, x, b, eta, alpha = NULL) {
 # a Frank-Wolfe solver for synthetic control weights using exact line search
 sc.weight.fw = function(Y, zeta, intercept = TRUE, lambda = NULL, min.decrease = 1e-3, max.iter = 1000) {
   T0 = ncol(Y) - 1
-  N0 = nrow(Y) - 1
+  N0 = nrow(Y)
   if (is.null(lambda)) { lambda = rep(1 / T0, T0) }
   if (intercept) {
     Y = apply(Y, 2, function(col) { col - mean(col) })
@@ -38,8 +38,8 @@ sc.weight.fw = function(Y, zeta, intercept = TRUE, lambda = NULL, min.decrease =
 
   t = 0
   vals = rep(NA, max.iter)
-  A = Y[1:N0, 1:T0]
-  b = Y[1:N0, T0 + 1]
+  A = Y[, 1:T0]
+  b = Y[, T0 + 1]
   eta = N0 * Re(zeta^2)
   while (t < max.iter && (t < 2 || vals[t - 1] - vals[t] > min.decrease^2)) {
     t = t + 1

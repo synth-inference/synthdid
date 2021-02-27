@@ -23,11 +23,11 @@
 #' @export synthdid_estimate
 #' @importFrom stats sd
 synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
-                              zeta.lambda = 0, zeta.omega = sd(apply(Y, 1, diff)),
+                              zeta.lambda = 0, zeta.omega = sd(apply(Y[1:N0,1:T0], 1, diff)),
                               lambda.intercept = TRUE, omega.intercept = TRUE,
                               weights = list(lambda = NULL, omega = NULL, vals = NULL),
                               update.lambda = is.null(weights$lambda), update.omega = is.null(weights$omega),
-                              min.decrease = 1e-3 * sd(apply(Y, 1, diff)), max.iter = 1e4) {
+                              min.decrease = 1e-3 * sd(apply(Y[1:N0,1:T0], 1, diff)), max.iter = 1e4) {
   stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2, 3), dim(X)[1:2] == dim(Y), is.list(weights),
     is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0,
     !is.null(weights$lambda) || update.lambda, !is.null(weights$omega) || update.omega)
@@ -41,14 +41,14 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
     weights$omega.vals = NULL
     if (update.lambda) {
       Yc = collapsed.form(Y, N0, T0)
-      lambda.opt = sc.weight.fw(Yc, zeta = zeta.lambda, intercept = lambda.intercept, min.decrease = min.decrease, max.iter = max.iter)
+      lambda.opt = sc.weight.fw(Yc[1:N0, ], zeta = zeta.lambda, intercept = lambda.intercept, min.decrease = min.decrease, max.iter = max.iter)
       weights$lambda = lambda.opt$lambda
       weights$lambda.vals = lambda.opt$vals
       weights$vals = lambda.opt$vals
     }
     if (update.omega) {
       Yc = collapsed.form(Y, N0, T0)
-      omega.opt = sc.weight.fw(t(Yc), zeta = zeta.omega, intercept = omega.intercept, min.decrease = min.decrease, max.iter = max.iter)
+      omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, min.decrease = min.decrease, max.iter = max.iter)
       weights$omega = omega.opt$lambda
       weights$omega.vals = omega.opt$vals
       if (is.null(weights$vals)) { weights$vals = omega.opt$vals }
