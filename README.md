@@ -1,4 +1,4 @@
-[![Build Status](https://dev.azure.com/grf-labs/grf/_apis/build/status/synth-inference.synthdid?branchName=master)](https://dev.azure.com/grf-labs/grf/_build/latest?definitionId=3&branchName=master)
+[![Build Status](https://dev.azure.com/grf-labs/synth-inference/_apis/build/status/synth-inference.synthdid?branchName=master)](https://dev.azure.com/grf-labs/synth-inference/_build/latest?definitionId=4&branchName=master)
 
 # synthdid: Synthetic Difference in Differences Estimation
 
