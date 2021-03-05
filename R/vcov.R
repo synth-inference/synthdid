@@ -8,6 +8,7 @@
 #' }
 #'
 #' The jackknife is not recommended for SC, see section 5 in Arkhangelsky et al.
+#' "placebo" is the only option that works for only one treated unit.
 #'
 #' @param object A synthdid model
 #' @param method, the CI method. The default is bootstrap (warning: this may be slow on large

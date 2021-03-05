@@ -35,6 +35,7 @@ Provides variance estimates based on the following three options
 }
 \details{
 The jackknife is not recommended for SC, see section 5 in Arkhangelsky et al.
+"placebo" is the only option that works for only one treated unit.
 }
 \references{
 Dmitry Arkhangelsky, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager.
