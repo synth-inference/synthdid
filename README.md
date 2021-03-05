@@ -22,7 +22,7 @@ Example usage:
 library(synthdid)
 
 setup = synthdid:::random.low.rank()
-tau.hat = synthdid_estimate(Y,n_0,T_0)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
 se = synthdid_se(tau.hat)
 
 print(paste("true tau:", tau))
