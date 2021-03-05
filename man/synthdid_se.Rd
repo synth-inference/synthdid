@@ -14,7 +14,9 @@ synthdid_se(
 \arguments{
 \item{estimate}{A synthdid model}
 
-\item{method, }{the CI method}
+\item{method, }{the CI method. The default is bootstrap (warning: this may be slow on large
+data sets, the jackknife option is the fastest, with the caveat that it is not recommended
+for SC).}
 
 \item{weights, }{like attr(estimate, 'weights')}
 

@@ -10,7 +10,9 @@
 #' The jackknife is not recommended for SC, see section 5 in Arkhangelsky et al.
 #'
 #' @param object A synthdid model
-#' @param method, the CI method
+#' @param method, the CI method. The default is bootstrap (warning: this may be slow on large
+#'  data sets, the jackknife option is the fastest, with the caveat that it is not recommended
+#'  for SC).
 #' @param weights, like attr(estimate, 'weights')
 #' @param replications, the number of bootstrap replications
 #' @param ... Additional arguments (currently ignored).
