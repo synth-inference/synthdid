@@ -48,9 +48,9 @@ random.low.rank = function() {
   var <- outer(1:T, 1:T, FUN=function(x, y) rho^(abs(x-y)))
 
   W <- (1:n > n_0) %*% t(1:T > T_0)
-  U <- matrix(rpois(rank * n, sqrt(1:n) / sqrt(n)), n, rank)
+  U <- matrix(rpois(rank * n, sqrt(sample(1:n)) / sqrt(n)), n, rank)
   V <- matrix(rpois(rank * T, sqrt(1:T) / sqrt(T)), T, rank)
-  alpha <- outer(10*(1:n)/n, rep(1,T))
+  alpha <- outer(10*sample(1:n)/n, rep(1,T))
   beta <-  outer(rep(1,n), 10*(1:T)/T)
   mu <- U %*% t(V) + alpha + beta
   error <- mvtnorm::rmvnorm(n, sigma = var, method = "chol")
