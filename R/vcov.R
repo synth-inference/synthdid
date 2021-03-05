@@ -31,7 +31,6 @@ vcov.synthdid_estimate = function(
     method = match.arg(method)
     setup = attr(object, 'setup')
     estimator = attr(object, 'estimator')
-    if (setup$N0 == nrow(setup$Y) - 1 && method != "placebo") { return(NA) }
 
     out = synthdid_se(object, method, weights, replications)
 
