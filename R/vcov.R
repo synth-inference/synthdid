@@ -35,5 +35,5 @@ vcov.synthdid_estimate = function(
 
     out = synthdid_se(object, method, weights, replications)
 
-    matrix(out^2, dimnames = list(estimator, estimator))
+    matrix(out^2)
 }
