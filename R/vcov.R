@@ -28,11 +28,6 @@ vcov.synthdid_estimate = function(
   method = c("bootstrap", "jackknife", "placebo"),
   weights = attr(object, 'weights'),
   replications = 200, ...) {
-    method = match.arg(method)
-    setup = attr(object, 'setup')
-    estimator = attr(object, 'estimator')
 
-    out = synthdid_se(object, method, weights, replications)
-
-    matrix(out^2)
+    matrix(synthdid_se(object, method, weights, replications)^2)
 }
