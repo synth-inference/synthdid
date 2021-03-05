@@ -1,6 +1,6 @@
 # This script checks the coverage properties of all
 # estimators for the random.low.rank DGP.
-# R: 3.6
+# R: 3.6.0
 set.seed(42)
 library(synthdid)
 
@@ -13,7 +13,7 @@ for (estimator in estimators) {
       setup = synthdid:::random.low.rank()
       estimate = do.call(estimator, setup[-2])
       se = synthdid_se(estimate, method = CI.method)
-      0 > estimate - 1.96*se && 0 < estimate + 1.96*se
+      1 > estimate - 1.96*se && 1 < estimate + 1.96*se
     })
     res = c(res, c(paste0(estimator, CI.method, ": ", mean(cov))))
   }
