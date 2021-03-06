@@ -21,3 +21,13 @@ for (estimator in estimators) {
 matrix(res[-1], length(res[-1]), 1)
 
 # Output at https://github.com/synth-inference/synthdid/pull/42 is:
+# [,1]
+# [1,] "sc_estimatejackknife: 1"
+# [2,] "sc_estimatebootstrap: 0.954"
+# [3,] "sc_estimateplacebo: 0.939"
+# [4,] "did_estimatejackknife: 0.933"
+# [5,] "did_estimatebootstrap: 0.92"
+# [6,] "did_estimateplacebo: 0.951"
+# [7,] "synthdid_estimatejackknife: 0.932"
+# [8,] "synthdid_estimatebootstrap: 0.938"
+# [9,] "synthdid_estimateplacebo: 0.937"
