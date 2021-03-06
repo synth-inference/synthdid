@@ -41,7 +41,7 @@ test_that("default synthdid behavior has not changed", {
   # saveRDS(weights, "weights.expected.Rds")
 })
 
-test_that("invariances hold with default options", {
+test_that("column/row/scaling invariances hold with default options", {
   # Test that three types of invariances hold, for details see
   # https://github.com/synth-inference/synthdid/issues/38
   estimators = list(sc_estimate, did_estimate, synthdid_estimate)
