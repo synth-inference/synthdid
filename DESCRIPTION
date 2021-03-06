@@ -23,3 +23,4 @@ Suggests:
     testthat,
     ggplot2
 URL: https://github.com/synth-inference/synthdid
+BugReports: https://github.com/synth-inference/synthdid/issues
