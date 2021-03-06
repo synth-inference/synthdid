@@ -1,6 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^experiments
+^tests/benchmarks
 ^vignettes
 ^azure-pipelines\.yml$
 ^_pkgdown\.yml$

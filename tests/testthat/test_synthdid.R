@@ -45,30 +45,36 @@ test_that("invariances hold with default options", {
   # Test that three types of invariances hold, for details see
   # https://github.com/synth-inference/synthdid/issues/38
   estimators = list(sc_estimate, did_estimate, synthdid_estimate)
+  CI.methods = c("jackknife", "bootstrap", "placebo")
   setup = random.low.rank()
+  seed = sample(1:1e6, 1)
 
   # 1. Invariance to column fixed effect (all)
   # Re-mapping Yit <- Yit + bt for arbitrary bt doesn't change anything
   bt = 2 * matrix(1:ncol(setup$Y), nrow(setup$Y), ncol(setup$Y), byrow = TRUE)
   for (estimator in estimators) {
-    estimate = estimator(setup$Y, setup$N0, setup$T0)
-    estimate.se = synthdid_se(estimate)
-    estimate.col.scaled = estimator(setup$Y + bt, setup$N0, setup$T0)
-    estimate.se.col.scaled = synthdid_se(estimate.col.scaled)
-    expect_equal(c(estimate), c(estimate.col.scaled))
-    expect_equal(estimate.se, estimate.se.col.scaled)
+    for (CI.method in CI.methods) {
+      estimate = estimator(setup$Y, setup$N0, setup$T0)
+      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
+      estimate.col.scaled = estimator(setup$Y + bt, setup$N0, setup$T0)
+      set.seed(seed); estimate.se.col.scaled = synthdid_se(estimate.col.scaled, method = CI.method, replications = 10)
+      expect_equal(c(estimate), c(estimate.col.scaled))
+      expect_equal(estimate.se, estimate.se.col.scaled)
+    }
   }
 
   # 2. Invariance to row fixed effect (exception: "SC")
   # Re-mapping Yit <- Yit + ai for arbitrary ai doesn't change anything
   ai = 2.5 * matrix(1:nrow(setup$Y), nrow(setup$Y), ncol(setup$Y), byrow = FALSE)
   for (estimator in estimators[-1]) {
-    estimate = estimator(setup$Y, setup$N0, setup$T0)
-    estimate.se = synthdid_se(estimate)
-    estimate.row.scaled = estimator(setup$Y + ai, setup$N0, setup$T0)
-    estimate.se.row.scaled = synthdid_se(estimate.row.scaled)
-    expect_equal(c(estimate), c(estimate.row.scaled))
-    expect_equal(estimate.se, estimate.se.row.scaled)
+    for (CI.method in CI.methods) {
+      estimate = estimator(setup$Y, setup$N0, setup$T0)
+      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
+      estimate.row.scaled = estimator(setup$Y + ai, setup$N0, setup$T0)
+      set.seed(seed); estimate.se.row.scaled = synthdid_se(estimate.row.scaled, method = CI.method, replications = 10)
+      expect_equal(c(estimate), c(estimate.row.scaled))
+      expect_equal(estimate.se, estimate.se.row.scaled)
+    }
   }
 
   # 3. Invariance to scaling (all)
@@ -76,27 +82,31 @@ test_that("invariances hold with default options", {
   # 3.1: c is very small
   c.small = 10^-6
   for (estimator in estimators) {
-    estimate = estimator(setup$Y, setup$N0, setup$T0)
-    estimate.se = synthdid_se(estimate)
-    weights = attr(estimate, "weights")
-    estimate.scaled = estimator(c.small * setup$Y, setup$N0, setup$T0)
-    estimate.se.scaled = synthdid_se(estimate.scaled)
-    weights.scaled = attr(estimate.scaled, "weights")
-    expect_equal(c(c.small * estimate), c(estimate.scaled))
-    expect_equal(c.small * estimate.se, estimate.se.scaled)
-    expect_equal(weights[c("lambda", "omega")], weights.scaled[c("lambda", "omega")])
+    for (CI.method in CI.methods) {
+      estimate = estimator(setup$Y, setup$N0, setup$T0)
+      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
+      weights = attr(estimate, "weights")
+      estimate.scaled = estimator(c.small * setup$Y, setup$N0, setup$T0)
+      set.seed(seed); estimate.se.scaled = synthdid_se(estimate.scaled, method = CI.method, replications = 10)
+      weights.scaled = attr(estimate.scaled, "weights")
+      expect_equal(c(c.small * estimate), c(estimate.scaled))
+      expect_equal(c.small * estimate.se, estimate.se.scaled)
+      expect_equal(weights[c("lambda", "omega")], weights.scaled[c("lambda", "omega")])
+    }
   }
   # 3.2: c is very large
   c.large = 10^6
   for (estimator in estimators) {
-    estimate = estimator(setup$Y, setup$N0, setup$T0)
-    estimate.se = synthdid_se(estimate)
-    weights = attr(estimate, "weights")
-    estimate.scaled = estimator(c.large * setup$Y, setup$N0, setup$T0)
-    estimate.se.scaled = synthdid_se(estimate.scaled)
-    weights.scaled = attr(estimate.scaled, "weights")
-    expect_equal(c(c.large * estimate), c(estimate.scaled))
-    expect_equal(c.large * estimate.se, estimate.se.scaled)
-    expect_equal(weights[c("lambda", "omega")], weights.scaled[c("lambda", "omega")])
+    for (CI.method in CI.methods) {
+      estimate = estimator(setup$Y, setup$N0, setup$T0)
+      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
+      weights = attr(estimate, "weights")
+      estimate.scaled = estimator(c.large * setup$Y, setup$N0, setup$T0)
+      set.seed(seed); estimate.se.scaled = synthdid_se(estimate.scaled, method = CI.method, replications = 10)
+      weights.scaled = attr(estimate.scaled, "weights")
+      expect_equal(c(c.large * estimate), c(estimate.scaled))
+      expect_equal(c.large * estimate.se, estimate.se.scaled)
+      expect_equal(weights[c("lambda", "omega")], weights.scaled[c("lambda", "omega")])
+    }
   }
 })
