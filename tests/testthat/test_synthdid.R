@@ -112,7 +112,7 @@ test_that("column/row/scaling invariances hold with default options", {
 })
 
 test_that("treated/control scaling invariances hold with default options", {
-  # Test that three types of invariances hold, for details see
+  # Test that four types of invariances hold, for details see
   # https://github.com/synth-inference/synthdid/issues/43
   estimators = list(sc_estimate, did_estimate, synthdid_estimate)
   seed = sample(1:1e6, 1)
