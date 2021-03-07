@@ -133,11 +133,6 @@ test_that("treated/control scaling invariances hold with default options", {
     estimate = estimator(Y.orig, N0, T0)
     estimate.shift = estimator(Y1, N0, T0)
     expect_equal(c(estimate.shift), c(estimate) + c, tol = 1e-2)
-    for (CI.method in CI.methods) {
-      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
-      set.seed(seed); estimate.se.shift = synthdid_se(estimate.shift, method = CI.method, replications = 10)
-      expect_equal(estimate.se, estimate.se.shift, tol = 1e-2)
-    }
   }
 
   # 2.
@@ -148,11 +143,6 @@ test_that("treated/control scaling invariances hold with default options", {
     estimate = estimator(Y.orig, N0, T0)
     estimate.shift = estimator(Y2, N0, T0)
     expect_equal(c(estimate.shift), c(estimate) - c, tol = 1e-10)
-    for (CI.method in CI.methods) {
-      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
-      set.seed(seed); estimate.se.shift = synthdid_se(estimate.shift, method = CI.method, replications = 10)
-      expect_equal(estimate.se, estimate.se.shift, tol = 1e-10)
-    }
   }
 
   # 3.
@@ -163,11 +153,6 @@ test_that("treated/control scaling invariances hold with default options", {
     estimate = estimator(Y.orig, N0, T0)
     estimate.shift = estimator(Y3, N0, T0)
     expect_equal(c(estimate.shift), c(estimate) + c, tol = 1e-10)
-    for (CI.method in CI.methods) {
-      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
-      set.seed(seed); estimate.se.shift = synthdid_se(estimate.shift, method = CI.method, replications = 10)
-      expect_equal(estimate.se, estimate.se.shift, tol = 1e-10)
-    }
   }
 
   # 4.
@@ -178,10 +163,5 @@ test_that("treated/control scaling invariances hold with default options", {
     estimate = estimator(Y.orig, N0, T0)
     estimate.shift = estimator(Y4, N0, T0)
     expect_equal(c(estimate.shift), c(estimate) - c, tol = 1e-2)
-    for (CI.method in CI.methods) {
-      set.seed(seed); estimate.se = synthdid_se(estimate, method = CI.method, replications = 10)
-      set.seed(seed); estimate.se.shift = synthdid_se(estimate.shift, method = CI.method, replications = 10)
-      expect_equal(estimate.se, estimate.se.shift, tol = 1e-1)
-    }
   }
 })
