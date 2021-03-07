@@ -123,45 +123,46 @@ test_that("treated/control scaling invariances hold with default options", {
   T = ncol(setup$Y)
   exposed = 1:nrow(setup$Y) > N0
   Y.orig = setup$Y
-  c = 0.25
 
-  # 1.
-  # Re-mapping Yit <- Yit + c for exposed t > T0 increases tau by c
-  Y1 <- setup$Y
-  Y1[exposed, (T0+1):T] <- c + Y1[exposed, (T0+1):T]
-  for (estimator in estimators) {
-    estimate = estimator(Y.orig, N0, T0)
-    estimate.shift = estimator(Y1, N0, T0)
-    expect_equal(c(estimate.shift), c(estimate) + c, tol = 1e-2)
-  }
+  for (c in c(1e-6, 0.25, 1e6)) {
+    # 1.
+    # Re-mapping Yit <- Yit + c for exposed t > T0 increases tau by c
+    Y1 <- setup$Y
+    Y1[exposed, (T0+1):T] <- c + Y1[exposed, (T0+1):T]
+    for (estimator in estimators) {
+      estimate = estimator(Y.orig, N0, T0)
+      estimate.shift = estimator(Y1, N0, T0)
+      expect_equal(c(estimate.shift), c(estimate) + c, tol = 1e-2)
+    }
 
-  # 2.
-  # Re-mapping Yit <- Yit + c for exposed t < T0 decreases tau by c (exception: "SC")
-  Y2 <- setup$Y
-  Y2[exposed, 1:T0] <- c + Y2[exposed, 1:T0]
-  for (estimator in estimators[-1]) {
-    estimate = estimator(Y.orig, N0, T0)
-    estimate.shift = estimator(Y2, N0, T0)
-    expect_equal(c(estimate.shift), c(estimate) - c, tol = 1e-10)
-  }
+    # 2.
+    # Re-mapping Yit <- Yit + c for exposed t < T0 decreases tau by c (exception: "SC")
+    Y2 <- setup$Y
+    Y2[exposed, 1:T0] <- c + Y2[exposed, 1:T0]
+    for (estimator in estimators[-1]) {
+      estimate = estimator(Y.orig, N0, T0)
+      estimate.shift = estimator(Y2, N0, T0)
+      expect_equal(c(estimate.shift), c(estimate) - c, tol = 1e-10)
+    }
 
-  # 3.
-  # Re-mapping Yit <- Yit + c for unexposed t < T0 increases tau by c (exception: "SC")
-  Y3 <- setup$Y
-  Y3[!exposed, 1:T0] <- c + Y3[!exposed, 1:T0]
-  for (estimator in estimators[-1]) {
-    estimate = estimator(Y.orig, N0, T0)
-    estimate.shift = estimator(Y3, N0, T0)
-    expect_equal(c(estimate.shift), c(estimate) + c, tol = 1e-10)
-  }
+    # 3.
+    # Re-mapping Yit <- Yit + c for unexposed t < T0 increases tau by c (exception: "SC")
+    Y3 <- setup$Y
+    Y3[!exposed, 1:T0] <- c + Y3[!exposed, 1:T0]
+    for (estimator in estimators[-1]) {
+      estimate = estimator(Y.orig, N0, T0)
+      estimate.shift = estimator(Y3, N0, T0)
+      expect_equal(c(estimate.shift), c(estimate) + c, tol = 1e-10)
+    }
 
-  # 4.
-  # Re-mapping Yit <- Yit + c for unexposed t > T0 decreases tau by c
-  Y4 <- setup$Y
-  Y4[!exposed, (T0+1):T] <- c + Y4[!exposed, (T0+1):T]
-  for (estimator in estimators) {
-    estimate = estimator(Y.orig, N0, T0)
-    estimate.shift = estimator(Y4, N0, T0)
-    expect_equal(c(estimate.shift), c(estimate) - c, tol = 1e-2)
+    # 4.
+    # Re-mapping Yit <- Yit + c for unexposed t > T0 decreases tau by c
+    Y4 <- setup$Y
+    Y4[!exposed, (T0+1):T] <- c + Y4[!exposed, (T0+1):T]
+    for (estimator in estimators) {
+      estimate = estimator(Y.orig, N0, T0)
+      estimate.shift = estimator(Y4, N0, T0)
+      expect_equal(c(estimate.shift), c(estimate) - c, tol = 1e-2)
+    }
   }
 })
