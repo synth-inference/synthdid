@@ -115,7 +115,6 @@ test_that("treated/control scaling invariances hold with default options", {
   # Test that three types of invariances hold, for details see
   # https://github.com/synth-inference/synthdid/issues/43
   estimators = list(sc_estimate, did_estimate, synthdid_estimate)
-  CI.methods = c("jackknife", "bootstrap", "placebo")
   seed = sample(1:1e6, 1)
   setup = random.low.rank()
   T0 = setup$T0
