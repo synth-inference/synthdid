@@ -4,13 +4,13 @@
 #' If a list of estimates is passed, plots all of them. By default, does this in different facets.
 #' To overlay estimates in the same facet, indicate a facet for each estimator in the argument 'facet'.
 #'
-#' For SC estimates (lambda=[0,0,...]), plots the trajectories and SC estimate of the effect, but no diagram.
+#' For SC estimates, i.e., if lambda is a vector of zeros, plots the trajectories and SC estimate of the effect, but no diagram.
 #'
 #' Requires ggplot2
 #' Due to differences between ggplot and ggplotly, this will warn about an unknown aesthetic frame.
 #'
 #' @param estimates, a list of estimates output by synthdid_estimate. Or a single estimate.
-#'          If estimates have attribute 'intercept' set (scalar in [0,1]), then plot after subtracting
+#'          If estimates have attribute 'intercept' set (scalar in \[0,1\]), then plot after subtracting
 #'          that fraction of the SDID adjustment for the difference between pre-treatment treated and sc curves.
 #'          With intercept of almost one, this makes it easier to assess parallel-ness by making trajectories closer
 #'          With intercept of one, this overlays curves, and plotting a diagram is suppressed as in the case of a SC estimate.
