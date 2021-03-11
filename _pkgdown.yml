@@ -13,4 +13,9 @@ reference:
   - title: Synthetic Difference in Differences Estimation
     contents:
       - synthdid_estimate
-      - synthdid_se
+      - sc_estimate
+      - did_estimate
+      - vcov.synthdid_estimate
+      - summary.synthdid_estimate
+      - plot.synthdid_estimate
+      - print.synthdid_estimate

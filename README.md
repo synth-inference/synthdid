@@ -1,6 +1,6 @@
-[![Build Status](https://dev.azure.com/grf-labs/synth-inference/_apis/build/status/synth-inference.synthdid?branchName=master)](https://dev.azure.com/grf-labs/synth-inference/_build/latest?definitionId=4&branchName=master)
-
 # synthdid: Synthetic Difference in Differences Estimation
+
+[![Build Status](https://dev.azure.com/grf-labs/synth-inference/_apis/build/status/synth-inference.synthdid?branchName=master)](https://dev.azure.com/grf-labs/synth-inference/_build/latest?definitionId=4&branchName=master)
 
 This package implements the synthetic difference in difference estimator (SDID) for the
 average treatment effect in panel data, as proposed in Arkhangelsky et al (2019).
@@ -23,9 +23,9 @@ library(synthdid)
 
 setup = synthdid:::random.low.rank()
 tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
-se = synthdid_se(tau.hat)
+se = sqrt(vcov(tau.hat))
 
-print(paste("true tau:", tau))
+print(paste("true tau:", 1))
 print(paste0("point estimate: ", round(tau.hat, 2)))
 print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * se, 2), ", ", round(tau.hat + 1.96 * se, 2), ")"))
 plot(tau.hat)
