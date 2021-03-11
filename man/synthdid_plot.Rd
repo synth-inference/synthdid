@@ -6,7 +6,7 @@
 In this overlay, the treatment effect is indicated by an arrow.
 The weights lambda defining our synthetic pre-treatment time period are plotted below.
 If a list of estimates is passed, plots all of them. By default, does this in different facets.
-To overlay estimates in the same facet, indicate a facet for each estimator in the argument `facet'.}
+To overlay estimates in the same facet, indicate a facet for each estimator in the argument 'facet'.}
 \usage{
 synthdid_plot(
   estimates,

@@ -2,7 +2,7 @@
 #' In this overlay, the treatment effect is indicated by an arrow.
 #' The weights lambda defining our synthetic pre-treatment time period are plotted below.
 #' If a list of estimates is passed, plots all of them. By default, does this in different facets.
-#' To overlay estimates in the same facet, indicate a facet for each estimator in the argument `facet'.
+#' To overlay estimates in the same facet, indicate a facet for each estimator in the argument 'facet'.
 #'
 #' For SC estimates (lambda=[0,0,...]), plots the trajectories and SC estimate of the effect, but no diagram.
 #'
@@ -237,7 +237,7 @@ synthdid_placebo_plot = function(estimate, overlay = FALSE, treated.fraction = N
 #' Plots unit by unit difference-in-differences
 #' Requires ggplot2
 #' @param estimates as output by synthdid_estimate. Can be a single one or a list of them.
-#' @param show.ci If TRUE, plots horizontal lines for 95\% CI as well as the point estimate. Defaults to FALSE.
+#' @param show.ci If TRUE, plots horizontal lines for 95% CI as well as the point estimate. Defaults to FALSE.
 #' @param negligible.threshold Unit weight threshold below which units are plotted as small, transparent xs instead of circles. Defaults to .001.
 #' @param negligible.alpha Determines transparency of those xs.
 #' @export synthdid_units_plot
