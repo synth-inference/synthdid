@@ -46,9 +46,9 @@ in penalized MSE smaller than min.decrease^2.}
 }
 \value{
 An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
-        Weights contains the estimated weights lambda and omega and corresponding intercepts.
-        If covariates X are passedas well as regression coefficients beta if X is passed
-        Setup is a list describing the problem passed in: Y, N0, T0, X.
+Weights contains the estimated weights lambda and omega and corresponding intercepts.
+If covariates X are passedas well as regression coefficients beta if X is passed
+Setup is a list describing the problem passed in: Y, N0, T0, X.
 }
 \description{
 synthdid_estimate for diff-in-diff estimates.
