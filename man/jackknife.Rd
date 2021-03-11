@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{jackknife}
 \alias{jackknife}
-\title{Jackknife standard error of function `theta` at samples `x`.}
+\title{Jackknife standard error of function \code{theta} at samples \code{x}.}
 \usage{
 jackknife(x, theta)
 }
@@ -12,6 +12,6 @@ jackknife(x, theta)
 \item{theta}{a function which returns a scalar estimate}
 }
 \description{
-Jackknife standard error of function `theta` at samples `x`.
+Jackknife standard error of function \code{theta} at samples \code{x}.
 }
 \keyword{internal}

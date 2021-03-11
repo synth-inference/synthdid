@@ -16,11 +16,10 @@
 #'          With intercept of one, this overlays curves, and plotting a diagram is suppressed as in the case of a SC estimate.
 #' @param treated.name, the name of the treated curve that appears in the legend. Defaults to 'treated'
 #' @param control.name, the name of the control curve that appears in the legend. Defaults to 'synthetic control'
-#' @param force.sc, TOADD
 #' @param facet, a list of the same length as estimates indicating the facet in which to plot each estimate.
 #'        The values of the elements of the list are used to label the facets.
 #'        If NULL, plot each estimate in a different facet. Defaults to NULL.
-#' @param facet.vertical, TOADD
+#' @param facet.vertical, TRUE if facets should be stacked vertically. Defaults to FALSE (horizonal).
 #' @param lambda.comparable, TRUE if the weights lambda should be plotted in such a way that the ribbons
 #'        have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots.
 #' 	  Defaults to FALSE if facet is not passed, TRUE if passed.
@@ -31,20 +30,23 @@
 #' @param effect.curvature, the curvature of the arrows indicating the treatment effect. Defaults to zero.
 #'        Nonzero values help avoid overplotting when plotting multiple estimates in one facet.
 #' @param line.width the line width.
-#' @param guide.linetype (undocumented for now)
-#' @param point.size (undocumented for now)
+#' @param guide.linetype determines the (ggplot) linetype of the vertical segments of the parallelogram
+#' @param point.size determines the size of the points of the parallelogram
 #' @param trajectory.alpha determines transparency of trajectories
 #' @param diagram.alpha determines transparency of diff-in-diff diagram
 #' @param effect.alpha determines transparency of effect arrows
 #' @param onset.alpha determines transparency of vertical lines indicating onset of treatment
+#' @param ci.alpha determines transparency of the arrows illustrating upper and lower bounds of a 95% confidence interval for the effect
+#' @param se.method determines the method used to calculate the standard error used for this confidence interval
 #' @param alpha.multiplier, a vector of the same length as estimates, is useful for comparing multiple estimates in
 #'        one facet but highlighting one or several. All plot elements associated with the estimate are displayed
 #'        with alpha multiplied by the corresponding element of alpha.multiplier. Defaults to a vector of ones.
 #' @export synthdid_plot
-synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'synthetic control', force.sc = FALSE,
+synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'synthetic control', 
                          facet = NULL, facet.vertical = TRUE, lambda.comparable = !is.null(facet), overlay = 0,
-                         lambda.plot.scale = 3, trajectory.linetype = 1, effect.curvature = 0, line.width = .5, guide.linetype = 2, point.size = .5,
-                         trajectory.alpha = .4, diagram.alpha = .95, effect.alpha = .95, onset.alpha = .3, alpha.multiplier = NULL) {
+                         lambda.plot.scale = 3, trajectory.linetype = 1, effect.curvature = .3, line.width = .5, guide.linetype = 2, point.size = .5,
+                         trajectory.alpha = .4, diagram.alpha = .95, effect.alpha = .95, onset.alpha = .3, ci.alpha=.3,
+			 se.method='jackknife', alpha.multiplier = NULL) {
   if (requireNamespace("ggplot2", quietly = TRUE)) {
     .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
   } else {
@@ -66,7 +68,7 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
   plot.descriptions = lapply(1:nrow(grid), function(row) {
     est = estimates[[grid$estimate[row]]]
     over = overlay[grid$overlay[row]]
-
+    se = sqrt(vcov(est, method=se.method))
     setup = attr(est, 'setup')
     weights = attr(est, 'weights')
     Y = setup$Y - contract3(setup$X, weights$beta)
@@ -118,6 +120,9 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
       y = c(control.pre, control.post),
       yend = c(treated.pre, sdid.post))
     arrows = data.frame(x = post.time, xend = post.time, y = sdid.post, yend = treated.post, xscale = max(time) - post.time, color = groups[control])
+    ub.arrows = data.frame(x = post.time, xend = post.time, y = sdid.post + 1.96*se, yend = treated.post, xscale = max(time) - post.time, color = groups[control])
+    lb.arrows = data.frame(x = post.time, xend = post.time, y = sdid.post - 1.96*se, yend = treated.post, xscale = max(time) - post.time, color = groups[control])
+
 
     T0s = attr(est, 'T0s')
     if (!is.null(T0s)) {
@@ -137,7 +142,7 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
     }
     elements = list(lines = lines, points = points, did.segments = did.segments, did.points = did.points,
       hallucinated.segments = hallucinated.segments, guide.segments = guide.segments,
-      arrows = arrows, vlines = vlines, ribbons = ribbons)
+      arrows = arrows, lb.arrows = lb.arrows, ub.arrows = ub.arrows, vlines = vlines, ribbons = ribbons)
     lapply(elements, function(x) {
       x$frame = over
       x$is.sc = is.sc
@@ -171,15 +176,29 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
   no.sc = function(x) { x[!x$is.sc, ] }
 
   p = ggplot() +
-    geom_line(aes(x = x, y = y, color = color, frame = frame, alpha = trajectory.alpha * show), data = conc$lines, linetype = trajectory.linetype, size = line.width) +
-    geom_point(aes(x = x, y = y, color = color, frame = frame, alpha = diagram.alpha * show), data = conc$points, shape = 21, size = point.size) +
-    geom_point(aes(x = x, y = y, color = color, frame = frame, alpha = diagram.alpha * show), data = no.sc(conc$did.points), size = point.size) +
-    geom_segment(aes(x = x, xend = xend, y = y, yend = yend, color = color, frame = frame, alpha = diagram.alpha * show), data = no.sc(conc$did.segments), size = line.width) +
-    geom_segment(aes(x = x, xend = xend, y = y, yend = yend, frame = frame, group = estimate, alpha = .6 * diagram.alpha * show), data = no.sc(conc$hallucinated.segments), linetype = guide.linetype, size = line.width, color = 'black') +
-    geom_segment(aes(x = x, xend = xend, y = y, yend = yend, frame = frame, group = estimate, alpha = .5 * diagram.alpha * show), data = no.sc(conc$guide.segments), size = line.width, linetype = guide.linetype, color = 'black') +
-    geom_vline(aes(xintercept = xintercept, alpha = onset.alpha * show), data = conc$vlines, size = line.width, color = 'black') +
-    geom_ribbon(aes(x = x, ymin = ymin, ymax = ymax, group = color, fill = color, alpha = .5 * diagram.alpha * show), color = 'black', data = conc$ribbons, size = line.width, show.legend = FALSE) +
-    geom_curve(aes(x = x, xend = xend, y = y, yend = yend, alpha = effect.alpha * show), data = conc$arrows, curvature = effect.curvature, color = 'black', size = line.width, arrow = arrow(length = unit(.2, 'cm')))
+    geom_line(aes(x = x, y = y, color = color, frame = frame, alpha = trajectory.alpha * show), data = conc$lines, 
+	linetype = trajectory.linetype, size = line.width) +
+    geom_point(aes(x = x, y = y, color = color, frame = frame, alpha = diagram.alpha * show), data = conc$points, 
+	shape = 21, size = point.size) +
+    geom_point(aes(x = x, y = y, color = color, frame = frame, alpha = diagram.alpha * show), data = no.sc(conc$did.points), 
+	size = point.size) +
+    geom_segment(aes(x = x, xend = xend, y = y, yend = yend, color = color, frame = frame, alpha = diagram.alpha * show), data = no.sc(conc$did.segments), 
+	size = line.width) +
+    geom_segment(aes(x = x, xend = xend, y = y, yend = yend, frame = frame, group = estimate, alpha = .6 * diagram.alpha * show), data = no.sc(conc$hallucinated.segments), 
+	linetype = guide.linetype, size = line.width, color = 'black') +
+    geom_segment(aes(x = x, xend = xend, y = y, yend = yend, frame = frame, group = estimate, alpha = .5 * diagram.alpha * show), data = no.sc(conc$guide.segments), 
+	size = line.width, linetype = guide.linetype, color = 'black') +
+    geom_vline(aes(xintercept = xintercept, alpha = onset.alpha * show), data = conc$vlines, 
+	size = line.width, color = 'black') +
+    geom_ribbon(aes(x = x, ymin = ymin, ymax = ymax, group = color, fill = color, alpha = .5 * diagram.alpha * show),  data = conc$ribbons, 
+	color = 'black', size = line.width, show.legend = FALSE) +
+    geom_curve(aes(x = x, xend = xend, y = y, yend = yend, alpha = effect.alpha * show), data = conc$arrows, 
+    	curvature = effect.curvature, color = 'black', size = line.width, arrow = arrow(length = unit(.2, 'cm'))) + 
+    geom_curve(aes(x = x, xend = xend, y = y, yend = yend, alpha = ci.alpha * show), data = conc$ub.arrows, 
+	curvature = effect.curvature, color = 'black', size = line.width, arrow = arrow(length = unit(.2, 'cm'))) + 
+    geom_curve(aes(x = x, xend = xend, y = y, yend = yend, alpha = ci.alpha * show), data = conc$lb.arrows, 
+	curvature = effect.curvature, color = 'black', size = line.width, arrow = arrow(length = unit(.2, 'cm')))
+  
   # facet if we want multiple facets
   if (!all(conc$lines$facet == conc$lines$facet[1])) {
     if (facet.vertical) { p = p + facet_grid(facet ~ ., scales = 'free_y') }

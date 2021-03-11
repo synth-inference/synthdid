@@ -25,9 +25,9 @@ for SC).}
 \description{
 Provides variance estimates based on the following three options
 \itemize{
-  \item The bootstrap, Algorithm 2 in Arkhangelsky et al.
-  \item The jackknife, Algorithm 3 in Arkhangelsky et al.
-  \item Placebo, Algorithm 4 in Arkhangelsky et al.
+\item The bootstrap, Algorithm 2 in Arkhangelsky et al.
+\item The jackknife, Algorithm 3 in Arkhangelsky et al.
+\item Placebo, Algorithm 4 in Arkhangelsky et al.
 }
 }
 \details{
@@ -36,5 +36,5 @@ The jackknife is not recommended for SC, see section 5 in Arkhangelsky et al.
 }
 \references{
 Dmitry Arkhangelsky, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager.
- "Synthetic Difference in Differences". arXiv preprint arXiv:1812.09970, 2019.
+"Synthetic Difference in Differences". arXiv preprint arXiv:1812.09970, 2019.
 }
