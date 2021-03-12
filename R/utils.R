@@ -33,6 +33,23 @@ pairwise.sum.decreasing = function(x, y) {
   pairwise.sum
 }
 
+# pass column names / indices. For now, assume indices. Defaults correspond to our built-in datasets
+make.panel = function(panel, unit=2, time=3, outcome=4, treatment=5) {
+    panel = panel[order(panel[, treatment], panel[, unit], panel[, time]), ]
+    T = length(unique(panel[, time]))
+    N = length(unique(panel[, unit]))
+    Y = matrix(panel[,outcome], N, T, byrow = TRUE,
+               dimnames = list(unique(panel[,unit]), unique(panel[,time])))
+    W = matrix(panel[,treatment], N, T, byrow = TRUE,
+               dimnames = list(unique(panel[,unit]), unique(panel[,time])))
+    N0 = N-sum(W[,T])
+    T0 = T-sum(W[N,])
+    if(! (all(W[1:N0,] == 0) && all(W[,1:T0] == 0) && all(W[N0+1,T0+1]==1))) { 
+	error('The package cannot use this data. Treatment adoption is not simultaneous')
+    }
+    list(Y=Y, N0=N0, T0=T0)
+}
+
 # A convenience function for generating data for unit tests.
 random.low.rank = function() {
   n_0 <- 100
