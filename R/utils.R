@@ -98,9 +98,6 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
     stop("Input `panel` must be a balanced panel: it must have an observation for every unit at every time.")
   }
 
-  # convert Dates to strings because Dates cannot be colnames
-  if(inherits(panel[,time], 'Date')) { panel[,time] = as.character(panel[,time]) }
-  
   treated.units = unique(panel[panel[, treatment] == 1, unit])
   treated.unit = panel[, unit] %in% treated.units
   panel = panel[order(treated.unit, panel[, unit], panel[, time]), ]
