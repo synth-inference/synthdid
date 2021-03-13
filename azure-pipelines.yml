@@ -28,6 +28,8 @@ steps:
       curl -OLs https://eddelbuettel.github.io/r-ci/run.sh && chmod 0755 run.sh
       ./run.sh bootstrap
       ./run.sh install_all
+      sudo apt-get update -qq
+      sudo apt install ffmpeg # Needed for vignettes
     displayName: Setup R
   - script: ./run.sh run_tests
     displayName: Test R package
