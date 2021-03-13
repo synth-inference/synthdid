@@ -98,10 +98,10 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
 #'         Setup is a list describing the problem passed in: Y, N0, T0, X.
 #' @export sc_estimate
 sc_estimate = function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
-                       zeta.lambda = 0, zeta.omega = sd(apply(Y, 1, diff)),
+                       zeta.lambda = 0, zeta.omega = sd(apply(Y[1:N0,1:T0], 1, diff)),
                        lambda.intercept = FALSE, omega.intercept = FALSE,
                        weights = list(lambda = rep(0, T0), omega = NULL, vals = NULL),
-                       min.decrease = 1e-3 * sd(apply(Y, 1, diff)), max.iter = 1e4) {
+                       min.decrease = 1e-3 * sd(apply(Y[1:N0,1:T0], 1, diff)), max.iter = 1e4) {
   estimate = synthdid_estimate(Y, N0, T0, X = X,
     zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
     lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,
@@ -131,10 +131,10 @@ sc_estimate = function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
 #'         Setup is a list describing the problem passed in: Y, N0, T0, X.
 #' @export did_estimate
 did_estimate = function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
-                        zeta.lambda = 0, zeta.omega = sd(apply(Y, 1, diff)),
+                        zeta.lambda = 0, zeta.omega = sd(apply(Y[1:N0,1:T0], 1, diff)),
                         lambda.intercept = FALSE, omega.intercept = FALSE,
                         weights = list(lambda = rep(1 / T0, T0), omega = rep(1 / N0, N0), vals = NULL),
-                        min.decrease = 1e-3, max.iter = 1e4) {
+                        min.decrease = 1e-3 * sd(apply(Y[1:N0,1:T0], 1, diff)), max.iter = 1e4) {
   estimate = synthdid_estimate(Y, N0, T0, X = X,
     zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
     lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,

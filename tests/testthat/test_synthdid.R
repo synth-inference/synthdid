@@ -41,7 +41,7 @@ test_that("default synthdid behavior has not changed", {
   # saveRDS(weights, "weights.expected.Rds")
 })
 
-test_that("invariances hold with default options", {
+test_that("column/row/scaling invariances hold with default options", {
   # Test that three types of invariances hold, for details see
   # https://github.com/synth-inference/synthdid/issues/38
   estimators = list(sc_estimate, did_estimate, synthdid_estimate)
@@ -107,6 +107,69 @@ test_that("invariances hold with default options", {
       expect_equal(c(c.large * estimate), c(estimate.scaled))
       expect_equal(c.large * estimate.se, estimate.se.scaled)
       expect_equal(weights[c("lambda", "omega")], weights.scaled[c("lambda", "omega")])
+    }
+  }
+})
+
+test_that("treated effect shifts correctly with scalar shifts to the 4 blocks", {
+  # Test that four types of invariances hold, for details see
+  # https://github.com/synth-inference/synthdid/issues/43
+  estimators = list(sc_estimate, did_estimate, synthdid_estimate)
+  seed = sample(1:1e6, 1)
+  setup = random.low.rank()
+  T0 = setup$T0
+  N0 = setup$N0
+  T = ncol(setup$Y)
+  exposed = 1:nrow(setup$Y) > N0
+  Y.orig = setup$Y
+  
+  lambda = function(obj) { attr(obj, 'weights')$lambda }
+  omega  = function(obj) { attr(obj, 'weights')$omega }
+
+  for (c in c(1e-6, 0.25, 1e6)) {
+    # 1.
+    # Re-mapping Yit <- Yit + c for exposed t > T0 increases tau by c
+    Y1 <- setup$Y
+    Y1[exposed, (T0+1):T] <- c + Y1[exposed, (T0+1):T]
+    for (estimator in estimators) {
+      estimate = estimator(Y.orig, N0, T0)
+      estimate.shift = estimator(Y1, N0, T0)
+      expect_equal(lambda(estimate), lambda(estimate.shift))
+      expect_equal(omega(estimate),  omega(estimate.shift))
+      expect_equal(c(estimate.shift), c(estimate) + c)
+    }
+
+    # 2.
+    # Re-mapping Yit <- Yit + c for exposed t < T0 decreases tau by c (exception: "SC")
+    Y2 <- setup$Y
+    Y2[exposed, 1:T0] <- c + Y2[exposed, 1:T0]
+    for (estimator in estimators[-1]) {
+      estimate = estimator(Y.orig, N0, T0)
+      estimate.shift = estimator(Y2, N0, T0)
+      expect_equal(lambda(estimate.shift), lambda(estimate))
+      expect_equal(c(estimate.shift), c(estimate) - c, tol = 1e-10)
+    }
+
+    # 3.
+    # Re-mapping Yit <- Yit + c for unexposed t < T0 increases tau by c (exception: "SC")
+    Y3 <- setup$Y
+    Y3[!exposed, 1:T0] <- c + Y3[!exposed, 1:T0]
+    for (estimator in estimators[-1]) {
+      estimate = estimator(Y.orig, N0, T0)
+      estimate.shift = estimator(Y3, N0, T0)
+      expect_equal(lambda(estimate.shift), lambda(estimate))
+      expect_equal(c(estimate.shift), c(estimate) + c, tol = 1e-10)
+    }
+
+    # 4.
+    # Re-mapping Yit <- Yit + c for unexposed t > T0 decreases tau by c
+    Y4 <- setup$Y
+    Y4[!exposed, (T0+1):T] <- c + Y4[!exposed, (T0+1):T]
+    for (estimator in estimators[-1]) {     # shouldn't work for sc -- relies on unit fixed effects
+      estimate = estimator(Y.orig, N0, T0)
+      estimate.shift = estimator(Y4, N0, T0)
+      expect_equal(omega(estimate.shift), omega(estimate))
+      expect_equal(c(estimate.shift), c(estimate) - c, tol = 1e-10)
     }
   }
 })
