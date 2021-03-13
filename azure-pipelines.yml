@@ -35,6 +35,7 @@ steps:
     condition: failed()
     displayName: Print test failures
   - script: |
+      R CMD INSTALL .
       sudo Rscript -e "install.packages('rmarkdown')"
       Rscript -e "rmarkdown::render('vignettes/synthdid.Rmd')"
     displayName: Test vignettes
