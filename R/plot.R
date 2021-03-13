@@ -223,7 +223,7 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
 	size = line.width, linetype = guide.linetype, color = 'black') +
     geom_vline(aes(xintercept = xintercept, alpha = onset.alpha * show), data = conc$vlines, 
 	size = line.width, color = 'black') +
-    geom_ribbon(aes(x = x, ymin = ymin, ymax = ymax, group = color, fill = color, alpha = .5 * diagram.alpha * show),  data = conc$ribbons, 
+    geom_ribbon(aes(x = x, ymin = ymin, ymax = ymax, group = color, fill = color, alpha = .5 * diagram.alpha * show),  data = no.sc(conc$ribbons), 
 	color = 'black', size = line.width, show.legend = FALSE) +
     geom_curve(aes(x = x, xend = xend, y = y, yend = yend, alpha = effect.alpha * show), data = conc$arrows, 
     	curvature = effect.curvature, color = 'black', size = line.width, arrow = arrow(length = unit(.2, 'cm'))) + 

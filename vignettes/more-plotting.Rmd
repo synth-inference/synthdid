@@ -59,11 +59,7 @@ diff-in-diff's control toward California. Instead, we pass this parameter as an 
 'overlay' of the estimator, which overrides the function argument and is interpreted the same way.
 Including an invisible (via alpha.multiplier) copy of tau.hat keeps the axes of the plot
 from changing as the visible one's control trajectory moves.
----
-# This example requires the right mix of packages and libraries to knit properly
-# into an animation. To just plot 5 pictures, replace the next line with:
-# {r, fig.width=7, fig.height=4.5}
----
+
 ```{r, fig.width=7, fig.height=4.5, animation.hook='gifski', interval=.5}
 estimate.sc = sc_estimate(setup$Y, setup$N0, setup$T0)
 with.overlay = function(est, s) { attr(est,'overlay') = s; est } 
