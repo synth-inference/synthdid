@@ -85,7 +85,7 @@ make.panel = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4) {
   panel = panel[keep]
   val <- as.vector(table(panel[, unit], panel[, time]))
   if (!all(val == 1)) {
-    stop("Input `panel` must be a balaned panel data set.")
+    stop("Input `panel` must be a balanced panel data set.")
   }
 
   panel = panel[order(panel[, treatment], panel[, unit], panel[, time]), ]
