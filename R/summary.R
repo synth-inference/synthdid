@@ -26,7 +26,8 @@ synthdid_controls = function(estimates, sort.by = 1, mass = .9, weight.type = 'o
 
 #' Summarize a synthdid object
 #' @param object The object to summarize
-#' @param weight.digits The number of digits to use when displaying weights (omega)
+#' @param weight.digits The number of digits to use when displaying weights (omega, lambda)
+#' @param fast Be fast but less accurate, e.g. jackknife instead of bootstrap se estimate
 #' @param ... Additional arguments (currently ignored).
 #' @method summary synthdid_estimate
 #' @export
