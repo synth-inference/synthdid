@@ -19,6 +19,8 @@ test_that("panel.matrices works as expected", {
   # Passing in a data.frame with more columns
   out.aug <- panel.matrices(panel.aug, unit = "State", time = "Year", outcome = "PacksPerCapita", treatment = "treated")
   expect_equal(out, out.aug)
+  out.aug2 <- panel.matrices(cbind(covariates, panel), unit = 6, time = 7, outcome = "PacksPerCapita", treatment = 9)
+  expect_equal(out, out.aug2)
 
   # Removing one (unit, year) entry causes an unbalanced panel error
   expect_error(panel.matrices(panel[-10, ]), "Input `panel` must be a balanced panel data set.")
