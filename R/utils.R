@@ -64,16 +64,6 @@ pairwise.sum.decreasing = function(x, y) {
 #'
 #' @export
 panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4) {
-  keep = c(unit, time, outcome, treatment)
-  if (!all(keep %in% 1:ncol(panel) | keep %in% colnames(panel))) {
-    stop("Column identifiers should be either integer or column names in `panel`.")
-  }
-  index.to.name = function(x) { if(x %in% 1:ncol(panel)) { colnames(panel)[x] } else { x } }
-  unit = index.to.name(unit)
-  time = index.to.name(time)
-  outcome = index.to.name(outcome)
-  treatment = index.to.name(treatment) 
-  
   # TODO: add support for covariates X, i.e. could keep all other columns
   keep = c(unit, time, outcome, treatment)
   if (!all(keep %in% 1:ncol(panel) | keep %in% colnames(panel))) {
@@ -85,6 +75,7 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
   outcome = index.to.name(outcome)
   treatment = index.to.name(treatment)
   keep = c(unit, time, outcome, treatment)
+
   panel = panel[keep]
   if (!is.data.frame(panel)){
     stop("Unsupported input type `panel.`")
