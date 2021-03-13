@@ -18,7 +18,6 @@ knitr::opts_chunk$set(dev = "ragg_png", fig.ext = "png")
 ```{r setup}
 library(synthdid)
 library(ggplot2)
-library(mvtnorm)
 ```
 
 # Example use 
