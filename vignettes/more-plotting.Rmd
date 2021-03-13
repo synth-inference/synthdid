@@ -74,11 +74,14 @@ estimators = function(s) {
 }
 
 plot.estimators = function(ests, alpha.multiplier) {
-  synthdid_plot(ests, se.method='none', 
+  p = synthdid_plot(ests, se.method='none', 
                 alpha.multiplier=alpha.multiplier, facet=rep(1,length(ests)),
 	        trajectory.linetype = 1, effect.curvature=-.4,
-	        trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1) + 
-    scale_alpha(range=c(0,1), guide='none') 
+	        trajectory.alpha=.5, effect.alpha=.5, diagram.alpha=1)
+  suppressMessages(p + scale_alpha(range=c(0,1), guide='none'))
+  # scale alpha so alpha=0 means totally invisible, which is unusual but useful
+  # for hiding our invisible estimate. We have to suppress a warning that 
+  # we're overriding an extant alpha scale that's added in synthdid_plot 
 }
 
 # set up the box we zoom in on in plot 5
