@@ -49,6 +49,7 @@ steps:
       sudo Rscript -e "install.packages('https://cran.r-project.org/src/contrib/Archive/pkgdown/pkgdown_1.5.1.tar.gz', repos = NULL, type = 'source')"
       # Install synthdid, and optionally packages used for vignettes.
       R CMD INSTALL .
+      sudo Rscript -e "install.packages(c('gifski'))" 
       # Build and deploy page. This requires that the branch `gh-pages` exists.
       # git worktree is used to only commit the doc folder (docs/) as the root.
       # update-ref is used to not keep a commit history of the generated docs.
