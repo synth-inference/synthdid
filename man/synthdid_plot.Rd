@@ -12,6 +12,7 @@ synthdid_plot(
   estimates,
   treated.name = "treated",
   control.name = "synthetic control",
+  spaghetti.units = c(),
   facet = NULL,
   facet.vertical = TRUE,
   lambda.comparable = !is.null(facet),
@@ -27,6 +28,10 @@ synthdid_plot(
   effect.alpha = 0.95,
   onset.alpha = 0.3,
   ci.alpha = 0.3,
+  spaghetti.line.width = 0.2,
+  spaghetti.label.size = 1,
+  spaghetti.line.alpha = 0.3,
+  spaghetti.label.alpha = 0.5,
   se.method = "jackknife",
   alpha.multiplier = NULL
 )
@@ -41,6 +46,8 @@ With intercept of one, this overlays curves, and plotting a diagram is suppresse
 \item{treated.name, }{the name of the treated curve that appears in the legend. Defaults to 'treated'}
 
 \item{control.name, }{the name of the control curve that appears in the legend. Defaults to 'synthetic control'}
+
+\item{spaghetti.units, }{a list of units to plot individually. spaghetti.unit \%in\% rownames(Y) must work. Defaults to the empty list.}
 
 \item{facet, }{a list of the same length as estimates indicating the facet in which to plot each estimate.
 The values of the elements of the list are used to label the facets.
@@ -77,6 +84,14 @@ Nonzero values help avoid overplotting when plotting multiple estimates in one f
 \item{onset.alpha}{determines transparency of vertical lines indicating onset of treatment}
 
 \item{ci.alpha}{determines transparency of the arrows illustrating upper and lower bounds of a 95\% confidence interval for the effect}
+
+\item{spaghetti.line.width}{determines the width of spaghetti trajectories}
+
+\item{spaghetti.label.size}{determines the size of spaghetti labels}
+
+\item{spaghetti.line.alpha}{determines transparency of spaghetti trajectories}
+
+\item{spaghetti.label.alpha}{determines transparency of spaghetti trajectory labels}
 
 \item{se.method}{determines the method used to calculate the standard error used for this confidence interval}
 

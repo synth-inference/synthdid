@@ -16,7 +16,7 @@ test_that("plotting doesn't error with (i) dates as colnames (ii) spaghetti unit
   california_prop99$date = as.Date(sprintf('%04d/%02d/%02d', california_prop99$Year, 1, 1))
   setup = panel.matrices(california_prop99, time='date')
   estimate = synthdid_estimate(setup$Y, setup$N0, setup$T0)
-  top.controls = synthdid_controls(estimate)[1:10,, drop=FALSE]
+  top.controls = synthdid_controls(estimate)[1:10, drop=FALSE]
   plot(estimate, spaghetti.units=rownames(top.controls))
 
   expect_equal(1, 1)
