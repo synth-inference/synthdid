@@ -23,6 +23,10 @@ the number of time periods before treatment.
 }
 \description{
 Converts a data set in panel form to matrix format required by synthdid estimators.
+A typical long panel date set look like [unit, time, outcome, treatment]. Synthdid
+requires a balanced panel where each unit is observed at all time periods. This function
+converts the data set to a num.units * num.time.periods sized matrix where the first N0
+rows are treated units, and the first T0 columns are the pre-tretment period.
 }
 \examples{
 \donttest{

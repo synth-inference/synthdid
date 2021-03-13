@@ -36,6 +36,10 @@ pairwise.sum.decreasing = function(x, y) {
 #' Convert a long (balanced) panel to a wide matrix
 #'
 #' Converts a data set in panel form to matrix format required by synthdid estimators.
+#' A typical long panel date set look like \[unit, time, outcome, treatment\]. Synthdid
+#' requires a balanced panel where each unit is observed at all time periods. This function
+#' converts the data set to a num.units * num.time.periods sized matrix where the first N0
+#' rows are treated units, and the first T0 columns are the pre-tretment period.
 #'
 #' @param panel A data.frame with columns consisting of units, time, outcome, and treatment indicator.
 #' @param unit The column number/name corresponding to the unit identifier. Default is 1.
