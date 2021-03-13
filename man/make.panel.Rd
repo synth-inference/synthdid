@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{make.panel}
 \alias{make.panel}
-\title{Convert a long panel to a wide matrix}
+\title{Convert a long (balanced) panel to a wide matrix}
 \usage{
 make.panel(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
 }
