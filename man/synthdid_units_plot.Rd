@@ -2,26 +2,31 @@
 % Please edit documentation in R/plot.R
 \name{synthdid_units_plot}
 \alias{synthdid_units_plot}
-\title{Plots unit by unit difference-in-differences
+\title{Plots unit by unit difference-in-differences. Dot size indicates the weights omega_i
+used in the average that yields our treatment effect estimate.
+This estimate and endpoints of a 95\% CI are plotted as horizontal lines.
 Requires ggplot2}
 \usage{
 synthdid_units_plot(
   estimates,
-  show.ci = FALSE,
   negligible.threshold = 0.001,
-  negligible.alpha = 0.3
+  negligible.alpha = 0.3,
+  se.method = "jackknife"
 )
 }
 \arguments{
 \item{estimates}{as output by synthdid_estimate. Can be a single one or a list of them.}
 
-\item{show.ci}{If TRUE, plots horizontal lines for 95\% CI as well as the point estimate. Defaults to FALSE.}
-
 \item{negligible.threshold}{Unit weight threshold below which units are plotted as small, transparent xs instead of circles. Defaults to .001.}
 
 \item{negligible.alpha}{Determines transparency of those xs.}
+
+\item{se.method:}{the method used to calculate standard errors for the CI. See vcov.synthdid_estimate.
+Defaults to 'jackknife' for speed. If 'none', don't plot a CI.}
 }
 \description{
-Plots unit by unit difference-in-differences
+Plots unit by unit difference-in-differences. Dot size indicates the weights omega_i
+used in the average that yields our treatment effect estimate.
+This estimate and endpoints of a 95\% CI are plotted as horizontal lines.
 Requires ggplot2
 }

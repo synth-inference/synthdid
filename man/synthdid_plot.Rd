@@ -22,7 +22,7 @@ synthdid_plot(
   line.width = 0.5,
   guide.linetype = 2,
   point.size = 0.5,
-  trajectory.alpha = 0.4,
+  trajectory.alpha = 0.5,
   diagram.alpha = 0.95,
   effect.alpha = 0.95,
   onset.alpha = 0.3,
@@ -32,11 +32,7 @@ synthdid_plot(
 )
 }
 \arguments{
-\item{estimates, }{a list of estimates output by synthdid_estimate. Or a single estimate.
-If estimates have attribute 'intercept' set (scalar in [0,1]), then plot after subtracting
-that fraction of the SDID adjustment for the difference between pre-treatment treated and sc curves.
-With intercept of almost one, this makes it easier to assess parallel-ness by making trajectories closer
-With intercept of one, this overlays curves, and plotting a diagram is suppressed as in the case of a SC estimate.}
+\item{estimates, }{a list of estimates output by synthdid_estimate. Or a single estimate.}
 
 \item{treated.name, }{the name of the treated curve that appears in the legend. Defaults to 'treated'}
 
@@ -52,7 +48,12 @@ If NULL, plot each estimate in a different facet. Defaults to NULL.}
 have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots.
 Defaults to FALSE if facet is not passed, TRUE if passed.}
 
-\item{overlay}{specifies a value of 'intercept' for all SDID estimates. Defaults to 0.
+\item{overlay, }{a number in [0,1] defaulting to 0, can be used to shift the control trajectory toward the treated trajectory.
+When a nonzero value is passed, we plot the control after subtracting
+that fraction of the diff-in-diff style adjustment for the difference between lambda-weighted pre-treatment averages of the treated and control.
+With intercept of almost one, this makes it easier to assess parallel-ness by making trajectories closer
+With intercept of one, this essentially overlays the curves, and plotting a diagram is suppressed as in the case of a SC estimate.
+To use different values for different plots, pass these values as an attribute 'overlay' of each estimate.
 If a vector is passed, plots at different intercept levels indicated by the 'frame' aesthetic. ggplotly will interpret this as an animation.}
 
 \item{lambda.plot.scale}{determines the scale of the plot of the weights lambda.}
@@ -78,7 +79,7 @@ Nonzero values help avoid overplotting when plotting multiple estimates in one f
 
 \item{ci.alpha}{determines transparency of the arrows illustrating upper and lower bounds of a 95\% confidence interval for the effect}
 
-\item{se.method}{determines the method used to calculate the standard error used for this confidence interval}
+\item{se.method}{determines the method used to calculate the standard error used for this confidence interval. if 'none', don't show the interval}
 
 \item{alpha.multiplier, }{a vector of the same length as estimates, is useful for comparing multiple estimates in
 one facet but highlighting one or several. All plot elements associated with the estimate are displayed

@@ -46,7 +46,7 @@
 synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'synthetic control', 
                          facet = NULL, facet.vertical = TRUE, lambda.comparable = !is.null(facet), overlay = 0,
                          lambda.plot.scale = 3, trajectory.linetype = 1, effect.curvature = .3, line.width = .5, guide.linetype = 2, point.size = .5,
-                         trajectory.alpha = .5, diagram.alpha = .95, effect.alpha = .95, onset.alpha = .3, ci.alpha=.3,
+                         trajectory.alpha = .5, diagram.alpha = .95, effect.alpha = .95, onset.alpha = .6, ci.alpha=.3,
 			 se.method='jackknife', alpha.multiplier = NULL) {
   if (requireNamespace("ggplot2", quietly = TRUE)) {
     .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
