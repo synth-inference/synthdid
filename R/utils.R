@@ -70,11 +70,7 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
     stop("Column identifiers should be either integer or column names in `panel`.")
   }
   if (!is.data.frame(panel)){
-    if (is.matrix(panel)) {
-      panel = as.data.frame(panel)
-    } else {
-      stop("Unsupported input type `panel.`")
-    }
+    stop("Unsupported input type `panel.`")
   }
   if (anyNA(panel)) {
     stop("Missing values in `panel`.")
