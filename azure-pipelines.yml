@@ -34,6 +34,11 @@ steps:
   - script: ./run.sh dump_logs_by_extension "fail"
     condition: failed()
     displayName: Print test failures
+  - script: |
+  # Test that vignettes render without error
+      Rscript -e "rmarkdown::render('vignettes/synthdid.Rmd')"
+      # Add vignette number two here, etc.
+    displayName: Test vignettes
   # Final deploy step
   # Build the online docs and deploy to gh-pages - only done on master branch.
   # `GITHUB_PAT` is a GitHub access token stored on Azure Pipelines.
