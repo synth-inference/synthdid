@@ -24,8 +24,8 @@ N0 = nrow(Y)-1
 library(reshape2)
 mY = melt(Y)
 colnames(mY) = c('State', 'Year', 'PacksPerCapita')
-mY$treated = mY$State == 'California' & mY$Year >= 1989
-write.csv(mY, file='california_prop99.csv')
+mY$treated = as.numeric(mY$State == 'California' & mY$Year >= 1989)
+write.csv(mY, file='california_prop99.csv', row.names = FALSE)
 
 ## read and compare
 devtools::load_all('.')
