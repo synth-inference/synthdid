@@ -1,0 +1,39 @@
+#' California proposition 99
+#'
+#' A dataset containing per-capita cigarette consumption (in packs).
+#' In year 1989 California imposed a Tobacco tax. The column `treated` is 1 from then on for California.
+#'
+#' @format A data frame with 1209 rows and 4 variables:
+#' \describe{
+#'   \item{State}{US state name, character string}
+#'   \item{Year}{Year, integer}
+#'   \item{PacksPerCapita}{per-capita cigarette consumption, numeric}
+#'   \item{treated}{the treatmed indicator 0: control, 1: treated, numeric}
+#'   ...
+#' }
+#' @source Abadie, Alberto, Alexis Diamond, and Jens Hainmueller.
+#'  "Synthetic control methods for comparative case studies: Estimating the effect of California’s tobacco control program."
+#'   Journal of the American statistical Association 105, no. 490 (2010): 493-505.
+#'
+#' @examples
+#' \donttest{
+#' # Load tobacco sales in long panel format.
+#' data("california_prop99")
+#' # Transform to N*T matrix format required for synthdid,
+#' # where N is the number of units and T the time periods.
+#' setup <- make.panel(california_prop99, unit = 1, time = 2, outcome = 3, treatment = 4)
+#'
+#' # Compute synthdid estimate
+#' synthdid_estimate(setup$Y, setup$N0, setup$T0)
+#'
+#' # Compute synthetic control estimate
+#' sc_estimate(setup$Y, setup$N0, setup$T0)
+#'
+#' # Compute did estimate
+#' did_estimate(setup$Y, setup$N0, setup$T0)
+#'
+#' # ETC Skip: to be filled out more, this docstring can produce Table 1 in the paper
+#'
+#' }
+#'
+"california_prop99"
