@@ -94,7 +94,7 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
   )
   val <- as.vector(table(panel[, unit], panel[, time]))
   if (!all(val == 1)) {
-    stop("Input `panel` must be a balanced panel data set.")
+    stop("Input `panel` must be a balanced panel: it must have an observation for every unit at every time.")
   }
 
   treated.units = unique(panel[panel[, treatment] == 1, unit])
