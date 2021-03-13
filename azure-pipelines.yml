@@ -38,7 +38,7 @@ steps:
     displayName: Print test failures
   - script: |
       R CMD INSTALL .
-      sudo Rscript -e "install.packages(c('rmarkdown', 'gifski', 'ragg')"
+      sudo Rscript -e "install.packages(c('rmarkdown', 'gifski', 'ragg'))"
       Rscript -e "rmarkdown::render('vignettes/synthdid.Rmd')"
       Rscript -e "rmarkdown::render('vignettes/more-plotting.Rmd')"
     displayName: Test vignettes
@@ -51,7 +51,7 @@ steps:
       sudo Rscript -e "install.packages(c('fs', 'highlight', 'httr', 'memoise', 'openssl', 'purrr', 'rmarkdown', 'whisker', 'xml2', 'yaml'))"
       sudo Rscript -e "install.packages('https://cran.r-project.org/src/contrib/Archive/pkgdown/pkgdown_1.5.1.tar.gz', repos = NULL, type = 'source')"
       # To render plot animations properly in pkgdown, we currently also need 'gifski' and 'ragg'.
-      sudo Rscript -e "install.packages(c('gifski', 'ragg')"
+      sudo Rscript -e "install.packages(c('gifski', 'ragg'))"
       # Install synthdid, and optionally packages used for vignettes.
       R CMD INSTALL .
       # Build and deploy page. This requires that the branch `gh-pages` exists.
