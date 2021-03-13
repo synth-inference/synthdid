@@ -1,4 +1,5 @@
-data.raw = read.table("MLAB_data.txt")
+## load and set up dataset
+data.raw = read.table("raw/california_prop99.txt")
 
 STATE.NAME = c("Alabama", "Arkansas", "Colorado", "Connecticut", "Delaware",
                "Georgia", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas",
@@ -15,11 +16,22 @@ Y = t(data.raw[9:39,])
 colnames(Y) = 1969 + 1:31 
 rownames(Y) = STATE.NAME
 states = function(...) { which(STATE.NAME %in% c(...)) }
-southeast = list('Alabama', 'Arkansas', 'Mississippi', 'Louisiana', 'Georgia', 'Kentucky', 'Tennesee','Florida')
-west = list('Colorado', 'Idaho', 'Montana', 'Nevada', 'New Mexico', 'North Dakota', 'South Dakota', 'Utah', 'Wyoming')
-Y.southeast = Y[c(do.call(states, southeast), states('California')), ]
-Y.west = Y[c(do.call(states, west), states('California')), ]
 Y = Y[c(setdiff(1:nrow(Y), states('California')), states('California')), ]
 T0 = 19
 N0 = nrow(Y)-1
 
+## write datset as csv
+library(reshape2)
+mY = melt(Y)
+colnames(mY) = c('State', 'Year', 'PacksPerCapita')
+mY$treated = mY$State == 'California' & mY$Year >= 1989
+write.csv(mY, file='california_prop99.csv')
+
+## read and compare
+devtools::load_all('.')
+setup = make.panel(read.csv('california_prop99.csv'))
+if(!  all(setup$Y == Y) 
+   &  all(rownames(setup$Y) ==  rownames(Y)) 
+   &  all(colnames(setup$Y) ==  colnames(Y))
+   &  setup$N0 == N0
+   &  setup$T0 == T0) { error('california prop 99 data matrix does not match after writing and reading csv calling make.panel') }
