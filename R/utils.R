@@ -88,9 +88,9 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
   if (!all(panel[, treatment] %in% c(0, 1))) {
     stop("The treatment status should be in 0 or 1.")
   }
-  # Remove any factor variables
+  # Convert potential factor/date columns to character
   panel = data.frame(
-    lapply(panel, function(col) {if (is.factor(col)) as.character(col) else col}), stringsAsFactors = FALSE
+    lapply(panel, function(col) {if (is.factor(col) || inherits(col, "Date")) as.character(col) else col}), stringsAsFactors = FALSE
   )
   val <- as.vector(table(panel[, unit], panel[, time]))
   if (!all(val == 1)) {
