@@ -122,7 +122,7 @@ test_that("treated effect shifts correctly with scalar shifts to the 4 blocks", 
   T = ncol(setup$Y)
   exposed = 1:nrow(setup$Y) > N0
   Y.orig = setup$Y
-  
+
   lambda = function(obj) { attr(obj, 'weights')$lambda }
   omega  = function(obj) { attr(obj, 'weights')$omega }
 
@@ -172,4 +172,15 @@ test_that("treated effect shifts correctly with scalar shifts to the 4 blocks", 
       expect_equal(c(estimate.shift), c(estimate) - c, tol = 1e-10)
     }
   }
+})
+
+test_that("California estimates have not changed", {
+  data("california_prop99")
+  setup <- panel.matrices(california_prop99)
+
+  sdid = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+  sc = sc_estimate(setup$Y, setup$N0, setup$T0)
+  did = did_estimate(setup$Y, setup$N0, setup$T0)
+
+  expect_equal(c(sdid, sc, did), c(-14.23324, -20.02022, -27.34911), tol = 1e-5)
 })

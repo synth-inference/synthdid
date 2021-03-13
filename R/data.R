@@ -26,19 +26,7 @@
 #' data("california_prop99")
 #' # Transform to N*T matrix format required for synthdid,
 #' # where N is the number of units and T the time periods.
-#' setup <- make.panel(california_prop99, unit = 1, time = 2, outcome = 3, treatment = 4)
-#'
-#' # Compute synthdid estimate
-#' synthdid_estimate(setup$Y, setup$N0, setup$T0)
-#'
-#' # Compute synthetic control estimate
-#' sc_estimate(setup$Y, setup$N0, setup$T0)
-#'
-#' # Compute did estimate
-#' did_estimate(setup$Y, setup$N0, setup$T0)
-#'
-#' # ETC Skip: to be filled out more, this docstring can produce Table 1 in the paper
-#'
+#' setup <- panel.matrices(california_prop99)
 #' }
 #'
 NULL
