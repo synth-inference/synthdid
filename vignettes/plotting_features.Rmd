@@ -18,10 +18,11 @@ We store timesteps as the colnames of Y, and colnames can't be Date objects,
 so to work around this we can use strings convertible to dates via as.Date.
 Functions in the package, like the plotting functions, are aware of this convention, 
 so the dates get displayed correctly, with correct spacing is retained when intervals vary.
+Note the long linear sections where we're drawing the segment between 1973 and 1978 and 1988-1993. 
 ```{r, fig.width=7.5, fig.height=4}
   data(california_prop99)
   california_prop99$date = as.Date(sprintf('%04d/%02d/%02d', california_prop99$Year, 1, 1))
-  setup = panel.matrices(california_prop99[! california_prop99$year %in%  c(1974:1977, 1985:1993),], time='date')
+  setup = panel.matrices(california_prop99[! california_prop99$Year %in%  c(1974:1977, 1989:1992),], time='date')
   estimate = synthdid_estimate(setup$Y, setup$N0, setup$T0)
   plot(estimate)
 ```
@@ -29,10 +30,10 @@ so the dates get displayed correctly, with correct spacing is retained when inte
 # Spaghetti Plots
 We can include the trajectories of individual controls on our parallel trends diagram.
 Here we plot the 10 controls with the largest weights $\omega_i$. 
-``{r, fig.width=7.5, fig.height=4}
+```{r, fig.width=7.5, fig.height=4}
   top.controls = synthdid_controls(estimate)[1:10, , drop=FALSE]
   plot(estimate, spaghetti.units=rownames(top.controls))
-``
+```
 
 # Complex Plots
 We can even overlay multiple estimates in one plot and include a magnified view of some regions.
@@ -52,12 +53,12 @@ from changing as the visible one's control trajectory moves.
 # into an animation. To just plot 5 pictures, replace the next line with:
 # {r, fig.width=7, fig.height=4.5}
 ---
-```{r, fig.width=7, fig.height=4.5, fig.show='animate', ffmpeg.format='gif', dev='jpeg'}
+```{r, fig.width=7, fig.height=4.5, animation.hook='ffmpeg', ffmpeg.format='gif', dev='jpeg'}
 estimate.sc = sc_estimate(setup$Y, setup$N0, setup$T0)
 with.overlay = function(est, s) { attr(est,'overlay') = s; est } 
 estimators = function(s) { 
   estimator.list = list(with.overlay(estimate, s), estimate.sc, estimate) 
-  names(estimator.list)=c('Synthetic Diff-in-Diff', 'Synthetic Control', '')
+  names(estimator.list)=c('synth. diff-in-diff', 'synth. control', '')
   estimator.list
 }
 
@@ -70,8 +71,9 @@ plot.estimators = function(ests, alpha.multiplier) {
 }
 
 # set up the box we zoom in on in plot 5
+lambda = attr(estimate, 'weights')$lambda
 time = as.integer(timesteps(setup$Y))
-xbox.ind = c(which(lambda(estimate) > .01)[1], setup$T0+4)
+xbox.ind = c(which(lambda > .01)[1], setup$T0+4)
 xbox = time[xbox.ind] + c(-.5,.5)
 ybox = range(setup$Y[setup$N0+1, min(xbox.ind):(max(xbox.ind))]) + c(-4,4)
 
