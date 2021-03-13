@@ -1,13 +1,13 @@
 # The following pipeline tests synthdid in the following way:
 # 1. With the latest R release (4.0) on Ubuntu.
 # The R setup here is based on https://eddelbuettel.github.io/r-ci/
-name: "R (release) - Ubuntu-latest"
+name: "R (release) - Macos-latest"
 
 trigger:
 - master
 
 pool:
-  vmImage: "ubuntu-latest"
+  vmImage: "macos-latest"
 
 variables:
 - name: R_LIBS_USER
@@ -28,8 +28,6 @@ steps:
       curl -OLs https://eddelbuettel.github.io/r-ci/run.sh && chmod 0755 run.sh
       ./run.sh bootstrap
       ./run.sh install_all
-      sudo apt-get update -qq
-      sudo apt install ffmpeg # Needed for vignettes
     displayName: Setup R
   - script: ./run.sh run_tests
     displayName: Test R package
@@ -38,8 +36,9 @@ steps:
     displayName: Print test failures
   - script: |
       R CMD INSTALL .
-      sudo Rscript -e "install.packages('rmarkdown')"
+      sudo Rscript -e "install.packages(c('rmarkdown', 'gifski', 'ragg'))"
       Rscript -e "rmarkdown::render('vignettes/synthdid.Rmd')"
+      Rscript -e "rmarkdown::render('vignettes/more-plotting.Rmd')"
     displayName: Test vignettes
   # Final deploy step
   # Build the online docs and deploy to gh-pages - only done on master branch.
@@ -49,9 +48,10 @@ steps:
       # Install a previous version of `pkgdown` and its dependencies, which appears less likely to break.
       sudo Rscript -e "install.packages(c('fs', 'highlight', 'httr', 'memoise', 'openssl', 'purrr', 'rmarkdown', 'whisker', 'xml2', 'yaml'))"
       sudo Rscript -e "install.packages('https://cran.r-project.org/src/contrib/Archive/pkgdown/pkgdown_1.5.1.tar.gz', repos = NULL, type = 'source')"
+      # To render plot animations properly in pkgdown, we currently also need 'gifski' and 'ragg'.
+      sudo Rscript -e "install.packages(c('gifski', 'ragg'))"
       # Install synthdid, and optionally packages used for vignettes.
       R CMD INSTALL .
-      sudo Rscript -e "install.packages(c('gifski'))" 
       # Build and deploy page. This requires that the branch `gh-pages` exists.
       # git worktree is used to only commit the doc folder (docs/) as the root.
       # update-ref is used to not keep a commit history of the generated docs.
