@@ -242,7 +242,7 @@ synthdid_placebo_plot = function(estimate, overlay = FALSE, treated.fraction = N
 #' @param estimates as output by synthdid_estimate. Can be a single one or a list of them.
 #' @param negligible.threshold Unit weight threshold below which units are plotted as small, transparent xs instead of circles. Defaults to .001.
 #' @param negligible.alpha Determines transparency of those xs.
-#' @param se.method: the method used to calculate standard errors for the CI. See vcov.synthdid_estimate. 
+#' @param se.method the method used to calculate standard errors for the CI. See vcov.synthdid_estimate. 
 #'        Defaults to 'jackknife' for speed. If 'none', don't plot a CI.
 #' @export synthdid_units_plot
 synthdid_units_plot = function(estimates, negligible.threshold = .001, negligible.alpha = .3, se.method='jackknife') {

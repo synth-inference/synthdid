@@ -21,7 +21,7 @@ synthdid_units_plot(
 
 \item{negligible.alpha}{Determines transparency of those xs.}
 
-\item{se.method:}{the method used to calculate standard errors for the CI. See vcov.synthdid_estimate.
+\item{se.method}{the method used to calculate standard errors for the CI. See vcov.synthdid_estimate.
 Defaults to 'jackknife' for speed. If 'none', don't plot a CI.}
 }
 \description{

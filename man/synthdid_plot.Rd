@@ -25,7 +25,7 @@ synthdid_plot(
   trajectory.alpha = 0.5,
   diagram.alpha = 0.95,
   effect.alpha = 0.95,
-  onset.alpha = 0.3,
+  onset.alpha = 0.6,
   ci.alpha = 0.3,
   se.method = "jackknife",
   alpha.multiplier = NULL
