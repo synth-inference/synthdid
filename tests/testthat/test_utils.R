@@ -36,10 +36,10 @@ test_that("panel.matrices works as expected", {
   expect_equal(unname(out.date$W), unname(out$W))
 
   # Removing one (unit, year) entry causes an unbalanced panel error
-  expect_error(panel.matrices(panel[-10, ]), "Input `panel` must be a balanced panel data set.")
+  expect_error(panel.matrices(panel[-10, ]), "Input `panel` must be a balanced panel: it must have an observation for every unit at every time.")
 
   # Duplicating some units causes an unbalanced panel error
-  expect_error(panel.matrices(rbind(panel, panel[5:10, ])), "Input `panel` must be a balanced panel data set.")
+  expect_error(panel.matrices(rbind(panel, panel[5:10, ])), "Input `panel` must be a balanced panel: it must have an observation for every unit at every time.")
 
   # If we make Kansas a treated state, it is the last row in the reshaped matrix
   panel[panel$State =="Kansas" & panel$Year >=1989, "treated"] = 1
