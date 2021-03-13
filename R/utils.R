@@ -82,6 +82,9 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
   if (length(unique(panel[, treatment])) == 1) {
     stop("There is no variation in treatment status.")
   }
+  if (!all(panel[, treatment] %in% c(0, 1))) {
+    stop("The treatment status should be in 0 or 1.")
+  }
   # Remove any factor variables
   panel = data.frame(
     lapply(panel, function(col) {if (is.factor(col)) as.character(col) else col}), stringsAsFactors = FALSE
@@ -92,17 +95,19 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
     stop("Input `panel` must be a balanced panel data set.")
   }
 
-  panel = panel[order(panel[, treatment], panel[, unit], panel[, time]), ]
-  T = length(unique(panel[, time]))
-  N = length(unique(panel[, unit]))
-  Y = matrix(panel[,outcome], N, T, byrow = TRUE,
+  treated.units = unique(panel[panel[, treatment] == 1, unit])
+  treated.unit = panel[, unit] %in% treated.units
+  panel = panel[order(treated.unit, panel[, unit], panel[, time]), ]
+  num.years = length(unique(panel[, time]))
+  num.units = length(unique(panel[, unit]))
+  Y = matrix(panel[,outcome], num.units, num.years, byrow = TRUE,
              dimnames = list(unique(panel[,unit]), unique(panel[,time])))
-  W = matrix(panel[,treatment], N, T, byrow = TRUE,
+  W = matrix(panel[,treatment], num.units, num.years, byrow = TRUE,
              dimnames = list(unique(panel[,unit]), unique(panel[,time])))
-  N0 = N-sum(W[,T])
-  T0 = T-sum(W[N,])
+  N0 = num.units - sum(W[, num.years])
+  T0 = num.years - sum(W[num.units, ])
   if(! (all(W[1:N0,] == 0) && all(W[,1:T0] == 0) && all(W[N0+1,T0+1]==1))) {
-    stop('The package cannot use this data. Treatment adoption is not simultaneous')
+    stop("The package cannot use this data. Treatment adoption is not simultaneous.")
   }
   list(Y = Y, N0 = N0, T0 = T0, W = W)
 }
