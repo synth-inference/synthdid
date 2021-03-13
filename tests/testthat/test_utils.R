@@ -2,11 +2,23 @@ test_that("panel.matrices works as expected", {
   data("california_prop99")
   panel = california_prop99
   panel.shuffled = panel[sample(1:nrow(panel)), ]
+  covariates = as.data.frame(matrix(runif(nrow(panel) * 5), nrow(panel), 5))
+  panel.aug = cbind(covariates, panel)
+  panel.aug = panel.aug[sample(1:ncol(panel.aug))]
   out = panel.matrices(panel)
   out.shuffled = panel.matrices(panel.shuffled)
   expect_equal(out, out.shuffled)
+
   # In the California data set the last unit in the reshape data is California
   expect_equal(row.names(out$Y)[nrow(out$Y)], "California")
+
+  # Mixed column input works
+  out.int.string <- panel.matrices(panel, unit = "State", time = "Year", outcome = 3, treatment = "treated")
+  expect_equal(out, out.int.string)
+
+  # Passing in a data.frame with more columns
+  out.aug <- panel.matrices(panel.aug, unit = "State", time = "Year", outcome = "PacksPerCapita", treatment = "treated")
+  expect_equal(out, out.aug)
 
   # Removing one (unit, year) entry causes an unbalanced panel error
   expect_error(panel.matrices(panel[-10, ]), "Input `panel` must be a balanced panel data set.")
