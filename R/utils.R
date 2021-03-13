@@ -33,21 +33,74 @@ pairwise.sum.decreasing = function(x, y) {
   pairwise.sum
 }
 
-# pass column names / indices. For now, assume indices. Defaults correspond to our built-in datasets
-make.panel = function(panel, unit=2, time=3, outcome=4, treatment=5) {
-    panel = panel[order(panel[, treatment], panel[, unit], panel[, time]), ]
-    T = length(unique(panel[, time]))
-    N = length(unique(panel[, unit]))
-    Y = matrix(panel[,outcome], N, T, byrow = TRUE,
-               dimnames = list(unique(panel[,unit]), unique(panel[,time])))
-    W = matrix(panel[,treatment], N, T, byrow = TRUE,
-               dimnames = list(unique(panel[,unit]), unique(panel[,time])))
-    N0 = N-sum(W[,T])
-    T0 = T-sum(W[N,])
-    if(! (all(W[1:N0,] == 0) && all(W[,1:T0] == 0) && all(W[N0+1,T0+1]==1))) { 
-	error('The package cannot use this data. Treatment adoption is not simultaneous')
+#' Convert a long (balanced) panel to a wide matrix
+#'
+#' Converts a data set in panel form to matrix format required by synthdid estimators.
+#'
+#' @param panel A data.frame with columns consisting of units, time, outcome, and treatment indicator.
+#' @param unit The column number/name corresponding to the unit identifier. Default is 1.
+#' @param time The column number/name corresponding to the time identifier. Default is 2.
+#' @param outcome The column number/name corresponding to the outcome identifier. Default is 3.
+#' @param treated The column number/name corresponding to the treatment status. Default is 4.
+#'
+#' @return A list with entries `Y`: the data matrix, `N0`: the number of control units, `T0`:
+#'  the number of time periods before treatment.
+#'
+#' @examples
+#' \donttest{
+#' # Load tobacco sales in long panel format.
+#' data("california_prop99")
+#' # Transform to N*T matrix format required for synthdid,
+#' # where N is the number of units and T the time periods.
+#' setup <- make.panel(california_prop99, unit = 1, time = 2, outcome = 3, treatment = 4)
+#'
+#' # Compute synthdid estimate
+#' synthdid_estimate(setup$Y, setup$N0, setup$T0)
+#' }
+#'
+#' @export
+make.panel = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4) {
+  # TODO: add support for covariates X, i.e. could keep all other columns
+  keep = c(unit, time, outcome, treatment)
+  if (!(all(keep %in% 1:ncol(panel)) || all(keep %in% colnames(panel)))) {
+    stop("Column identifiers should be either integer or column names in `panel`.")
+  }
+  if (!is.data.frame(panel)){
+    if (is.matrix(panel)) {
+      panel = as.data.frame(panel)
+    } else {
+      stop("Unsupported input type `panel.`")
     }
-    list(Y=Y, N0=N0, T0=T0)
+  }
+  if (anyNA(panel)) {
+    stop("Missing values in `panel`.")
+  }
+  if (length(unique(panel[, treatment])) == 1) {
+    stop("There is no variation in treatment status.")
+  }
+  # Remove any factor variables
+  panel = data.frame(
+    lapply(panel, function(col) {if (is.factor(col)) as.character(col) else col}), stringsAsFactors = FALSE
+  )
+  panel = panel[keep]
+  val <- as.vector(table(panel[, unit], panel[, time]))
+  if (!all(val == 1)) {
+    stop("Input `panel` must be a balaned panel data set.")
+  }
+
+  panel = panel[order(panel[, treatment], panel[, unit], panel[, time]), ]
+  T = length(unique(panel[, time]))
+  N = length(unique(panel[, unit]))
+  Y = matrix(panel[,outcome], N, T, byrow = TRUE,
+             dimnames = list(unique(panel[,unit]), unique(panel[,time])))
+  W = matrix(panel[,treatment], N, T, byrow = TRUE,
+             dimnames = list(unique(panel[,unit]), unique(panel[,time])))
+  N0 = N-sum(W[,T])
+  T0 = T-sum(W[N,])
+  if(! (all(W[1:N0,] == 0) && all(W[,1:T0] == 0) && all(W[N0+1,T0+1]==1))) {
+    stop('The package cannot use this data. Treatment adoption is not simultaneous')
+  }
+  list(Y=Y, N0=N0, T0=T0)
 }
 
 # A convenience function for generating data for unit tests.
