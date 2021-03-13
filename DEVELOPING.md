@@ -9,8 +9,9 @@ Developing and building can be done through RStudio, or by using the `devtools` 
 
 1. Edit code
 2. Load everything into an R session with `devtools::load_all(".")`
-3. Test your changes with `devtools::test()`
-3. Build the auto-generated documentation with `devtools::document(roclets = c('rd', 'collate', 'namespace'))`
-4. Commit the changes (including the generated documentation).
+3. Test your changes with `devtools::check()'. 
+   This also builds auto-generated documentation, possibly raising warnings that arise from errors in your in-code Markdown. 
+   For example: Square brackets are special syntax and must be escaped if meant literally: in Markdown, the unit interval is \[0,1\].
+4.Commit the changes (including the generated documentation).
 
 Vignettes for the online documentation are stored in `R/vignettes`. This page can be rendered locally using `pkgdown::build_site()`. The layout for this page is defined in `_pkgdown.yml`.
