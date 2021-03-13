@@ -136,6 +136,17 @@ timesteps = function(Y) {
 }
 
 
+## define some convenient accessors
+setOldClass("synthdid_estimate")
+get_slot = function(name) { function(object) { object[[name]] } }
+setGeneric('weights')
+setGeneric('Y',      get_slot('Y'))
+setGeneric('lambda', get_slot('lambda'))
+setGeneric('omega',  get_slot('omega'))
+setMethod(weights, signature='synthdid_estimate',  definition=function(object) { attr(object, 'weights') })
+setMethod(Y,       signature='synthdid_estimate',  definition=function(object) { attr(object, 'setup')$Y })
+setMethod(lambda,  signature='synthdid_estimate',  definition=function(object) { lambda(weights(object)) })
+setMethod(omega,   signature='synthdid_estimate',  definition=function(object) { omega(weights(object))  })
 
 
 # A convenience function for generating data for unit tests.
