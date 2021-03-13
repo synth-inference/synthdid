@@ -32,7 +32,7 @@ synthdid_plot(
 }
 \arguments{
 \item{estimates, }{a list of estimates output by synthdid_estimate. Or a single estimate.
-If estimates have attribute 'intercept' set (scalar in [0,1]), then plot after subtracting
+If estimates have attribute 'intercept' set (scalar in \link{0,1}), then plot after subtracting
 that fraction of the SDID adjustment for the difference between pre-treatment treated and sc curves.
 With intercept of almost one, this makes it easier to assess parallel-ness by making trajectories closer
 With intercept of one, this overlays curves, and plotting a diagram is suppressed as in the case of a SC estimate.}
@@ -50,7 +50,7 @@ If NULL, plot each estimate in a different facet. Defaults to NULL.}
 \item{facet.vertical, }{TOADD}
 
 \item{lambda.comparable, }{TRUE if the weights lambda should be plotted in such a way that the ribbons
- have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots.
+have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots.
 Defaults to FALSE if facet is not passed, TRUE if passed.}
 
 \item{overlay}{specifies a value of 'intercept' for all SDID estimates. Defaults to 0.
@@ -82,7 +82,7 @@ one facet but highlighting one or several. All plot elements associated with the
 with alpha multiplied by the corresponding element of alpha.multiplier. Defaults to a vector of ones.}
 }
 \description{
-For SC estimates (lambda=[0,0,...]), plots the trajectories and SC estimate of the effect, but no diagram.
+For SC estimates (lambda=\link{0,0,...}), plots the trajectories and SC estimate of the effect, but no diagram.
 }
 \details{
 Requires ggplot2

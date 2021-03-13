@@ -157,7 +157,7 @@ test_that("treated effect shifts correctly with scalar shifts to the 4 blocks", 
     for (estimator in estimators[-1]) {
       estimate = estimator(Y.orig, N0, T0)
       estimate.shift = estimator(Y3, N0, T0)
-      expect_equal(lambda(estimate.shift), estimate)
+      expect_equal(lambda(estimate.shift), lambda(estimate))
       expect_equal(c(estimate.shift), c(estimate) + c, tol = 1e-10)
     }
 

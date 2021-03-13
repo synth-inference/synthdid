@@ -12,11 +12,11 @@ sc_estimate(
   T0,
   X = array(dim = c(dim(Y), 0)),
   zeta.lambda = 0,
-  zeta.omega = sd(apply(Y, 1, diff)),
+  zeta.omega = sd(apply(Y[1:N0, 1:T0], 1, diff)),
   lambda.intercept = FALSE,
   omega.intercept = FALSE,
   weights = list(lambda = rep(0, T0), omega = NULL, vals = NULL),
-  min.decrease = 0.001 * sd(apply(Y, 1, diff)),
+  min.decrease = 0.001 * sd(apply(Y[1:N0, 1:T0], 1, diff)),
   max.iter = 10000
 )
 }
@@ -47,9 +47,9 @@ in penalized MSE smaller than min.decrease^2.}
 }
 \value{
 An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
-        Weights contains the estimated weights lambda and omega and corresponding intercepts.
-        If covariates X are passedas well as regression coefficients beta if X is passed
-        Setup is a list describing the problem passed in: Y, N0, T0, X.
+Weights contains the estimated weights lambda and omega and corresponding intercepts.
+If covariates X are passedas well as regression coefficients beta if X is passed
+Setup is a list describing the problem passed in: Y, N0, T0, X.
 }
 \description{
 synthdid_estimate for synthetic control estimates.
