@@ -63,6 +63,7 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
   if (class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
   if (is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
   if (is.null(alpha.multiplier)) { alpha.multiplier = rep(1, length(estimates)) }
+  multiple.frames = length(overlay) > 1
   treated = 1
   control = 2
   groups = factor(c(control, treated), labels = c(control.name, treated.name))
@@ -203,7 +204,7 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
   # returns geom(aes, data=data, ...) where aes=base.aes if there's a single frame
   #					    aes=(base.aes, frame=frame) if there's more than one
   with.frame = function(geom, base.aes, data, ...) {
-	new.aes = if(length(unique(data$frame)) <= 1) { base.aes } else { modifyList(base.aes, aes(frame=frame)) }
+	new.aes = if(multiple.frames) { modifyList(base.aes, aes(frame=frame)) } else { base.aes } 
 	do.call(geom, c(list(new.aes, data=data), list(...))) 
   }
 
