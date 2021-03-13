@@ -1,5 +1,5 @@
 ---
-title: "plotting features"
+title: "More on Plotting"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{plotting features}
@@ -10,6 +10,13 @@ vignette: >
 ```{r setup}
 library(synthdid)
 library(ggplot2)
+```
+
+```{r, echo=FALSE}
+ragg_png = function(..., res = 192) {
+  ragg::agg_png(..., res = res, units = "in")
+}
+knitr::opts_chunk$set(dev = "ragg_png", fig.ext = "png")
 ```
 
 # Dates as Timesteps
@@ -30,7 +37,11 @@ Note the long linear sections where we're drawing the segment between 1973 and 1
 # Spaghetti Plots
 We can include the trajectories of individual controls on our parallel trends diagram.
 Here we plot the 10 controls with the largest weights $\omega_i$. 
+We'll go back to the regularly spaced data from here on.
 ```{r, fig.width=7.5, fig.height=4}
+  setup = panel.matrices(california_prop99)
+  estimate = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+  
   top.controls = synthdid_controls(estimate)[1:10, , drop=FALSE]
   plot(estimate, spaghetti.units=rownames(top.controls))
 ```
@@ -53,7 +64,7 @@ from changing as the visible one's control trajectory moves.
 # into an animation. To just plot 5 pictures, replace the next line with:
 # {r, fig.width=7, fig.height=4.5}
 ---
-```{r, fig.width=7, fig.height=4.5, animation.hook='ffmpeg', ffmpeg.format='gif', dev='jpeg'}
+```{r, fig.width=7, fig.height=4.5, animation.hook='gifski', interval=.5}
 estimate.sc = sc_estimate(setup$Y, setup$N0, setup$T0)
 with.overlay = function(est, s) { attr(est,'overlay') = s; est } 
 estimators = function(s) { 
@@ -102,3 +113,4 @@ p3 + plot.theme
 p4 + plot.theme
 p5 + plot.theme
 ```
+
