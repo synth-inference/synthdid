@@ -22,6 +22,15 @@ test_that("panel.matrices works as expected", {
   out.aug2 <- panel.matrices(cbind(covariates, panel), unit = 6, time = 7, outcome = "PacksPerCapita", treatment = 9)
   expect_equal(out, out.aug2)
 
+  # A year column in Date format is fine
+  panel.date = panel
+  panel.date$Year = as.Date(panel.date$Year, origin = "1970-12-30")
+  out.date = panel.matrices(panel.date)
+  expect_equal(unname(out.date$Y), unname(out$Y))
+  expect_equal(out.date$N0, out$N0)
+  expect_equal(out.date$T0, out$T0)
+  expect_equal(unname(out.date$W), unname(out$W))
+
   # Removing one (unit, year) entry causes an unbalanced panel error
   expect_error(panel.matrices(panel[-10, ]), "Input `panel` must be a balanced panel data set.")
 
