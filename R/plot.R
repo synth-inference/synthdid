@@ -10,10 +10,6 @@
 #' Due to differences between ggplot and ggplotly, this will warn about an unknown aesthetic frame.
 #'
 #' @param estimates, a list of estimates output by synthdid_estimate. Or a single estimate.
-#'          If estimates have attribute 'intercept' set (scalar in \[0,1\]), then plot after subtracting
-#'          that fraction of the SDID adjustment for the difference between pre-treatment treated and sc curves.
-#'          With intercept of almost one, this makes it easier to assess parallel-ness by making trajectories closer
-#'          With intercept of one, this overlays curves, and plotting a diagram is suppressed as in the case of a SC estimate.
 #' @param treated.name, the name of the treated curve that appears in the legend. Defaults to 'treated'
 #' @param control.name, the name of the control curve that appears in the legend. Defaults to 'synthetic control'
 #' @param facet, a list of the same length as estimates indicating the facet in which to plot each estimate.
@@ -23,7 +19,12 @@
 #' @param lambda.comparable, TRUE if the weights lambda should be plotted in such a way that the ribbons
 #'        have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots.
 #' 	  Defaults to FALSE if facet is not passed, TRUE if passed.
-#' @param overlay specifies a value of 'intercept' for all SDID estimates. Defaults to 0.
+#' @param overlay, a number in \[0,1\] defaulting to 0, can be used to shift the control trajectory toward the treated trajectory.
+#'        When a nonzero value is passed, we plot the control after subtracting
+#'        that fraction of the diff-in-diff style adjustment for the difference between lambda-weighted pre-treatment averages of the treated and control.
+#'        With intercept of almost one, this makes it easier to assess parallel-ness by making trajectories closer
+#'        With intercept of one, this essentially overlays the curves, and plotting a diagram is suppressed as in the case of a SC estimate.
+#'	  To use different values for different plots, pass these values as an attribute 'overlay' of each estimate.
 #'        If a vector is passed, plots at different intercept levels indicated by the 'frame' aesthetic. ggplotly will interpret this as an animation.
 #' @param lambda.plot.scale determines the scale of the plot of the weights lambda.
 #' @param trajectory.linetype, the linetype of the treated and synthetic control trajectories
@@ -37,7 +38,7 @@
 #' @param effect.alpha determines transparency of effect arrows
 #' @param onset.alpha determines transparency of vertical lines indicating onset of treatment
 #' @param ci.alpha determines transparency of the arrows illustrating upper and lower bounds of a 95% confidence interval for the effect
-#' @param se.method determines the method used to calculate the standard error used for this confidence interval
+#' @param se.method determines the method used to calculate the standard error used for this confidence interval. if 'none', don't show the interval
 #' @param alpha.multiplier, a vector of the same length as estimates, is useful for comparing multiple estimates in
 #'        one facet but highlighting one or several. All plot elements associated with the estimate are displayed
 #'        with alpha multiplied by the corresponding element of alpha.multiplier. Defaults to a vector of ones.
@@ -68,7 +69,7 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
   plot.descriptions = lapply(1:nrow(grid), function(row) {
     est = estimates[[grid$estimate[row]]]
     over = overlay[grid$overlay[row]]
-    se = sqrt(vcov(est, method=se.method))
+    se = if(se.method == 'none') { NA } else { sqrt(vcov(est, method=se.method)) }
     setup = attr(est, 'setup')
     weights = attr(est, 'weights')
     Y = setup$Y - contract3(setup$X, weights$beta)
@@ -80,11 +81,10 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
     omega.synth = c(weights$omega, rep(0, N1))
     omega.target = c(rep(0, N0), rep(1 / N1, N1))
 
-    # if we're given a synthetic control estimate, take note: we'll plot it differently
-    # and if we're passed a SDID estimate with 'intercept' attribute = 1, we'll subtract the SDID intercept offset
-    # and plot it like a synthetic control estimate
-    is.sc = all(weights$lambda == 0) || (!is.null(attr(est, 'intercept')) && attr(est, 'intercept') == 1)
-    if (!is.null(attr(est, 'intercept'))) { over = attr(est, 'intercept') } # force overlaying curves if intercept attribute = 1
+    # pull estimate-specific overlay from attribute if present
+    # if we're given a synthetic control estimate or overlay is one, take note: we'll plot it differently
+    if (!is.null(attr(est, 'overlay'))) { over = attr(est, 'overlay') } 
+    is.sc = all(weights$lambda == 0) || over==1
 
     intercept.offset = over * c((omega.target - omega.synth) %*% Y %*% lambda.synth)
     obs.trajectory = as.numeric(omega.target %*% Y)
@@ -193,12 +193,13 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
     geom_ribbon(aes(x = x, ymin = ymin, ymax = ymax, group = color, fill = color, alpha = .5 * diagram.alpha * show),  data = conc$ribbons, 
 	color = 'black', size = line.width, show.legend = FALSE) +
     geom_curve(aes(x = x, xend = xend, y = y, yend = yend, alpha = effect.alpha * show), data = conc$arrows, 
-    	curvature = effect.curvature, color = 'black', size = line.width, arrow = arrow(length = unit(.2, 'cm'))) + 
-    geom_curve(aes(x = x, xend = xend, y = y, yend = yend, alpha = ci.alpha * show), data = conc$ub.arrows, 
-	curvature = effect.curvature, color = 'black', size = line.width, arrow = arrow(length = unit(.2, 'cm'))) + 
-    geom_curve(aes(x = x, xend = xend, y = y, yend = yend, alpha = ci.alpha * show), data = conc$lb.arrows, 
-	curvature = effect.curvature, color = 'black', size = line.width, arrow = arrow(length = unit(.2, 'cm')))
-  
+    	curvature = effect.curvature, color = 'black', size = line.width, arrow = arrow(length = unit(.2, 'cm')))
+    if(!all(is.na(conc$ub.arrows$y))) {
+      p = p + geom_curve(aes(x = x, xend = xend, y = y, yend = yend, alpha = ci.alpha * show), data = conc$ub.arrows, 
+		curvature = effect.curvature, color = 'black', size = line.width, arrow = arrow(length = unit(.2, 'cm'))) + 
+              geom_curve(aes(x = x, xend = xend, y = y, yend = yend, alpha = ci.alpha * show), data = conc$lb.arrows, 
+		curvature = effect.curvature, color = 'black', size = line.width, arrow = arrow(length = unit(.2, 'cm')))
+    }
   # facet if we want multiple facets
   if (!all(conc$lines$facet == conc$lines$facet[1])) {
     if (facet.vertical) { p = p + facet_grid(facet ~ ., scales = 'free_y') }
@@ -234,14 +235,17 @@ synthdid_placebo_plot = function(estimate, overlay = FALSE, treated.fraction = N
   synthdid_plot(estimates, facet = if (overlay) { c(1, 1) } else { NULL })
 }
 
-#' Plots unit by unit difference-in-differences
+#' Plots unit by unit difference-in-differences. Dot size indicates the weights omega_i
+#' used in the average that yields our treatment effect estimate. 
+#' This estimate and endpoints of a 95% CI are plotted as horizontal lines.
 #' Requires ggplot2
 #' @param estimates as output by synthdid_estimate. Can be a single one or a list of them.
-#' @param show.ci If TRUE, plots horizontal lines for 95% CI as well as the point estimate. Defaults to FALSE.
 #' @param negligible.threshold Unit weight threshold below which units are plotted as small, transparent xs instead of circles. Defaults to .001.
 #' @param negligible.alpha Determines transparency of those xs.
+#' @param se.method: the method used to calculate standard errors for the CI. See vcov.synthdid_estimate. 
+#'        Defaults to 'jackknife' for speed. If 'none', don't plot a CI.
 #' @export synthdid_units_plot
-synthdid_units_plot = function(estimates, show.ci = FALSE, negligible.threshold = .001, negligible.alpha = .3) {
+synthdid_units_plot = function(estimates, negligible.threshold = .001, negligible.alpha = .3, se.method='jackknife') {
   if (requireNamespace("ggplot2", quietly = TRUE)) {
     .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
   } else {
@@ -262,7 +266,7 @@ synthdid_units_plot = function(estimates, show.ci = FALSE, negligible.threshold 
     omega.control = c(weights$omega, rep(0, N1))
     omega.treat = c(rep(0, N0), rep(1 / N1, N1))
     difs = as.vector(t(omega.treat) %*% Y %*% (lambda.post - lambda.pre)) - as.vector(Y[1:N0, ] %*% (lambda.post - lambda.pre))
-    se = if (show.ci) { synthdid_se(estimate) } else { NA }
+    se = if (se.method == 'none') { NA } else { sqrt(vcov(estimate, method=se.method)) }
     data.frame(y = difs, unit = rownames(Y)[1:N0], weight = omega.control[1:N0],
       estimate = c(estimate), se = se, estimator = names(estimates)[[ee]])
   }))
@@ -270,7 +274,7 @@ synthdid_units_plot = function(estimates, show.ci = FALSE, negligible.threshold 
     geom_point(aes(x = unit, y = y, size = weight), data = plot.data[plot.data$weight > negligible.threshold, ]) +
     geom_point(aes(x = unit, y = y, size = weight), data = plot.data[plot.data$weight <= negligible.threshold, ], alpha = negligible.alpha, shape = 4, show.legend = FALSE) +
     geom_hline(aes(yintercept = estimate), size = .75)
-  if (show.ci) {
+  if (!all(is.na(plot.data$se))) {
     p = p + geom_hline(aes(yintercept = estimate - 1.96 * se), size = .5, alpha = .5) +
       geom_hline(aes(yintercept = estimate + 1.96 * se), size = .5, alpha = .5)
   }
