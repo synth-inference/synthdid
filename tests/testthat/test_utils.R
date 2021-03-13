@@ -5,7 +5,11 @@ test_that("panel.matrices works as expected", {
   covariates = as.data.frame(matrix(runif(nrow(panel) * 5), nrow(panel), 5))
   panel.aug = cbind(covariates, panel)
   panel.aug = panel.aug[sample(1:ncol(panel.aug))]
+
+  # Expected output
   out = panel.matrices(panel)
+
+  # Is the same if input data rows are shuffled
   out.shuffled = panel.matrices(panel.shuffled)
   expect_equal(out, out.shuffled)
 
