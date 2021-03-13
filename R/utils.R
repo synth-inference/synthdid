@@ -41,7 +41,7 @@ pairwise.sum.decreasing = function(x, y) {
 #' @param unit The column number/name corresponding to the unit identifier. Default is 1.
 #' @param time The column number/name corresponding to the time identifier. Default is 2.
 #' @param outcome The column number/name corresponding to the outcome identifier. Default is 3.
-#' @param treated The column number/name corresponding to the treatment status. Default is 4.
+#' @param treatment The column number/name corresponding to the treatment status. Default is 4.
 #'
 #' @return A list with entries `Y`: the data matrix, `N0`: the number of control units, `T0`:
 #'  the number of time periods before treatment.

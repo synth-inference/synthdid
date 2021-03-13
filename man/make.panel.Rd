@@ -15,7 +15,7 @@ make.panel(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
 
 \item{outcome}{The column number/name corresponding to the outcome identifier. Default is 3.}
 
-\item{treated}{The column number/name corresponding to the treatment status. Default is 4.}
+\item{treatment}{The column number/name corresponding to the treatment status. Default is 4.}
 }
 \value{
 A list with entries \code{Y}: the data matrix, \code{N0}: the number of control units, \code{T0}:
