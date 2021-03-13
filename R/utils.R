@@ -100,7 +100,7 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
   if(! (all(W[1:N0,] == 0) && all(W[,1:T0] == 0) && all(W[N0+1,T0+1]==1))) {
     stop('The package cannot use this data. Treatment adoption is not simultaneous')
   }
-  list(Y=Y, N0=N0, T0=T0)
+  list(Y = Y, N0 = N0, T0 = T0, W = W)
 }
 
 # A convenience function for generating data for unit tests.
