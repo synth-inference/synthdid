@@ -75,6 +75,7 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
   outcome = index.to.name(outcome)
   treatment = index.to.name(treatment)
   keep = c(unit, time, outcome, treatment)
+
   panel = panel[keep]
   if (!is.data.frame(panel)){
     stop("Unsupported input type `panel.`")
@@ -113,6 +114,34 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
   }
   list(Y = Y, N0 = N0, T0 = T0, W = W)
 }
+
+#' Get timesteps from panel matrix Y
+#'
+#' timesteps are stored as colnames(Y), but column names cannot be Date objects.
+#' Instead, we use strings. If they are strings convertible to dates, return that
+#'
+#' @param Y a matrix 
+#' @return its column names interpreted as Dates if possible
+#' @export
+timesteps = function(Y) {
+    tryCatch({
+	as.Date(colnames(Y))
+    }, error = function(e) { colnames(Y) })
+}
+
+
+## define some convenient accessors
+setOldClass("synthdid_estimate")
+get_slot = function(name) { function(object) { object[[name]] } }
+setGeneric('weights')
+setGeneric('Y',      get_slot('Y'))
+setGeneric('lambda', get_slot('lambda'))
+setGeneric('omega',  get_slot('omega'))
+setMethod(weights, signature='synthdid_estimate',  definition=function(object) { attr(object, 'weights') })
+setMethod(Y,       signature='synthdid_estimate',  definition=function(object) { attr(object, 'setup')$Y })
+setMethod(lambda,  signature='synthdid_estimate',  definition=function(object) { lambda(weights(object)) })
+setMethod(omega,   signature='synthdid_estimate',  definition=function(object) { omega(weights(object))  })
+
 
 # A convenience function for generating data for unit tests.
 random.low.rank = function() {
