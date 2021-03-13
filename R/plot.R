@@ -50,9 +50,9 @@
 #' @export synthdid_plot
 synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'synthetic control', spaghetti.units = c(),
                          facet = NULL, facet.vertical = TRUE, lambda.comparable = !is.null(facet), overlay = 0,
-                         lambda.plot.scale = 3, trajectory.linetype = 1, effect.curvature = .3, line.width = .5, guide.linetype = 2, point.size = .5,
-                         trajectory.alpha = .4, diagram.alpha = .95, effect.alpha = .95, onset.alpha = .3, ci.alpha=.3,
-			 spaghetti.line.width = .2, spaghetti.label.size = 1, 
+                         lambda.plot.scale = 3, trajectory.linetype = 1, effect.curvature = .3, line.width = .5, guide.linetype = 2, point.size = 1,
+                         trajectory.alpha = .5, diagram.alpha = .95, effect.alpha = .95, onset.alpha = .3, ci.alpha=.3,
+			 spaghetti.line.width = .2, spaghetti.label.size = 2, 
 			 spaghetti.line.alpha = .3, spaghetti.label.alpha = .5,
 			 se.method='jackknife', alpha.multiplier = NULL) {
   if (requireNamespace("ggplot2", quietly = TRUE)) {
