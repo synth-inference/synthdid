@@ -13,7 +13,7 @@ STATE.NAME = c("Alabama", "Arkansas", "Colorado", "Connecticut", "Delaware",
 STATE = data.raw[1,]
 X.attr = t(data.raw[2:8,])
 Y = t(data.raw[9:39,])
-colnames(Y) = 1969 + 1:31 
+colnames(Y) = 1969 + 1:31
 rownames(Y) = STATE.NAME
 states = function(...) { which(STATE.NAME %in% c(...)) }
 Y = Y[c(setdiff(1:nrow(Y), states('California')), states('California')), ]
@@ -29,9 +29,9 @@ write.csv(mY, file='california_prop99.csv')
 
 ## read and compare
 devtools::load_all('.')
-setup = make.panel(read.csv('california_prop99.csv'))
-if(!  all(setup$Y == Y) 
-   &  all(rownames(setup$Y) ==  rownames(Y)) 
+setup = panel.matrices(read.csv('california_prop99.csv'))
+if(!  all(setup$Y == Y)
+   &  all(rownames(setup$Y) ==  rownames(Y))
    &  all(colnames(setup$Y) ==  colnames(Y))
    &  setup$N0 == N0
    &  setup$T0 == T0) { error('california prop 99 data matrix does not match after writing and reading csv calling make.panel') }
