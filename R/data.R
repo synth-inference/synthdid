@@ -1,0 +1,32 @@
+#' California proposition 99
+#'
+#' A dataset containing per-capita cigarette consumption (in packs).
+#' In year 1989 California imposed a Tobacco tax. The column `treated` is 1 from then on for California.
+#'
+#' @docType data
+#' @name california_prop99
+#'
+#' @format A data frame with 1209 rows and 4 variables:
+#' \describe{
+#'   \item{State}{US state name, character string}
+#'   \item{Year}{Year, integer}
+#'   \item{PacksPerCapita}{per-capita cigarette consumption, numeric}
+#'   \item{treated}{the treatmed indicator 0: control, 1: treated, numeric}
+#'   ...
+#' }
+#' @source Abadie, Alberto, Alexis Diamond, and Jens Hainmueller.
+#'  "Synthetic control methods for comparative case studies: Estimating the effect of California’s tobacco control program."
+#'   Journal of the American statistical Association 105, no. 490 (2010): 493-505.
+#'
+#' @usage data(california_prop99)
+#'
+#' @examples
+#' \donttest{
+#' # Load tobacco sales in long panel format.
+#' data("california_prop99")
+#' # Transform to N*T matrix format required for synthdid,
+#' # where N is the number of units and T the time periods.
+#' setup <- panel.matrices(california_prop99)
+#' }
+#'
+NULL

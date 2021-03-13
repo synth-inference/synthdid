@@ -19,3 +19,7 @@ reference:
       - summary.synthdid_estimate
       - plot.synthdid_estimate
       - print.synthdid_estimate
+
+  - title: Data sets
+    contents:
+      - california_prop99

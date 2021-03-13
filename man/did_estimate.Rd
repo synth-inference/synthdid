@@ -11,11 +11,11 @@ did_estimate(
   T0,
   X = array(dim = c(dim(Y), 0)),
   zeta.lambda = 0,
-  zeta.omega = sd(apply(Y, 1, diff)),
+  zeta.omega = sd(apply(Y[1:N0, 1:T0], 1, diff)),
   lambda.intercept = FALSE,
   omega.intercept = FALSE,
   weights = list(lambda = rep(1/T0, T0), omega = rep(1/N0, N0), vals = NULL),
-  min.decrease = 0.001,
+  min.decrease = 0.001 * sd(apply(Y[1:N0, 1:T0], 1, diff)),
   max.iter = 10000
 )
 }
