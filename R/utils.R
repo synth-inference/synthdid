@@ -76,9 +76,16 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
   
   # TODO: add support for covariates X, i.e. could keep all other columns
   keep = c(unit, time, outcome, treatment)
-  if (!(all(keep %in% 1:ncol(panel)) || all(keep %in% colnames(panel)))) {
+  if (!all(keep %in% 1:ncol(panel) | keep %in% colnames(panel))) {
     stop("Column identifiers should be either integer or column names in `panel`.")
   }
+  index.to.name = function(x) { if(x %in% 1:ncol(panel)) { colnames(panel)[x] } else { x } }
+  unit = index.to.name(unit)
+  time = index.to.name(time)
+  outcome = index.to.name(outcome)
+  treatment = index.to.name(treatment)
+  keep = c(unit, time, outcome, treatment)
+  panel = panel[keep]
   if (!is.data.frame(panel)){
     stop("Unsupported input type `panel.`")
   }
@@ -91,14 +98,13 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
   if (!all(panel[, treatment] %in% c(0, 1))) {
     stop("The treatment status should be in 0 or 1.")
   }
-  # Remove any factor variables
+  # Convert potential factor/date columns to character
   panel = data.frame(
-    lapply(panel, function(col) {if (is.factor(col)) as.character(col) else col}), stringsAsFactors = FALSE
+    lapply(panel, function(col) {if (is.factor(col) || inherits(col, "Date")) as.character(col) else col}), stringsAsFactors = FALSE
   )
-  panel = panel[keep]
   val <- as.vector(table(panel[, unit], panel[, time]))
   if (!all(val == 1)) {
-    stop("Input `panel` must be a balanced panel data set.")
+    stop("Input `panel` must be a balanced panel: it must have an observation for every unit at every time.")
   }
 
   # convert Dates to strings because Dates cannot be colnames
