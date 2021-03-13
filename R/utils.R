@@ -52,14 +52,14 @@ pairwise.sum.decreasing = function(x, y) {
 #' data("california_prop99")
 #' # Transform to N*T matrix format required for synthdid,
 #' # where N is the number of units and T the time periods.
-#' setup <- make.panel(california_prop99, unit = 1, time = 2, outcome = 3, treatment = 4)
+#' setup <- panel.matrices(california_prop99, unit = 1, time = 2, outcome = 3, treatment = 4)
 #'
 #' # Compute synthdid estimate
 #' synthdid_estimate(setup$Y, setup$N0, setup$T0)
 #' }
 #'
 #' @export
-make.panel = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4) {
+panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4) {
   # TODO: add support for covariates X, i.e. could keep all other columns
   keep = c(unit, time, outcome, treatment)
   if (!(all(keep %in% 1:ncol(panel)) || all(keep %in% colnames(panel)))) {
