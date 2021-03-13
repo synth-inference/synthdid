@@ -101,6 +101,9 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
     stop("Input `panel` must be a balanced panel data set.")
   }
 
+  # convert Dates to strings because Dates cannot be colnames
+  if(inherits(panel[,time], 'Date')) { panel[,time] = as.character(panel[,time]) }
+  
   treated.units = unique(panel[panel[, treatment] == 1, unit])
   treated.unit = panel[, unit] %in% treated.units
   panel = panel[order(treated.unit, panel[, unit], panel[, time]), ]
@@ -117,6 +120,23 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
   }
   list(Y = Y, N0 = N0, T0 = T0, W = W)
 }
+
+#' Get timesteps from panel matrix Y
+#'
+#' timesteps are stored as colnames(Y), but column names cannot be Date objects.
+#' Instead, we use strings. If they are strings convertible to dates, return that
+#'
+#' @param Y a matrix 
+#' @return its column names interpreted as Dates if possible
+#' @export
+timesteps = function(Y) {
+    tryCatch({
+	as.Date(colnames(Y))
+    }, error = function(e) { colnames(Y) })
+}
+
+
+
 
 # A convenience function for generating data for unit tests.
 random.low.rank = function() {

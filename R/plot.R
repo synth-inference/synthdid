@@ -96,7 +96,7 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
     control.pre = omega.synth %*% Y %*% lambda.synth + intercept.offset
     sdid.post = as.numeric(control.post + treated.pre - control.pre)
 
-    time = as.numeric(colnames(Y))
+    time = as.numeric(timesteps(Y))
     if (length(time) == 0 || !all(is.finite(time))) { time = 1:(T0 + T1) }
     pre.time = lambda.synth %*% time
     post.time = lambda.target %*% time
@@ -206,9 +206,12 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
   }
   # if only one estimate per facet, exclude estimate-denoting linetype from legend
   if (is.null(facet)) { p = p + guides(linetype = FALSE) }
-  # use dates on x axis if provided in colnames(Y)
+
+  # if timesteps(Y) is a date, the x coordinates in our plot are as.numeric(timesteps(Y))
+  # that's in units of days since the unix epoch: 1970-01-01
+  # to improve readability, display ticks as Dates
   p = tryCatch({
-    as.Date(colnames(Y))
+    as.Date(colnames(attr(estimates[[1]], 'setup')$Y))
     p + scale_x_continuous(labels = function(time) { as.Date(time, origin = '1970-01-01') })
   }, error = function(e) { p })
 
