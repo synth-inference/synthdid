@@ -23,6 +23,7 @@ reference:
     contents:
       - summary.synthdid_estimate
       - print.synthdid_estimate
+      - synthdid_controls
 
   - title: Utilities
     contents:

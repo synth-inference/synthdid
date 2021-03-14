@@ -7,13 +7,13 @@
 \title{synthdid: Synthetic Difference-in-Difference Estimation}
 \description{
 This package implements the synthetic difference in difference estimator (SDID) for the average treatment effect in panel data,
-as proposed in Arkhangelsky et al (2019). We observe matrices of outcomes Y and treatment indicators W
-that we think of as satisfying Y[i,j] = L[i,j] + tau[i,j] W[i,j] + epsilon[i,j]. Here
-tau[i,j] is the effect of treatment on the unit i at time j, and out goal is to
-estimate the average of these effects \tau[i,j] for the treated observations.
-All treated units must begin treatment simultaneously, so W is a block matrix: W[i,j] = 1 for i > N_0 and j > T_0,
-with N0 denoting the number of control units and T0 the number of observation times before onset of treatment.
-This applies, in particular, to the case of a single treated unit.
+as proposed in Arkhangelsky et al (2019). We observe matrices of outcomes Y and binary treatment indicators W
+that we think of as satisfying Y[i,j] = L[i,j] + tau[i,j] W[i,j] + noise[i,j].
+Here tau[i,j] is the effect of treatment on the unit i at time j, and out goal is to estimate the average effect of
+treatment when and where it happened: the average of tau[i,j] over the observations with W[i,j]=1.
+All treated units must begin treatment simultaneously, so W is a block matrix: W[i,j] = 1 for i > N_0 and j > T_0
+and zero otherwise, with N0 denoting the number of control units and T0 the number of observation times
+before onset of treatment. This applies, in particular, to the case of a single treated unit.
 
 This package is currently in beta and the functionality and interface is subject to change.
 
@@ -31,9 +31,9 @@ data('california_prop99')
 setup = panel.matrices(california_prop99)
 tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
 se = sqrt(vcov(tau.hat, method='placebo'))
-print(paste0("point estimate: ", round(tau.hat, 2)))
-print(paste0("95\% CI for tau: (", round(tau.hat - 1.96 * se, 2), ", ",
-                                  round(tau.hat + 1.96 * se, 2), ")"))
+sprintf('point estimate: \%1.2f', tau.hat)
+sprintf('95\%\% CI (\%1.2f, \%1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+plot(tau.hat)
 }
 
 }
