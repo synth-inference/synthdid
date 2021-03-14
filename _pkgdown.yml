@@ -18,12 +18,12 @@ reference:
       - sc_estimate
       - did_estimate
       - vcov.synthdid_estimate
+      - synthdid_effect_curve
 
   - title: Summary methods
     contents:
       - summary.synthdid_estimate
       - print.synthdid_estimate
-      - synthdid_controls
 
   - title: Utilities
     contents:
@@ -34,6 +34,8 @@ reference:
     - plot.synthdid_estimate
     - synthdid_plot
     - synthdid_units_plot
+    - synthdid_placebo_plot
+    - synthdid_rmse_plot
 
   - title: Data sets
     contents:
