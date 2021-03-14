@@ -11,28 +11,37 @@ This applies, in particular, to the case of a single treated unit.
 
 This package is currently in beta and the functionality and interface is subject to change.
 
-To install this package in R, run the following commands:
+Some helpful links for getting started:
+
+- The [R package documentation](https://synth-inference.github.io/synthdid/) contains usage examples and method reference.
+- The [online vignettes](https://synth-inference.github.io/synthdid/articles/more-plotting.html) contains a gallery of plot examples.
+- For community questions and answers around usage, see [Github issues page](https://github.com/synth-inference/synthdid/issues).
+
+### Installation
+
+The current development version can be installed from source using devtools.
+
 ```R
 library(devtools)
 install_github("synth-inference/synthdid")
 ```
-Example usage:
+
+### Usage Examples
 
 ```R
 library(synthdid)
 
-setup = synthdid:::random.low.rank()
+# Estimate the effect of California Proposition 99 on cigarette consumption
+data('california_prop99')
+setup = panel.matrices(california_prop99)
 tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
-se = sqrt(vcov(tau.hat))
-
-print(paste("true tau:", 1))
+se = sqrt(vcov(tau.hat, method='placebo'))
 print(paste0("point estimate: ", round(tau.hat, 2)))
-print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * se, 2), ", ", round(tau.hat + 1.96 * se, 2), ")"))
-plot(tau.hat)
+print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * se, 2), ", ",
+                                  round(tau.hat + 1.96 * se, 2), ")"))
 ```
 
 #### References
 Dmitry Arkhangelsky, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager.
-<b>Synthetic Difference in Differences</b>
-2019.
+<b>Synthetic Difference in Differences</b>, 2019.
 [<a href="https://arxiv.org/abs/1812.09970">arxiv</a>]
