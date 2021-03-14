@@ -9,7 +9,7 @@ Here &tau;<sub>ij</sub> is the effect of treatment on the unit i at time j, and 
 treatment when and where it happened: the average of &tau;<sub>ij</sub> over the observations with W<sub>ij</sub>=1.
 All treated units must begin treatment simultaneously, so W is a block matrix: W<sub>ij</sub> = 1 for i > N<sub>0</sub> and j > T<sub>0</sub>
 and zero otherwise, with N<sub>0</sub> denoting the number of control units and T<sub>0</sub> the number of observation times
-before onset of treatment. This applies, in particular, to the case of a single treated unit.
+before onset of treatment. This applies, in particular, to the case of a single treated unit or a single treated period.
 
 
 This package is currently in beta and the functionality and interface is subject to change.

@@ -6,7 +6,7 @@
 #' treatment when and where it happened: the average of tau\[i,j\] over the observations with W\[i,j\]=1.
 #' All treated units must begin treatment simultaneously, so W is a block matrix: W\[i,j\] = 1 for i > N0 and j > T0
 #' and zero otherwise, with N0 denoting the number of control units and T0 the number of observation times
-#' before onset of treatment. This applies, in particular, to the case of a single treated unit.
+#' before onset of treatment. This applies, in particular, to the case of a single treated unit or a single treated period.
 #'
 #' This package is currently in beta and the functionality and interface is subject to change.
 #'
