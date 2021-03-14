@@ -246,7 +246,7 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
     else { p = p + facet_grid(. ~ facet) }
   }
   # if only one estimate per facet, exclude estimate-denoting linetype from legend
-  if (is.null(facet)) { p = p + guides(linetype = FALSE) }
+  if (is.null(facet)) { p = p + guides(linetype = 'none') }
 
   # if timesteps(Y) is a date, the x coordinates in our plot are as.numeric(timesteps(Y))
   # that's in units of days since the unix epoch: 1970-01-01
@@ -321,7 +321,7 @@ synthdid_units_plot = function(estimates, negligible.threshold = .001, negligibl
     p = p + geom_hline(aes(yintercept = estimate - 1.96 * se), size = .5, alpha = .5) +
       geom_hline(aes(yintercept = estimate + 1.96 * se), size = .5, alpha = .5)
   }
-  p + facet_grid(. ~ estimator) + xlab('') + ylab('') + guides(shape = FALSE) +
+  p + facet_grid(. ~ estimator) + xlab('') + ylab('') + guides(shape = 'none') +
     theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 }
 
