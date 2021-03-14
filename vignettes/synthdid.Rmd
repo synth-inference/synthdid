@@ -42,9 +42,8 @@ tau.hat
 summary(tau.hat)
 
 se = sqrt(vcov(tau.hat, method='placebo'))
-print(paste0("point estimate: ", round(tau.hat, 2)))
-print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * se, 2), ", ", 
-                                  round(tau.hat + 1.96 * se, 2), ")"))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
 ```
 
 ## The parallel trends plot. 

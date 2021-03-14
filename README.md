@@ -22,11 +22,10 @@ Some helpful links for getting started:
 The current development version can be installed from source using devtools.
 
 ```R
-library(devtools)
-install_github("synth-inference/synthdid")
+devtools::install_github("synth-inference/synthdid")
 ```
 
-### Usage Examples
+### Example
 
 ```R
 library(synthdid)
@@ -36,9 +35,9 @@ data('california_prop99')
 setup = panel.matrices(california_prop99)
 tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
 se = sqrt(vcov(tau.hat, method='placebo'))
-print(paste0("point estimate: ", round(tau.hat, 2)))
-print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * se, 2), ", ",
-                                  round(tau.hat + 1.96 * se, 2), ")"))
+sprintf('point estimate: %1.2f', tau.hat)
+sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
+plot(tau.hat)
 ```
 
 #### References

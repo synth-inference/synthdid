@@ -17,7 +17,6 @@ reference:
       - synthdid_estimate
       - sc_estimate
       - did_estimate
-      - synthdid_se
       - vcov.synthdid_estimate
 
   - title: Summary methods
@@ -33,9 +32,6 @@ reference:
     contents:
     - plot.synthdid_estimate
     - synthdid_plot
-    - synthdid_effect_curve
-    - synthdid_placebo_plot
-    - synthdid_rmse_plot
     - synthdid_units_plot
 
   - title: Data sets
