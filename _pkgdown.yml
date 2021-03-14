@@ -12,15 +12,31 @@ navbar:
     href: https://github.com/synth-inference/synthdid
 
 reference:
-  - title: Synthetic Difference in Differences Estimation
+  - title: Estimators
     contents:
       - synthdid_estimate
       - sc_estimate
       - did_estimate
+      - synthdid_se
       - vcov.synthdid_estimate
+
+  - title: Summary methods
+    contents:
       - summary.synthdid_estimate
-      - plot.synthdid_estimate
       - print.synthdid_estimate
+
+  - title: Utilities
+    contents:
+      - panel.matrices
+
+  - title: Plots (requires ggplot2)
+    contents:
+    - plot.synthdid_estimate
+    - synthdid_plot
+    - synthdid_effect_curve
+    - synthdid_placebo_plot
+    - synthdid_rmse_plot
+    - synthdid_units_plot
 
   - title: Data sets
     contents:
