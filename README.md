@@ -5,7 +5,7 @@
 This package implements the synthetic difference in difference estimator (SDID) for the average treatment effect in panel data,
 as proposed in Arkhangelsky et al (2019). We observe matrices of outcomes Y and binary treatment indicators W
 that we think of as satisfying Y[i,j] = L[i,j] + tau[i,j] W[i,j] + noise[i,j].
-Here tau[i,j] is the effect of treatment on the unit i at time j, and out goal is to estimate the average effect of
+Here tau[i,j] is the effect of treatment on the unit i at time j, we estimate the average effect of
 treatment when and where it happened: the average of tau[i,j] over the observations with W[i,j]=1.
 All treated units must begin treatment simultaneously, so W is a block matrix: W[i,j] = 1 for i > N0 and j > T0
 and zero otherwise, with N0 denoting the number of control units and T0 the number of observation times
