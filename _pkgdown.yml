@@ -22,6 +22,7 @@ reference:
 
   - title: Summary methods
     contents:
+      - synthdid_controls
       - summary.synthdid_estimate
       - print.synthdid_estimate
 
