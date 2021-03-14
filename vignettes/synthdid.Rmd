@@ -7,47 +7,132 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, echo = FALSE, message = FALSE}
+```{r, echo = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
-set.seed(42)
+ragg_png = function(..., res = 192) {
+  ragg::agg_png(..., res = res, units = "in")
+}
+knitr::opts_chunk$set(dev = "ragg_png", fig.ext = "png")
 ```
 
 ```{r setup}
 library(synthdid)
 library(ggplot2)
-library(mvtnorm)
 ```
 
-# Example usage
+# Example use 
+We estimate the effect of California Proposition 99 on cigarette consumption
+
+## Standard Errors
+We have only one treated unit (California), so the only implemented method to estimate
+the standard error is the 'placebo' method described in Section 5 of Arkhangelsky et al. 
+Because this is not trustworthy, it is not used by default: vcov instead returns NA.
+Here it is probably too large. 
+
+But to show how confidence intervals are constructed and displayed, we'll use it anyway.
+To do this, we pass method='placebo' to vcov and pass se.method='placebo' 
+to our plotting functions so they do the same. 
+If we didn't, the plots wouldn't show have standard errors.
 ```{r}
-n_0 <- 100
-n_1 <- 10
-T_0 <- 120
-T_1 <- 20
-n <- n_0 + n_1
-T <- T_0 + T_1
-tau <- 1
-sigma <- .5
-rank <- 2
-rho <- 0.7
-var <- outer(1:T, 1:T, FUN=function(x, y) rho^(abs(x-y)))
+data('california_prop99')
+setup = panel.matrices(california_prop99)
+tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
 
-W <- (1:n > n_0) %*% t(1:T > T_0)
-U <- matrix(rpois(rank * n, sqrt(1:n) / sqrt(n)), n, rank)
-V <- matrix(rpois(rank * T, sqrt(1:T) / sqrt(T)), T, rank)
-alpha <- outer(10*(1:n)/n, rep(1,T))
-beta <-  outer(rep(1,n), 10*(1:T)/T)
-mu <- U %*% t(V) + alpha + beta
-error <- rmvnorm(n, sigma = var, method = "chol")
-Y <- mu + tau * W  + sigma * error
-rownames(Y) = 1:n
-colnames(Y) = 1:T
+tau.hat
+summary(tau.hat)
 
-tau.hat = synthdid_estimate(Y,n_0,T_0)
-se = synthdid_se(tau.hat)
-
-print(paste("true tau:", tau))
+se = sqrt(vcov(tau.hat, method='placebo'))
 print(paste0("point estimate: ", round(tau.hat, 2)))
-print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * se, 2), ", ", round(tau.hat + 1.96 * se, 2), ")"))
-plot(tau.hat)
+print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * se, 2), ", ", 
+                                  round(tau.hat + 1.96 * se, 2), ")"))
+```
+
+## The parallel trends plot. 
+  We show the trajectories of California  and the synthetic control we compare it to, 
+  with a vertical line indicating onset of treatment. The relative size of the 
+  weights $\lambda_t$ for pre-treatment periods are shown on the bottom. 
+  Overlaid is a diagram of the estimate. 
+  
+### The Parallelogram
+  The blue segment shows the change from the weighted pre-treatment average 
+  to the post-treatment average California. The red one does the same for
+  a synthetic control. 
+  
+### The Hallucination
+  Our premise is that, absent treatment, California would change like
+  the synthetic control: from California's pre-treatment average,
+  we draw a dashed segment parallel to the control's red one.
+  Where it ends is our estimate of what we'd have observed in California had, 
+  contrary to fact, it not been treated. 
+  
+### The Treatment Effect
+  Comparing this counterfactual estimate to what we observed in 
+  the real world, we get a treatment effect. We show it with a black arrow. 
+  We show a 95% confidence interval with two gray arrows: 
+  one for the upper confidence bound and one for the lower.
+  
+```{r, fig.width=7, fig.height=4}
+plot(tau.hat, se.method='placebo')
+```
+
+## The control unit contribution plot. 
+  We could draw the plot above, and get a questionable treatment effect estimate,
+  by comparison to any individual control state. Our actual estimate is a weighted average
+  of these: the weights are the synthetic control weights $\omega_i$. This plot
+  shows each individual comparison with a dot, with weight $\omega_i$ determining the dot size.
+  The black horizontal line shows the actual effect; 
+  the gray ones show the endpoints of a 95% confidence interval.
+
+```{r, fig.width=7, fig.height=4}
+synthdid_units_plot(tau.hat, se.method='placebo')
+```
+
+## Checking for pre-treatment parallel trends
+When the synthetic control and treated trajectories are far from one another,
+it can be hard to see how parallel they are. Pass overlay=1 to plot to overlay them. 
+
+```{r, fig.width=7, fig.height=4}
+plot(tau.hat, overlay=1,  se.method='placebo')
+```
+Pass values between zero and one to shift the control's trajectory
+toward California.
+```{r, fig.width=7, fig.height=4}
+plot(tau.hat, overlay=.8, se.method='placebo')
+```
+
+# Compare to other estimators
+We compare to synthetic control and diff-in-diff. 
+This reproduces Figure 1 of Arkhangelsky et al.
+```{r}
+tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
+tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
+estimates = list(tau.did, tau.sc, tau.hat)
+names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
+```
+```{r, fig.width=7, fig.height=4}
+synthdid_plot(estimates, se.method='placebo')
+```
+```{r, fig.width=15, fig.height=5}
+synthdid_units_plot(estimates, se.method='placebo')
+```
+
+# Customize plots 
+Arguments to plotting functions can change the transparency, line thickness, etc. of individual elements.
+The output of every plotting function is a ggplot, so you can change theme, legend position, etc. as usual.
+We'll use these to match the style of Arkhangelsky et al.
+```{r, fig.width=15, fig.height=5}
+synthdid_plot(estimates, facet.vertical=FALSE, 
+              control.name='control', treated.name='california', 
+              lambda.comparable=TRUE, se.method = 'none', 
+              trajectory.linetype = 1, line.width=.75, effect.curvature=-.4,
+              trajectory.alpha=.7, effect.alpha=.7, 
+              diagram.alpha=1, onset.alpha=.7) + 
+    theme(legend.position=c(.26,.07), legend.direction='horizontal', 
+          legend.key=element_blank(), legend.background=element_blank(),
+          strip.background=element_blank(), strip.text.x = element_blank())
+
+synthdid_units_plot(estimates, se.method='none') + 
+    theme(legend.background=element_blank(), legend.title = element_blank(), 
+          legend.direction='horizontal', legend.position=c(.17,.07), 
+	  strip.background=element_blank(), strip.text.x = element_blank())
 ```

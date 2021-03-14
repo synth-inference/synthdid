@@ -12,6 +12,7 @@ synthdid_plot(
   estimates,
   treated.name = "treated",
   control.name = "synthetic control",
+  spaghetti.units = c(),
   facet = NULL,
   facet.vertical = TRUE,
   lambda.comparable = !is.null(facet),
@@ -21,26 +22,28 @@ synthdid_plot(
   effect.curvature = 0.3,
   line.width = 0.5,
   guide.linetype = 2,
-  point.size = 0.5,
-  trajectory.alpha = 0.4,
+  point.size = 1,
+  trajectory.alpha = 0.5,
   diagram.alpha = 0.95,
   effect.alpha = 0.95,
   onset.alpha = 0.3,
   ci.alpha = 0.3,
+  spaghetti.line.width = 0.2,
+  spaghetti.label.size = 2,
+  spaghetti.line.alpha = 0.3,
+  spaghetti.label.alpha = 0.5,
   se.method = "jackknife",
   alpha.multiplier = NULL
 )
 }
 \arguments{
-\item{estimates, }{a list of estimates output by synthdid_estimate. Or a single estimate.
-If estimates have attribute 'intercept' set (scalar in [0,1]), then plot after subtracting
-that fraction of the SDID adjustment for the difference between pre-treatment treated and sc curves.
-With intercept of almost one, this makes it easier to assess parallel-ness by making trajectories closer
-With intercept of one, this overlays curves, and plotting a diagram is suppressed as in the case of a SC estimate.}
+\item{estimates, }{a list of estimates output by synthdid_estimate. Or a single estimate.}
 
 \item{treated.name, }{the name of the treated curve that appears in the legend. Defaults to 'treated'}
 
 \item{control.name, }{the name of the control curve that appears in the legend. Defaults to 'synthetic control'}
+
+\item{spaghetti.units, }{a list of units to plot individually. spaghetti.unit \%in\% rownames(Y) must work. Defaults to the empty list.}
 
 \item{facet, }{a list of the same length as estimates indicating the facet in which to plot each estimate.
 The values of the elements of the list are used to label the facets.
@@ -52,7 +55,12 @@ If NULL, plot each estimate in a different facet. Defaults to NULL.}
 have the same mass from plot to plot, assuming the treated curve is the same. Useful for side-by-side or overlaid plots.
 Defaults to FALSE if facet is not passed, TRUE if passed.}
 
-\item{overlay}{specifies a value of 'intercept' for all SDID estimates. Defaults to 0.
+\item{overlay, }{a number in [0,1] defaulting to 0, can be used to shift the control trajectory toward the treated trajectory.
+When a nonzero value is passed, we plot the control after subtracting
+that fraction of the diff-in-diff style adjustment for the difference between lambda-weighted pre-treatment averages of the treated and control.
+With intercept of almost one, this makes it easier to assess parallel-ness by making trajectories closer
+With intercept of one, this essentially overlays the curves, and plotting a diagram is suppressed as in the case of a SC estimate.
+To use different values for different plots, pass these values as an attribute 'overlay' of each estimate.
 If a vector is passed, plots at different intercept levels indicated by the 'frame' aesthetic. ggplotly will interpret this as an animation.}
 
 \item{lambda.plot.scale}{determines the scale of the plot of the weights lambda.}
@@ -78,7 +86,15 @@ Nonzero values help avoid overplotting when plotting multiple estimates in one f
 
 \item{ci.alpha}{determines transparency of the arrows illustrating upper and lower bounds of a 95\% confidence interval for the effect}
 
-\item{se.method}{determines the method used to calculate the standard error used for this confidence interval}
+\item{spaghetti.line.width}{determines the width of spaghetti trajectories}
+
+\item{spaghetti.label.size}{determines the size of spaghetti labels}
+
+\item{spaghetti.line.alpha}{determines transparency of spaghetti trajectories}
+
+\item{spaghetti.label.alpha}{determines transparency of spaghetti trajectory labels}
+
+\item{se.method}{determines the method used to calculate the standard error used for this confidence interval. if 'none', don't show the interval}
 
 \item{alpha.multiplier, }{a vector of the same length as estimates, is useful for comparing multiple estimates in
 one facet but highlighting one or several. All plot elements associated with the estimate are displayed

@@ -3,6 +3,8 @@ navbar:
   left:
   - text: "Get started"
     href: articles/synthdid.html
+  - text: "More on Plotting"
+    href: articles/more-plotting.html
   - text: "Reference"
     href: reference/index.html
   right:

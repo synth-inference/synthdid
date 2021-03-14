@@ -3,9 +3,21 @@ test_that("a simple workflow doesn't error", {
   tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
   se = synthdid_se(tau.hat)
 
-  print(paste0("point estimate: ", round(tau.hat, 2)))
-  print(paste0("95% CI for tau: (", round(tau.hat - 1.96 * se, 2), ", ", round(tau.hat + 1.96 * se, 2), ")"))
+  print(tau.hat)
+  summary(tau.hat)
   plot(tau.hat)
+
+  expect_equal(1, 1)
+})
+
+test_that("plotting doesn't error with (i) dates as colnames (ii) spaghetti units", {
+  data(california_prop99)
+
+  california_prop99$date = as.Date(sprintf('%04d/%02d/%02d', california_prop99$Year, 1, 1))
+  setup = panel.matrices(california_prop99, time='date')
+  estimate = synthdid_estimate(setup$Y, setup$N0, setup$T0)
+  top.controls = synthdid_controls(estimate)[1:10, , drop=FALSE]
+  plot(estimate, spaghetti.units=rownames(top.controls))
 
   expect_equal(1, 1)
 })

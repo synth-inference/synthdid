@@ -4,10 +4,14 @@
 \alias{summary.synthdid_estimate}
 \title{Summarize a synthdid object}
 \usage{
-\method{summary}{synthdid_estimate}(object, ...)
+\method{summary}{synthdid_estimate}(object, weight.digits = 3, fast = FALSE, ...)
 }
 \arguments{
 \item{object}{The object to summarize}
+
+\item{weight.digits}{The number of digits to use when displaying weights (omega, lambda)}
+
+\item{fast}{Be fast but less accurate, e.g. jackknife instead of bootstrap se estimate}
 
 \item{...}{Additional arguments (currently ignored).}
 }
