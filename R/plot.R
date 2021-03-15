@@ -13,6 +13,9 @@
 #' @param treated.name, the name of the treated curve that appears in the legend. Defaults to 'treated'
 #' @param control.name, the name of the control curve that appears in the legend. Defaults to 'synthetic control'
 #' @param spaghetti.units, a list of units to plot individually. spaghetti.unit %in% rownames(Y) must work. Defaults to the empty list.
+#' @param spaghetti.matrices, a list of matrices --- one for each element of estimates --- of trajectories to plot individually.
+#'        The rows of these matrices should be the same length as the trajectories in Y 
+#'        and they must be named --- set rownames(spaghetti.trajectories\[\[i\]\]) --- so trajectories can be labeled in the plot.
 #' @param facet, a list of the same length as estimates indicating the facet in which to plot each estimate.
 #'        The values of the elements of the list are used to label the facets.
 #'        If NULL, plot each estimate in a different facet. Defaults to NULL.
@@ -48,7 +51,8 @@
 #'        one facet but highlighting one or several. All plot elements associated with the estimate are displayed
 #'        with alpha multiplied by the corresponding element of alpha.multiplier. Defaults to a vector of ones.
 #' @export synthdid_plot
-synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'synthetic control', spaghetti.units = c(),
+synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'synthetic control', 
+			 spaghetti.units = c(), spaghetti.matrices = NULL,
                          facet = NULL, facet.vertical = TRUE, lambda.comparable = !is.null(facet), overlay = 0,
                          lambda.plot.scale = 3, trajectory.linetype = 1, effect.curvature = .3, line.width = .5, guide.linetype = 2, point.size = 1,
                          trajectory.alpha = .5, diagram.alpha = .95, effect.alpha = .95, onset.alpha = .3, ci.alpha=.3,
@@ -63,6 +67,7 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
   if (class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
   if (is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
   if (is.null(alpha.multiplier)) { alpha.multiplier = rep(1, length(estimates)) }
+  if (!is.null(spaghetti.matrices) && length(spaghetti.matrices) != length(estimates)) { stop('spaghetti.matrices must be the same length as estimates') }
   multiple.frames = length(overlay) > 1
   treated = 1
   control = 2
@@ -98,6 +103,12 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
     obs.trajectory = as.numeric(omega.target %*% Y)
     syn.trajectory = as.numeric(omega.synth %*% Y) + intercept.offset
     spaghetti.trajectories = Y[rownames(Y) %in% spaghetti.units, , drop=FALSE] 
+    if(!is.null(spaghetti.matrices)) {
+	more.spaghetti.trajectories = spaghetti.matrices[[grid$estimate[row]]]	
+	if(ncol(more.spaghetti.trajectories) != ncol(Y)) { stop('The elements of spaghetti.matrices must be matrices with the same number of columns as Y') }
+	if(is.null(rownames(more.spaghetti.trajectories))) { stop('The elements of the list spaghetti.matrices must have named rows') }
+	spaghetti.trajectories = rbind(spaghetti.trajectories, more.spaghetti.trajectories)
+    } 
 
     treated.post = omega.target %*% Y %*% lambda.target
     treated.pre = omega.target %*% Y %*% lambda.synth
@@ -137,7 +148,6 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
     spaghetti.lines = data.frame(x=rep(time, nrow(spaghetti.trajectories)),
 				 y=as.vector(t(spaghetti.trajectories)),
 				 unit=rep(rownames(spaghetti.trajectories), each=length(time)))
-
     spaghetti.labels = data.frame(x=rep(time[1], nrow(spaghetti.trajectories)),
 				  y=as.vector(spaghetti.trajectories[,1]), 
 				  unit=rownames(spaghetti.trajectories))
@@ -287,8 +297,9 @@ synthdid_placebo_plot = function(estimate, overlay = FALSE, treated.fraction = N
 #' @param negligible.alpha Determines transparency of those xs.
 #' @param se.method the method used to calculate standard errors for the CI. See vcov.synthdid_estimate. 
 #'        Defaults to 'jackknife' for speed. If 'none', don't plot a CI.
+#' @param units a list of control units --- elements of rownames(Y) --- to plot differences for. Defaults to NULL, meaning all of them.
 #' @export synthdid_units_plot
-synthdid_units_plot = function(estimates, negligible.threshold = .001, negligible.alpha = .3, se.method='jackknife') {
+synthdid_units_plot = function(estimates, negligible.threshold = .001, negligible.alpha = .3, se.method='jackknife', units=NULL) {
   if (requireNamespace("ggplot2", quietly = TRUE)) {
     .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
   } else {
@@ -310,7 +321,8 @@ synthdid_units_plot = function(estimates, negligible.threshold = .001, negligibl
     omega.treat = c(rep(0, N0), rep(1 / N1, N1))
     difs = as.vector(t(omega.treat) %*% Y %*% (lambda.post - lambda.pre)) - as.vector(Y[1:N0, ] %*% (lambda.post - lambda.pre))
     se = if (se.method == 'none') { NA } else { sqrt(vcov(estimate, method=se.method)) }
-    data.frame(y = difs, unit = rownames(Y)[1:N0], weight = omega.control[1:N0],
+    include.units = if(is.null(units)) { 1:N0 } else { which(rownames(Y)[1:N0] %in% units) }
+    data.frame(y = difs[include.units], unit = rownames(Y)[include.units], weight = omega.control[include.units],
       estimate = c(estimate), se = se, estimator = names(estimates)[[ee]])
   }))
   p = ggplot(plot.data) +
