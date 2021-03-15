@@ -2,7 +2,7 @@
 title: "More on Plotting"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{plotting features}
+  %\VignetteIndexEntry{More on Plotting}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -44,6 +44,23 @@ We'll go back to the regularly spaced data from here on.
   
   top.controls = synthdid_controls(estimate)[1:10, , drop=FALSE]
   plot(estimate, spaghetti.units=rownames(top.controls))
+```
+
+We can also pass trajectories of our choice, for example aggregates of controls.
+With fewer of these trajectories, we can make the lines a little more opaque without them getting distracting.
+```{r, fig.width=7.5, fig.height=4}
+  northern.new.england = c('New Hampshire', 'Vermont', 'Maine')
+  spaghetti.matrices = rbind(colMeans(setup$Y[rownames(setup$Y) %in% northern.new.england, ]),
+			                       colMeans(setup$Y[rownames(setup$Y) %in% rownames(top.controls), ]))
+  rownames(spaghetti.matrices) = c('Northern New England States', 'Top-10 Control Average')
+  plot(estimate, spaghetti.matrices=list(spaghetti.matrices), spaghetti.line.alpha=.4)
+```
+
+# Simplifying the Control Unit Contribution Plot
+When we have too many control units, the control unit contribution plot can be too dense to read. 
+We can restrict the units we plot by passing a list of names.
+```{r, fig.width=5, fig.height=5}
+  synthdid_units_plot(estimate, units = rownames(top.controls))
 ```
 
 # Complex Plots
