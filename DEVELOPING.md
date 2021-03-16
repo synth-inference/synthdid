@@ -1,6 +1,8 @@
 ### Developing
 
-Contributions are welcome. This repository follows the standard open source protocol and setup with git where there is an abundance of existing resources to get up to speed. Condensed greatly, the workflow is to fork this repository, check out a branch, commit your changes (forming an ideally legible commit history), then submitting a pull request explaining your contribution, ideally referring to the issue you created, or the issue you chose to work on.
+Contributions are welcome. To contribute, fork this repository, commit your changes and push them to your fork,
+and submit a pull request explaining your contribution. Ideally, your changes will have a legible commit history.
+To keep us informed about what you're doing, discuss your plans in a github issue here and refer it in your pull request.
 
 
 ### Worfklow
