@@ -21,6 +21,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Suggests:
     testthat,
-    ggplot2
+    ggplot2,
+    CVXR
 URL: https://github.com/synth-inference/synthdid
 BugReports: https://github.com/synth-inference/synthdid/issues
