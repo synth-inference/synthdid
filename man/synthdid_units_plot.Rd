@@ -11,7 +11,8 @@ synthdid_units_plot(
   estimates,
   negligible.threshold = 0.001,
   negligible.alpha = 0.3,
-  se.method = "jackknife"
+  se.method = "jackknife",
+  units = NULL
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ synthdid_units_plot(
 
 \item{se.method}{the method used to calculate standard errors for the CI. See vcov.synthdid_estimate.
 Defaults to 'jackknife' for speed. If 'none', don't plot a CI.}
+
+\item{units}{a list of control units --- elements of rownames(Y) --- to plot differences for. Defaults to NULL, meaning all of them.}
 }
 \description{
 Plots unit by unit difference-in-differences. Dot size indicates the weights omega_i

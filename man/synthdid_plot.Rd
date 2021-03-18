@@ -13,6 +13,7 @@ synthdid_plot(
   treated.name = "treated",
   control.name = "synthetic control",
   spaghetti.units = c(),
+  spaghetti.matrices = NULL,
   facet = NULL,
   facet.vertical = TRUE,
   lambda.comparable = !is.null(facet),
@@ -44,6 +45,10 @@ synthdid_plot(
 \item{control.name, }{the name of the control curve that appears in the legend. Defaults to 'synthetic control'}
 
 \item{spaghetti.units, }{a list of units to plot individually. spaghetti.unit \%in\% rownames(Y) must work. Defaults to the empty list.}
+
+\item{spaghetti.matrices, }{a list of matrices --- one for each element of estimates --- of trajectories to plot individually.
+The rows of these matrices should be the same length as the trajectories in Y
+and they must be named --- set rownames(spaghetti.trajectories[[i]]) --- so trajectories can be labeled in the plot.}
 
 \item{facet, }{a list of the same length as estimates indicating the facet in which to plot each estimate.
 The values of the elements of the list are used to label the facets.
