@@ -7,7 +7,6 @@
 \method{vcov}{synthdid_estimate}(
   object,
   method = c("bootstrap", "jackknife", "placebo"),
-  weights = attr(object, "weights"),
   replications = 200,
   ...
 )
@@ -18,8 +17,6 @@
 \item{method, }{the CI method. The default is bootstrap (warning: this may be slow on large
 data sets, the jackknife option is the fastest, with the caveat that it is not recommended
 for SC).}
-
-\item{weights, }{like attr(estimate, 'weights')}
 
 \item{replications, }{the number of bootstrap replications}
 

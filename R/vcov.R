@@ -14,7 +14,6 @@
 #' @param method, the CI method. The default is bootstrap (warning: this may be slow on large
 #'  data sets, the jackknife option is the fastest, with the caveat that it is not recommended
 #'  for SC).
-#' @param weights, like attr(estimate, 'weights')
 #' @param replications, the number of bootstrap replications
 #' @param ... Additional arguments (currently ignored).
 #'
@@ -23,11 +22,17 @@
 #'
 #' @method vcov synthdid_estimate
 #' @export
-vcov.synthdid_estimate = function(
-  object,
+vcov.synthdid_estimate = function(object,
   method = c("bootstrap", "jackknife", "placebo"),
-  weights = attr(object, 'weights'),
   replications = 200, ...) {
-
-    matrix(synthdid_se(object, method, weights, replications)^2)
+    method = match.arg(method)
+    if(method == 'bootstrap') { 
+	se = bootstrap_se(object, replications)
+    } else if(method == 'jackknife') {
+	se = jackknife_se(object)
+    } else if(method == 'placebo') {
+	se = placebo_se(object, replications)
+    }
+    matrix(se^2)
 }
+synthdid_se = function(...) { sqrt(vcov(...)) }
