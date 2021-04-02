@@ -7,7 +7,7 @@ trigger:
 - master
 
 pool:
-  vmImage: "macOS-latest"
+  vmImage: "ubuntu-latest"
 
 variables:
 - name: R_LIBS_USER
