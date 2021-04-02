@@ -55,7 +55,7 @@ NULL
 #'
 #' @format A data frame with 2000 rows and 8 variables.
 #' \describe{
-#'   \item{stata}{state}
+#'   \item{state}{state}
 #'   \item{year}{year}
 #'   \item{log_wage}{log_wage}
 #'   \item{hours}{hours}
