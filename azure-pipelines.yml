@@ -7,7 +7,7 @@ trigger:
 - master
 
 pool:
-  vmImage: "ubuntu-latest"
+  vmImage: "macOS-latest"
 
 variables:
 - name: R_LIBS_USER
@@ -31,7 +31,7 @@ steps:
       brew install pandoc # Vignettes/pkgdown sites
     displayName: Setup R
   - script: |
-      sudo Rscript -e "install.packages(c('CVXR'))" 
+      sudo Rscript -e "install.packages(c('CVXR'), type='source')" 
       ./run.sh run_tests
     displayName: Test R package
   - script: ./run.sh dump_logs_by_extension "fail"
