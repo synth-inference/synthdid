@@ -4,7 +4,14 @@
 \alias{panel.matrices}
 \title{Convert a long (balanced) panel to a wide matrix}
 \usage{
-panel.matrices(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
+panel.matrices(
+  panel,
+  unit = 1,
+  time = 2,
+  outcome = 3,
+  treatment = 4,
+  treated.last = TRUE
+)
 }
 \arguments{
 \item{panel}{A data.frame with columns consisting of units, time, outcome, and treatment indicator.}
@@ -16,17 +23,21 @@ panel.matrices(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
 \item{outcome}{The column number/name corresponding to the outcome identifier. Default is 3.}
 
 \item{treatment}{The column number/name corresponding to the treatment status. Default is 4.}
+
+\item{treated.last}{Should we sort the rows of Y and W so treated units are last. If FALSE, sort by unit number/name. Default is TRUE.}
 }
 \value{
 A list with entries \code{Y}: the data matrix, \code{N0}: the number of control units, \code{T0}:
-the number of time periods before treatment.
+the number of time periods before treatment, \code{W}: the matrix of treatment indicators.
 }
 \description{
 Converts a data set in panel form to matrix format required by synthdid estimators.
-A typical long panel date set look like [unit, time, outcome, treatment]. Synthdid
-requires a balanced panel where each unit is observed at all time periods. This function
-converts the data set to a num.units * num.time.periods sized matrix where the first N0
-rows are treated units, and the first T0 columns are the pre-tretment period.
+A typical long panel date set looks like [unit, time, outcome, treatment]. Synthdid
+requires a balanced panel with simultaneous adoption of treatment: each unit must be observed
+at all times, and all treated units must begin treatment simultaneosly. This function
+creates num.units x num.time.periods matrices Y and W of outcomes and treatment indicators.
+In these matrices, columns are sorted by time, and by default (when treated.last=TRUE),
+rows for control units appear before those of treated units.
 }
 \examples{
 \donttest{
