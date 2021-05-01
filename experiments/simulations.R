@@ -23,7 +23,6 @@ estimators = list(sdid=synthdid_estimate, sc=sc_estimate, did=did_estimate, mc=m
 ## load data and define simulators
 last.col = function(X) { X[, ncol(X)] }
 
-
 data(CPS)
 Y.logwage      = panel.matrices(CPS, treatment='min_wage', outcome='log_wage', treated.last=FALSE)$Y 
 Y.hours        = panel.matrices(CPS, treatment='min_wage', outcome='hours',    treated.last=FALSE)$Y
@@ -33,9 +32,9 @@ w.gunlaw       = last.col(panel.matrices(CPS, treatment='open_carry', treated.la
 w.abortion     = last.col(panel.matrices(CPS, treatment='abort_ban',  treated.last=FALSE)$W)
 
 data(PENN)
-Y.loggdp       = panel.matrices(PENN, treatment='dem', outcome='log_gdp')$Y
-w.democracy    = last.col(panel.matrices(PENN, treatment='dem')$W)
-w.education    = last.col(panel.matrices(PENN, treatment='educ')$W)
+Y.loggdp       = panel.matrices(PENN, treatment='dem', outcome='log_gdp', treated.last=FALSE)$Y
+w.democracy    = last.col(panel.matrices(PENN, treatment='dem',  treated.last=FALSE)$W)
+w.education    = last.col(panel.matrices(PENN, treatment='educ', treated.last=FALSE)$W)
 
 default=list(rank = 4, N1 = 10, T1 = 10)
 cps.baseline.params  = estimate.dgp(Y.logwage, w.minwage, default$rank)
