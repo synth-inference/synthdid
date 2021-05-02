@@ -42,7 +42,7 @@ synthdid_se = function(...) { sqrt(vcov(...)) }
 
 
 # The bootstrap se: Algorithm 2 of Arkhangelsky et al.
-bootstrap_se = function(estimate, replications) { sd(bootstrap_sample(estimate, replications)) }
+bootstrap_se = function(estimate, replications) { sqrt((replications-1)/replications) * sd(bootstrap_sample(estimate, replications)) }
 bootstrap_sample = function(estimate, replications) { 
     estimator = attr(estimate, 'estimator')
     setup = attr(estimate, 'setup')
@@ -89,7 +89,7 @@ placebo_se = function(estimate, replications) {
     theta = function(ind) {
       do.call(estimator, c(list(Y=setup$Y[ind,], N0=length(ind)-N1,  T0=setup$T0,  X=setup$X[ind, ,]), opts))
     }
-    sd(replicate(replications, theta(sample(1:setup$N0))))
+    sqrt((replications-1)/replications) * sd(replicate(replications, theta(sample(1:setup$N0))))
 }
 
 
