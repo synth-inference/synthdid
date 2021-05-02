@@ -2,25 +2,42 @@
 title: "synthdid simulations"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{simulations}
+  %\VignetteIndexEntry{synthdid simulations}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
+<!--html_preserve-->
+<style>
+pre, pre code, .sourceCode {
+  white-space: pre;
+  overflow-x: scroll;
+  width: 800px;
+  max-width: 2400px;
+}
+</style>
+<!--/html_preserve-->
+
+```{r, echo=FALSE}
+options(width=999)
+```
+
 ## Define estimators
-* sdid_reg: synthetic diff-in-diff with theoretically suggested regularization parameter
+* sdid_reg: synthetic diff-in-diff with theoretically suggested regularization parameter:
 $\zeta \sim (N_{tr} T_{post})^{1/4}$
-* sdid: synthetic diff-in-diff with default regularization $\zeta \sim 1$
-* sc  : synthetic control with default regularization $\zeta \sim 1$
+* sdid: synthetic diff-in-diff with default regularization: $\zeta \sim 1$
+* sc  : synthetic control with default regularization: $\zeta \sim 1$
 * did:  diff-in-diff
-* mc:   matrix completion (Athey et al.)
-* difp: What does this stand for? Also called de-meaned synthetic control (cite something)
+* mc:   the matrix completion estimator of [Athey et al.](https://arxiv.org/abs/1710.10251)
+* difp: What does this stand for? Also called de-meaned synthetic control, e.g. in [Ferman and Pinto](https://arxiv.org/abs/1911.08521)
 
 
 ```{r}
 library(synthdid)
 library(MCPanel)
+```
 
+```{r}
 mc_estimate = function(Y, N0, T0) {
     N1=nrow(Y)-N0
     T1=ncol(Y)-T0
@@ -81,8 +98,9 @@ is used to define them by modifying an extant dgp specification.
   i.e., rows from `L = M + F`, to use in the simulation design. This is used in some rows of Table 4.
 
 This returns a list with two elements.
-1. The simulator, a no-args function in the slot `$run`. 
-2. The parameters of the dgp, in the slot `$params`. 
+
+1. In the slot `$run`, the simulator, a no-args function returning a simulated dataset.
+2. In the slot `$params`, the parameters of the dgp.
 
 ```{r}
 simulator = function(params = cps.baseline.params,
@@ -112,7 +130,7 @@ simulator = function(params = cps.baseline.params,
 
 ## Define simulators.
 * Simulators use `Sigma`, not `ar_coef`, to generate noise, so updating `ar_coef` doesn't affect the simulations. 
-* We do update `ar_coef` below so `$params` has the correct coefficients. They will be shown in our summary table.
+* We do update `ar_coef` below so `$params` has the correct coefficients. These will be shown in Table 2.
 
 ```{r}
 simulators = list(
@@ -150,11 +168,13 @@ simulators = list(
 * Do fewer standard error estimates, as these are slow, for coverage for Table 4
 * Save results in sims.RData
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 library(abind)
 library(doParallel)
 library(doRNG)
+```
 
+```{r}
 set.seed(12345)
 sim.replications  = 1000
 coverage.replications = 400
