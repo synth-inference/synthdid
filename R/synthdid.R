@@ -23,10 +23,10 @@
 #' @export synthdid_estimate
 #' @importFrom stats sd
 synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
-                              zeta.lambda = 0, zeta.omega = sd(apply(Y[1:N0,1:T0], 1, diff)),
-                              lambda.intercept = TRUE, omega.intercept = TRUE,
-                              weights = list(lambda = NULL, omega = NULL, vals = NULL),
-                              update.lambda = is.null(weights$lambda), update.omega = is.null(weights$omega),
+                              zeta.omega = sd(apply(Y[1:N0,1:T0], 1, diff)), zeta.lambda = 1e-6*zeta.omega,
+                              omega.intercept = TRUE, lambda.intercept = TRUE, 
+                              weights = list(omega = NULL, lambda = NULL, vals = NULL),
+                              update.omega = is.null(weights$omega), update.lambda = is.null(weights$lambda), 
                               min.decrease = 1e-3 * sd(apply(Y[1:N0,1:T0], 1, diff)), max.iter = 1e4) {
   stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2, 3), dim(X)[1:2] == dim(Y), is.list(weights),
     is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0,

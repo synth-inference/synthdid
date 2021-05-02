@@ -30,7 +30,9 @@ steps:
       ./run.sh install_all
       brew install pandoc # Vignettes/pkgdown sites
     displayName: Setup R
-  - script: ./run.sh run_tests
+  - script: |
+      sudo Rscript -e "install.packages(c('CVXR'), type='source')" 
+      ./run.sh run_tests
     displayName: Test R package
   - script: ./run.sh dump_logs_by_extension "fail"
     condition: failed()
