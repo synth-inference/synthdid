@@ -1,7 +1,9 @@
 test_that("a simple workflow doesn't error", {
   setup = random.low.rank()
   tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
-  se = synthdid_se(tau.hat)
+  se = sqrt(vcov(tau.hat))
+  se.jackknife = sqrt(vcov(tau.hat, method='jackknife'))
+  se.placebo   = sqrt(vcov(tau.hat, method='placebo'))
 
   print(tau.hat)
   summary(tau.hat)
@@ -32,25 +34,6 @@ test_that("adjustment for covariates works: random noise less influential if pas
   se = synthdid_se(tau.hat)
 
   expect_lt(abs(tau.hat - tau.hat.cov), abs(tau.hat - tau.hat.noise))
-})
-
-test_that("default synthdid behavior has not changed", {
-  setup = readRDS("setup.Rds")
-  estimate = synthdid_estimate(setup$Y,setup$N0,setup$T0)
-  weights = attr(estimate, 'weights')
-  coef = c(estimate)
-
-  weights.expected = readRDS("weights.expected.Rds")
-  coef.expected = readRDS("coef.expected.Rds")
-
-  expect_equal(coef, coef.expected)
-  expect_equal(weights, weights.expected)
-
-  # To update this test:
-  # setup = random.low.rank()
-  # saveRDS(setup, "setup.Rds")
-  # saveRDS(coef, "coef.expected.Rds")
-  # saveRDS(weights, "weights.expected.Rds")
 })
 
 test_that("column/row/scaling invariances hold with default options", {

@@ -10,13 +10,13 @@ synthdid_estimate(
   N0,
   T0,
   X = array(dim = c(dim(Y), 0)),
-  zeta.lambda = 0,
   zeta.omega = sd(apply(Y[1:N0, 1:T0], 1, diff)),
-  lambda.intercept = TRUE,
+  zeta.lambda = 1e-06 * zeta.omega,
   omega.intercept = TRUE,
-  weights = list(lambda = NULL, omega = NULL, vals = NULL),
-  update.lambda = is.null(weights$lambda),
+  lambda.intercept = TRUE,
+  weights = list(omega = NULL, lambda = NULL, vals = NULL),
   update.omega = is.null(weights$omega),
+  update.lambda = is.null(weights$lambda),
   min.decrease = 0.001 * sd(apply(Y[1:N0, 1:T0], 1, diff)),
   max.iter = 10000
 )
@@ -30,21 +30,21 @@ synthdid_estimate(
 
 \item{X}{an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.}
 
-\item{zeta.lambda}{Its square is weight of the ridge penalty relative to MSE. Defaults to 0.}
-
 \item{zeta.omega}{Analogous for omega. Defaults to the standard deviation of first differences of Y.}
 
-\item{lambda.intercept}{Binary. Use an intercept when estimating lambda.}
+\item{zeta.lambda}{Its square is weight of the ridge penalty relative to MSE. Defaults to 0.}
 
 \item{omega.intercept}{Binary. Use an intercept when estimating omega.}
+
+\item{lambda.intercept}{Binary. Use an intercept when estimating lambda.}
 
 \item{weights}{a list with fields lambda and omega. If non-null weights$lambda is passed,
 we use them instead of estimating lambda weights. Same for weights$omega.}
 
+\item{update.omega}{Analogous.}
+
 \item{update.lambda}{If true, solve for lambda using the passed value of weights$lambda only as an initialization.
 If false, use it exactly as passed. Defaults to false if a non-null value of weights$lambda is passed.}
-
-\item{update.omega}{Analogous.}
 
 \item{min.decrease}{Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease
 in penalized MSE smaller than min.decrease^2.}

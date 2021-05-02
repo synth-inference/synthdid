@@ -23,10 +23,10 @@
 #' @export synthdid_estimate
 #' @importFrom stats sd
 synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
-                              zeta.lambda = 0, zeta.omega = sd(apply(Y[1:N0,1:T0], 1, diff)),
-                              lambda.intercept = TRUE, omega.intercept = TRUE,
-                              weights = list(lambda = NULL, omega = NULL, vals = NULL),
-                              update.lambda = is.null(weights$lambda), update.omega = is.null(weights$omega),
+                              zeta.omega = sd(apply(Y[1:N0,1:T0], 1, diff)), zeta.lambda = 1e-6*zeta.omega,
+                              omega.intercept = TRUE, lambda.intercept = TRUE, 
+                              weights = list(omega = NULL, lambda = NULL, vals = NULL),
+                              update.omega = is.null(weights$omega), update.lambda = is.null(weights$lambda), 
                               min.decrease = 1e-3 * sd(apply(Y[1:N0,1:T0], 1, diff)), max.iter = 1e4) {
   stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2, 3), dim(X)[1:2] == dim(Y), is.list(weights),
     is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0,
@@ -72,7 +72,8 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
   attr(estimate, 'weights') = weights
   attr(estimate, 'setup') = list(Y = Y, X = X, N0 = N0, T0 = T0)
   attr(estimate, 'opts') = list(zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
-    lambda.intercept = lambda.intercept, omega.intercept = omega.intercept)
+				lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,
+				min.decrease = min.decrease, max.iter = max.iter)
   return(estimate)
 }
 
@@ -177,60 +178,3 @@ synthdid_effect_curve = function(estimate) {
   tau.curve
 }
 
-#' Calculate standard error for estimator
-#'
-#' Provides variance estimates based on the following three options
-#' \itemize{
-#'   \item The bootstrap, Algorithm 2 in Arkhangelsky et al.
-#'   \item The jackknife, Algorithm 3 in Arkhangelsky et al.
-#'   \item Placebo, Algorithm 4 in Arkhangelsky et al.
-#' }
-#'
-#' The jackknife is not recommended for SC, see section 5 in Arkhangelsky et al.
-#' "placebo" is the only option that works for only one treated unit.
-#'
-#' @param estimate A synthdid model
-#' @param method, the CI method. The default is bootstrap (warning: this may be slow on large
-#'  data sets, the jackknife option is the fastest, with the caveat that it is not recommended
-#'  for SC).
-#' @param weights, like attr(estimate, 'weights')
-#' @param replications, the number of bootstrap replications
-#'
-#' @references Dmitry Arkhangelsky, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager.
-#'  "Synthetic Difference in Differences". arXiv preprint arXiv:1812.09970, 2019.
-#' @export synthdid_se
-synthdid_se = function(estimate,
-                       method = c("bootstrap", "jackknife", "placebo"),
-                       weights = attr(estimate, 'weights'),
-                       replications = 200) {
-  method = match.arg(method)
-  setup = attr(estimate, 'setup')
-  opts = attr(estimate, 'opts')
-  estimator = attr(estimate, 'estimator')
-  if (setup$N0 == nrow(setup$Y) - 1 && method != "placebo") { return(NA) }
-
-  if (method == "jackknife") {
-    sum_normalize = function(x) { x / sum(x) }
-    theta = function(ind) {
-      weights.jk = weights
-      if (!is.null(weights)) { weights.jk$omega = sum_normalize(weights$omega[ind[ind <= setup$N0]]) }
-      estimate.jk = synthdid_estimate(setup$Y[ind, ], sum(ind <= setup$N0), setup$T0, X = setup$X[ind, , ],
-        zeta.lambda = opts$zeta.lambda, zeta.omega = opts$zeta.omega,
-        lambda.intercept = opts$lambda.intercept, omega.intercept = opts$omega.intercept,
-        weights = weights.jk)
-    }
-    return (jackknife(1:nrow(setup$Y), theta))
-  } else if (method == "bootstrap") {
-    theta = function(ind) {
-      if(all(ind <= setup$N0) || all(ind > setup$N0)) { NA }
-      else {do.call(estimator, c(list(Y=setup$Y[sort(ind),], N0=sum(ind <= setup$N0), T0=setup$T0, X=setup$X[sort(ind), ,]), opts))}
-    }
-    return (sd(replicate(replications, theta(sample(1:nrow(setup$Y), replace=TRUE))), na.rm=TRUE))
-  } else if (method == "placebo") {
-    N1 = nrow(setup$Y) - setup$N0
-    theta = function(ind) {
-      do.call(estimator, c(list(Y=setup$Y[ind,], N0=length(ind)-N1,  T0=setup$T0,  X=setup$X[ind, ,]), opts))
-    }
-    return (sd(replicate(replications, theta(sample(1:setup$N0)))))
-  }
-}
