@@ -15,8 +15,15 @@ mc_estimate = function(Y, N0, T0) {
 difp_estimate = function(Y, N0, T0) { 
     synthdid_estimate(Y, N0, T0, weights=list(lambda=rep(1/T0, T0)))  
 } 	
+sdid_reg = function(Y, N0, T0) {
+    N1 = nrow(Y) - N0
+    T1 = ncol(Y) - T0
+    sigma = sd(apply(Y[1:N0,1:T0], 1, diff))
+    synthdid_estimate(Y, N0, T0, zeta.omega = (N1*T1)^(1/4)*sigma)
+}
 
-estimators = list(sdid=synthdid_estimate, sc=sc_estimate, did=did_estimate, mc=mc_estimate, difp=difp_estimate)
+estimators = list(sdid=synthdid_estimate, sc=sc_estimate, did=did_estimate, 
+		  mc=mc_estimate, difp=difp_estimate, sdid_reg=sdid_reg)
 
 
 ## load data and define simulators
@@ -106,20 +113,24 @@ sim.info = t(sapply(simulators, function(sim) {
 library(abind)
 library(doParallel)
 library(doRNG)
-registerDoParallel(makeCluster(4))
+cl = makeCluster(8, outfile='simulations.log')
+registerDoParallel(cl, cores=8)
 
-sim.replications  = 16
+sim.replications  = 1000
+coverage.replications = 400
 set.seed(12345)
 estimates = foreach(rr = 1:sim.replications, .combine=abind) %dorng% {
     library(synthdid)
     library(MCPanel)
+    print(rr)
+
     estimate = array(NA, dim=c(length(simulators), length(estimators), 4, 1))
     for(ss in 1:length(simulators)) {
 	setup = simulators[[ss]]$run()
 	for(ee in 1:length(estimators)) {
 	    est = estimators[[ee]](setup$Y, setup$N0, setup$T0)
 	    estimate[ss,ee,1,1] = est 
-	    if(names(estimators)[ee] %in% c('sdid', 'sc', 'did')) {
+	    if(names(estimators)[ee] %in% c('sdid', 'sc', 'did') && rr <= coverage.replications) {
 		estimate[ss,ee,2,1] = sqrt(vcov(est, method="bootstrap")) 
 		estimate[ss,ee,3,1] = sqrt(vcov(est, method="jackknife"))
 		estimate[ss,ee,4,1] = sqrt(vcov(est, method="placebo")) 
@@ -128,6 +139,7 @@ estimates = foreach(rr = 1:sim.replications, .combine=abind) %dorng% {
     }
     estimate
 }
+stopCluster(cl)
 
 rmse = apply(estimates, c(1,2), function(x) { sqrt(mean(x[1,]^2)) })
 bias = apply(estimates, c(1,2), function(x) { mean(x[1,]) })
