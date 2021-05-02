@@ -22,6 +22,10 @@ pre, pre code, .sourceCode {
 options(width=999)
 ```
 
+## Summary
+In this vignette, we run the simulations used in [Arkhangelsky et al.](https://arxiv.org/abs/1812.09970)
+and then summarize them, computing the results displayed in its Tables 2, 3, and 4 and Figure 2. 
+
 ## Define estimators
 * sdid_reg: synthetic diff-in-diff with theoretically suggested regularization parameter:
 $\zeta \sim (N_{tr} T_{post})^{1/4}$
