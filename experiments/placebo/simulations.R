@@ -102,11 +102,12 @@ simulators = list(
 				pi=function(pi) { rep(.5,length(pi)) }))
 
 ## collect summary info about simulator designs to include in tables
-sim.info = t(sapply(simulators, function(sim) { 
-    data.frame(F.scale  =  round(sqrt(mean(sim$params$F^2)), 3),
-               M.scale  =  round(sqrt(mean(sim$params$M^2)), 3),
-	       noise.scale  =  round(sqrt(norm(sim$params$Sigma, '2')), 3),
-	       ar.coefs    =  sprintf('(%.2f, %.2f)', sim$params$ar_coef[1], sim$params$ar_coef[2]))
+sim.info = do.call(rbind, lapply(simulators, function(sim) { 
+    data.frame(F.scale  =  sqrt(mean(sim$params$F^2)), 
+               M.scale  =  sqrt(mean(sim$params$M^2)),
+	       noise.scale  =  sqrt(norm(sim$params$Sigma, '2')),
+	       ar.lag1      =  sim$params$ar_coef[1],
+	       ar.lag2      =  sim$params$ar_coef[2])
 }))
 
 ## run simulations to estimate rmse and bias for Tables 2 and 3 and coverage for Table 4
@@ -149,12 +150,12 @@ coverage = lapply(2:4, function(se) {
 
 # Display a point estimate summary table. 
 # In the paper, this is split into Tables 2 and 3, with CPS sims in the former and PENN sims in the latter.
-point.table = cbind(sim.info, as.data.frame(round(cbind(rmse, bias), 3)))
+point.table = cbind(sim.info, as.data.frame(cbind(rmse, bias)))
 rownames(point.table) = names(simulators)
-colnames(point.table) = c('F', 'M', 'Sigma', 'AR(2)', 
+colnames(point.table) = c('F', 'M', 'Sigma', 'ar:lag1', 'ar:lag2', 
 			    sprintf('rmse:%s', names(estimators)), 
 			    sprintf('bias:%s', names(estimators)))
-point.table
+print(point.table, digits=2)
 
 # Display a coverage summary table. 
 # A subset of these rows are in Table 4 of the paper.
@@ -163,7 +164,12 @@ rownames(coverage.table) = names(simulators)
 colnames(coverage.table) = c(sprintf('bootstrap:%s',  names(estimators)),
 			     sprintf('jackknife:%s',  names(estimators)),
 			     sprintf('placebo:%s',    names(estimators)))
-coverage.table[,!is.na(coverage.table[1,])]
+print(coverage.table[,!is.na(coverage.table[1,])], digits=2)
+
+save('estimates', file='sims.RData')
+write.table(round(coverage.table,2), file='coverage_table.tab')
+write.table(round(point.table,2),    file='point_table.tab')
+
 
 # Plot the error distribution of the estimates. 
 # The first plot, for the baseline CPS setting, is Figure 2 of the paper. 
