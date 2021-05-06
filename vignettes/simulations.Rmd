@@ -18,7 +18,7 @@ pre, pre code, .sourceCode {
 </style>
 <!--/html_preserve-->
 
-```{r, echo=FALSE}
+```{r echo=FALSE}
 options(width=999)
 ```
 
@@ -172,8 +172,7 @@ simulators = list(
 * Do fewer standard error estimates, as these are slow, for coverage for Table 4
 * Save results in sims.RData
 
-```{r, message=FALSE, warning=FALSE}
-library(abind)
+```{r message=FALSE, warning=FALSE}
 library(doParallel)
 library(doRNG)
 ```
@@ -182,39 +181,47 @@ library(doRNG)
 set.seed(12345)
 sim.replications  = 1000
 coverage.replications = 400
+cores = 8
 
+cl = makeCluster(cores, outfile='simulations.log')
+registerDoParallel(cl, cores=cores)
 
-cl = makeCluster(8, outfile='simulations.log')
-registerDoParallel(cl, cores=8)
-
-estimates = foreach(rr = 1:sim.replications, .combine=abind) %dorng% {
+estimates.list = foreach(rr = 1:sim.replications) %dorng% {
     library(synthdid)
     library(MCPanel)
-    print(rr)
-
-    estimate = array(NA, dim=c(length(simulators), length(estimators), 4, 1))
+    start.time = Sys.time()
+    
+    estimate = array(NA, dim=c(length(simulators), length(estimators), 4))
     for(ss in 1:length(simulators)) {
         setup = simulators[[ss]]$run()
         for(ee in 1:length(estimators)) {
             est = estimators[[ee]](setup$Y, setup$N0, setup$T0)
-            estimate[ss,ee,1,1] = est 
+            estimate[ss,ee,1] = est 
             if(names(estimators)[ee] %in% c('sdid', 'sc', 'did', 'sdid_reg') && rr <= coverage.replications) {
-                estimate[ss,ee,2,1] = sqrt(vcov(est, method="bootstrap")) 
-                estimate[ss,ee,3,1] = sqrt(vcov(est, method="jackknife"))
-                estimate[ss,ee,4,1] = sqrt(vcov(est, method="placebo")) 
+                estimate[ss,ee,2] = sqrt(vcov(est, method="bootstrap")) 
+                estimate[ss,ee,3] = sqrt(vcov(est, method="jackknife"))
+                estimate[ss,ee,4] = sqrt(vcov(est, method="placebo")) 
             }
         }
     }
+    
+    end.time = Sys.time()
+    print(sprintf('replication %d ran for %1.0f seconds, from %s to %s', 
+                  rr, end.time-start.time, start.time, end.time))
     estimate
 }
 
+save('estimates.list', file='sims.RData')
 stopCluster(cl)
-save('estimates', file='sims.RData')
 ```
 
 ## Compute summary statistics from simulations
 
 ```{r}
+library(abind)
+estimates = do.call(abind, c(estimates.list, list(rev.along=0))) 
+# concatenates replications along the (new) 4th dimension
+
 rmse = apply(estimates, c(1,2), function(x) { sqrt(mean(x[1,]^2)) })
 bias = apply(estimates, c(1,2), function(x) { mean(x[1,]) })
 coverage = lapply(2:4, function(se) {
@@ -229,7 +236,7 @@ coverage = lapply(2:4, function(se) {
 sim.info = do.call(rbind, lapply(simulators, function(sim) { 
     data.frame(F.scale  =  sqrt(mean(sim$params$F^2)), 
                M.scale  =  sqrt(mean(sim$params$M^2)),
-               noise.scale  =  sqrt(norm(sim$params$Sigma, '2')),
+               noise.scale  =  sqrt(mean(diag(sim$params$Sigma))),
                ar.lag1      =  sim$params$ar_coef[1],
                ar.lag2      =  sim$params$ar_coef[2])
 }))
@@ -263,10 +270,39 @@ write.table(round(coverage.table[,keep],2), file='coverage_table.tab')
 round(coverage.table[,keep], digits=2)
 ```
 
+<!-- #region -->
 # Plot the error distribution of the estimates. 
-The first plot, for the baseline CPS setting, is Figure 2 of the paper. 
-The rest are analogous for different dgps.
+We plot an estimate of error density function for the baseline CPS setting and the minimum wage assignment variant. This is Figure 2. 
+
+
+* Recall estimates has dimensions (simulator, estimator, estimand, replication) with estimand=1 corresponding to the point estimate. 
+* The estimate=2,3,4 slots are corresponding standard error estimates.
+<!-- #endregion -->
 
 ```{r}
-## TODO
+grid = expand.grid(ss=1:length(simulators), ee=1:length(estimators))
+error.densities = do.call(rbind, mapply(function(ss,ee) {
+    errors = estimates[ss,ee,1,]
+    density.estimate = lindsey.density.estimate(errors, K = 100, deg = 3) 
+    data.frame(x=density.estimate$centers, 
+               y=density.estimate$density,
+               simulator=names(simulators)[ss],
+               estimator=names(estimators)[ee])
+    }, grid$ss, grid$ee, SIMPLIFY=FALSE))
+```
+
+```{r}
+library(ggplot2)
+
+show.sims       = error.densities$simulator %in% c('baseline', 'random')
+show.estimators = error.densities$estimator %in% c('did', 'sc', 'sdid', 'mc')
+error.densities$title = ifelse(error.densities$simulator == 'baseline', 
+                               'Minimum Wage Assignment', 'Random Assignment')
+
+ggplot(error.densities[show.sims & show.estimators, ]) + 
+    geom_line(aes(x=x,y=y,color=estimator)) + geom_vline(xintercept=0, linetype=3) + 
+    facet_wrap(~title) + xlab('estimate') + ylab('density') + 
+    theme_light() + theme(legend.position=c(.94,.92), 
+                          legend.background=element_blank(), 
+                          legend.title=element_blank()) 
 ```

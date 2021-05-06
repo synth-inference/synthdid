@@ -147,3 +147,36 @@ ar2_correlation_matrix <- function(ar_coef,T) {
 	
 	return(cor_matrix)
 }
+
+#' Computes a density estimator by smoothing a histogram using Poisson regression.
+#' Implementation of "Lindsey's method", as descrbied in Chapter 10 of 
+#' "Computer age statistical inference: algorithms, evidence, and data science' 
+#' by Bradley Efron and Trevor Hastie (2016).
+#'
+#' @param x - one-dimensional vector of data;
+#' @param K - number of bins in the histogram;
+#' @param deg - degree of natural splines used in Poisson regression;
+#' @return a list with 2 fields, centers and density, which are K-dimensional vectors 
+#' containing the bin centers and estimated density within each bin respectively.
+#' @export lindsey.density.estimate
+lindsey.density.estimate <- function(x,K,deg){
+    x_min <- min(x)
+    x_max <- max(x)
+    range_x <- x_max - x_min
+    low_x <- x_min - 0.2*range_x                                        # 20% step outside of range of x
+    up_x <- x_max + 0.2*range_x
+    range_full <-up_x- low_x
+    splits <- seq(low_x,up_x,length.out = K+1)                          # split the range into K segments
+    mesh_size <- splits[2] - splits[1]
+    centers <- (splits[-1]+splits[-(K+1)])/2
+    counts <- as.vector(table(cut(x,splits,include.lowest = TRUE)))     # counts the points in each segment
+    scale <- sum(counts)*mesh_size
+    
+    data_matrix <- splines::ns(centers, df = deg)
+    pois_reg_res <- glm(counts~data_matrix, family = 'poisson')
+    counts_pois <- exp(pois_reg_res$linear.predictors)                  # smoothed counts
+    dens_pois <- counts_pois/scale
+    
+    return(list(centers=centers, density=dens_pois))
+}
+
