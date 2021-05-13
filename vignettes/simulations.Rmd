@@ -1,8 +1,8 @@
 ---
-title: "synthdid simulations"
+title: "synthdid paper results"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{synthdid simulations}
+  %\VignetteIndexEntry{synthdid paper results}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -18,15 +18,17 @@ pre, pre code, .sourceCode {
 </style>
 <!--/html_preserve-->
 
-```{r echo=FALSE}
+```{r, knitr-opts, echo=FALSE}
 options(width=999)
 ```
 
 ## Summary
-In this vignette, we run the simulations used in [Arkhangelsky et al.](https://arxiv.org/abs/1812.09970)
-and then summarize them, computing the results displayed in its Tables 2, 3, and 4 and Figure 2. 
+In this vignette, we generate the figures and tables from [Arkhangelsky et al.](https://arxiv.org/abs/1812.09970).
+The first section, on the California Proposition 99 application, generates Table 1 and Figure 1.
+The second section runs the placebo simulations discussed in Section 3 and then summarizes them by generating Tables 2-4 and Figure 2. 
 
-## Define estimators
+
+## The estimators considered
 * sdid: synthetic diff-in-diff
 * sc  : synthetic control
 * did:  diff-in-diff
@@ -34,12 +36,10 @@ and then summarize them, computing the results displayed in its Tables 2, 3, and
 * difp: de-meaned synthetic control, as proposed in [Doudchenko and Imbens](https://arxiv.org/abs/1610.07748https://arxiv.org/abs/1610.07748) and [Ferman and Pinto](https://arxiv.org/abs/1911.08521).
 
 
-```{r}
+```{r define-estimators}
 library(synthdid)
 library(MCPanel)
-```
 
-```{r}
 mc_estimate = function(Y, N0, T0) {
     N1=nrow(Y)-N0
     T1=ncol(Y)-T0
@@ -60,9 +60,53 @@ estimators = list(sdid=synthdid_estimate,
                   difp=difp_estimate)
 ```
 
+# California Proposition 99 Application
+
+```{r california-estimation}
+data('california_prop99')
+setup = panel.matrices(california_prop99)
+
+estimates = lapply(estimators, function(estimator) { estimator(setup$Y, setup$N0, setup$T0) } )
+standard.errors = mapply(function(estimate, name) { 
+  if(name == 'mc') { NA } else { sqrt(vcov(estimate, method='placebo')) }
+}, estimates, names(estimators))
+```
+
+## Table 1
+```{r california-table}
+california.table = rbind(unlist(estimates), unlist(standard.errors))
+rownames(california.table) = c('estimate', 'standard error')
+colnames(california.table) = toupper(names(estimators))
+
+round(california.table[, c(3,2,1,4,5)], digits=1)
+```
+
+## Figure 1. Columns are DID, SC, SDID in that order.
+
+```{r, california-trends-plot, fig.width=15, fig.height=5, fig.path='figures/', dev=c('png', 'pdf')}
+synthdid_plot(rev(estimates[1:3]), facet.vertical=FALSE, 
+              control.name='control', treated.name='california', 
+              lambda.comparable=TRUE, se.method = 'none', 
+              trajectory.linetype = 1, line.width=.75, effect.curvature=-.4,
+              trajectory.alpha=.7, effect.alpha=.7, 
+              diagram.alpha=1, onset.alpha=.7) + 
+    theme(legend.position=c(.26,.07), legend.direction='horizontal', 
+          legend.key=element_blank(), legend.background=element_blank(),
+          strip.background=element_blank(), strip.text.x = element_blank())
+```
+
+```{r, california-units-plot, fig.width=15, fig.height=5, fig.path='figures/', dev=c('png', 'pdf')}
+synthdid_units_plot(rev(estimates[1:3]), se.method='none') + 
+    theme(legend.background=element_blank(), legend.title = element_blank(), 
+          legend.direction='horizontal', legend.position=c(.17,.07), 
+          strip.background=element_blank(), strip.text.x = element_blank())
+```
+
+# Placebo Simulations
+
 ## load data 
 
-```{r}
+```{r load-penn-and-cps-data}
 last.col = function(X) { X[, ncol(X)] }
 
 data(CPS)
@@ -97,7 +141,7 @@ This returns a list with two elements.
 1. In the slot `$run`, the simulator, a no-args function returning a simulated dataset.
 2. In the slot `$params`, the parameters of the dgp.
 
-```{r}
+```{r define-simulations-setup}
 simulator = function(params = cps.baseline.params,
                      F=function(x){x}, M=function(x){x}, 
                      Sigma = function(x){x}, pi = function(x){x}, 
@@ -127,7 +171,7 @@ simulator = function(params = cps.baseline.params,
 * Simulators use `Sigma`, not `ar_coef`, to generate noise, so updating `ar_coef` doesn't affect the simulations. 
 * We do update `ar_coef` below so `$params` has the correct coefficients. These will be shown in Table 2.
 
-```{r}
+```{r define-simulations}
 simulators = list(
     baseline   =  simulator(),
     # Modified outcome model
@@ -166,7 +210,7 @@ simulators = list(
 ### Details
 This is a long-running computation, taking roughly 3 days on a recent macbook air. It is written to save data as it runs, one file per replication, so it can be continued if interrupted. To continue, just rerun the loop: only replications for which these files are missing are run. As the %dorng% foreach loop gives each replication its own RNG state, computed as a function of the initial seed 12345, what is computed does not depend on whether the process is interrupted and continued.
 
-```{r message=FALSE}
+```{r, setup-simulations, message=FALSE}
 library(doRNG)
 library(doParallel)
 
@@ -176,7 +220,7 @@ coverage.estimators = c('sdid', 'sc', 'did')
 cores = 8
 ```
 
-```{r}
+```{r run-simulations}
 # set up workers
 cl = makeCluster(cores, outfile='simulations.log')
 registerDoParallel(cl, cores=cores)
@@ -225,7 +269,7 @@ stopCluster(cl)
 3. the jackknife estimate of standard error
 4. the placebo estimate of standard errror
 
-```{r}
+```{r load-estimates}
 library(abind)
 
 estimates.list = foreach(rr = 1:sim.replications) %do% {
@@ -236,7 +280,7 @@ estimates = do.call(abind, c(estimates.list, list(rev.along=0)))
 
 ## Compute summary statistics from simulations
 
-```{r}
+```{r summary-stats}
 rmse = apply(estimates, c(1,2), function(x) { sqrt(mean(x[1,]^2)) })
 bias = apply(estimates, c(1,2), function(x) { mean(x[1,]) })
 coverage = lapply(2:4, function(se) {
@@ -248,7 +292,7 @@ coverage = lapply(2:4, function(se) {
 ## Point Estimation: Tables 2 and 3
 ### Compute summary info about simulator designs to include in Table 2.
 
-```{r}
+```{r simulator-info}
 sim.info = do.call(rbind, lapply(simulators, function(sim) { 
     data.frame(F.scale  =  sqrt(mean(sim$params$F^2)), 
                M.scale  =  sqrt(mean(sim$params$M^2)),
@@ -261,7 +305,7 @@ sim.info = do.call(rbind, lapply(simulators, function(sim) {
 ## Display a point estimate summary table 
 In the paper, this is split into Tables 2 and 3, with CPS sims in the former and PENN sims in the latter. Also save in point_table.tab.
 
-```{r}
+```{r point-estimate-table}
 point.table = cbind(sim.info, as.data.frame(cbind(rmse, bias)))
 rownames(point.table) = names(simulators)
 colnames(point.table) = c('F', 'M', 'Sigma', 'ar:lag1', 'ar:lag2', 
@@ -274,7 +318,7 @@ round(point.table, digits=3)
 ## Display a coverage summary table. 
 A subset of these rows are in Table 4 of the paper. Also save in coverage_table.tab.
 
-```{r}
+```{r coverage-table}
 coverage.table = do.call(cbind, coverage)
 rownames(coverage.table) = names(simulators)
 colnames(coverage.table) = c(sprintf('bootstrap:%s',  names(estimators)),
@@ -286,14 +330,14 @@ write.table(round(coverage.table[,keep],2), file='coverage_table.tab')
 round(coverage.table[,keep], digits=2)
 ```
 
-## Plot the error distribution of the estimates. 
+## Plot the error distribution of the estimates (Figure 2)
 We plot an estimate of error density function for the baseline CPS setting and the minimum wage assignment variant. This is Figure 2. 
 
 
 * Recall estimates has dimensions (simulator, estimator, estimand, replication) with estimand=1 corresponding to the point estimate. 
 * The estimate=2,3,4 slots are corresponding standard error estimates.
 
-```{r}
+```{r error-density-setup}
 grid = expand.grid(ss=1:length(simulators), ee=1:length(estimators))
 error.densities = do.call(rbind, mapply(function(ss,ee) {
     errors = estimates[ss,ee,1,]
@@ -305,7 +349,7 @@ error.densities = do.call(rbind, mapply(function(ss,ee) {
     }, grid$ss, grid$ee, SIMPLIFY=FALSE))
 ```
 
-```{r fig.width=8, fig.height=4}
+```{r, error-density-plot, fig.width=8, fig.height=4, fig.path='figures/', dev=c('png', 'pdf')}
 library(ggplot2)
 
 show.sims       = error.densities$simulator %in% c('baseline', 'random')

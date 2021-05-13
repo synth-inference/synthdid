@@ -101,13 +101,13 @@ plot(tau.hat, overlay=.8, se.method='placebo')
 
 # Compare to other estimators
 We compare to synthetic control and diff-in-diff. 
-This reproduces Table 1 and Figure 1 of Arkhangelsky et al.
 ```{r}
 tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
 tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
 estimates = list(tau.did, tau.sc, tau.hat)
 names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
 ```
+
 ```{r}
 print(unlist(estimates))
 ```
@@ -122,7 +122,7 @@ synthdid_units_plot(estimates, se.method='placebo')
 # Customize plots 
 Arguments to plotting functions can change the transparency, line thickness, etc. of individual elements.
 The output of every plotting function is a ggplot, so you can change theme, legend position, etc. as usual.
-We'll use these to match the style of Arkhangelsky et al.
+We'll use these to match the style of Figure 1 in Arkhangelsky et al.
 ```{r fig.width=15, fig.height=5}
 synthdid_plot(estimates, facet.vertical=FALSE, 
               control.name='control', treated.name='california', 
