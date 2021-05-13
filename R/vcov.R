@@ -37,7 +37,8 @@ vcov.synthdid_estimate = function(object,
 }
 
 #' Calculate the standard error of a synthetic diff in diff estimate. Deprecated. Use vcov.synthdid_estimate.
-#' @export
+#' @param ... Any valid arguments for vcov.synthdid_estimate
+#' @export synthdid_se
 synthdid_se = function(...) { sqrt(vcov(...)) }
 
 

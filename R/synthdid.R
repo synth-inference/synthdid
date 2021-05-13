@@ -4,8 +4,9 @@
 #' @param N0 the number of control units. Rows 1-N0 of Y correspond to the control units.
 #' @param T0 the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.
 #' @param X an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.
-#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to 0.
-#' @param zeta.omega Analogous for omega. Defaults to the standard deviation of first differences of Y.
+#' @param noise.level, an estimate of the noise standard deviation sigma. Defaults to the standard deviation of first differences of Y.
+#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to an 'infinitesimal' value 1e-6 * noise.level
+#' @param zeta.omega Analogous for omega. Defaults to (N_tr T_post)^(1/4) * noise.level
 #' @param lambda.intercept Binary. Use an intercept when estimating lambda.
 #' @param omega.intercept Binary. Use an intercept when estimating omega.
 #' @param weights a list with fields lambda and omega. If non-null weights$lambda is passed,
@@ -22,12 +23,14 @@
 #'         Setup is a list describing the problem passed in: Y, N0, T0, X.
 #' @export synthdid_estimate
 #' @importFrom stats sd
-synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
-                              zeta.omega = sd(apply(Y[1:N0,1:T0], 1, diff)), zeta.lambda = 1e-6*zeta.omega,
+synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)), 
+			      noise.level = sd(apply(Y[1:N0,1:T0], 1, diff)),
+                              zeta.omega = ((nrow(Y)-N0)*(ncol(Y)-T0))^(1/4) * noise.level,  
+			      zeta.lambda = 1e-6*noise.level,
                               omega.intercept = TRUE, lambda.intercept = TRUE, 
                               weights = list(omega = NULL, lambda = NULL, vals = NULL),
                               update.omega = is.null(weights$omega), update.lambda = is.null(weights$lambda), 
-                              min.decrease = 1e-3 * sd(apply(Y[1:N0,1:T0], 1, diff)), max.iter = 1e4) {
+                              min.decrease = 1e-3 * noise.level, max.iter = 1e4) {
   stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2, 3), dim(X)[1:2] == dim(Y), is.list(weights),
     is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0,
     !is.null(weights$lambda) || update.lambda, !is.null(weights$omega) || update.omega)

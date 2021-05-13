@@ -107,8 +107,8 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4,
              dimnames = list(unique(panel[,unit]), unique(panel[,time])))
   W = matrix(panel[,treatment], num.units, num.years, byrow = TRUE,
              dimnames = list(unique(panel[,unit]), unique(panel[,time])))
-  w = apply(W, 1, any)                 # indicator for units that are treated at any time
-  T0 = which(apply(W, 2, any))[1]-1    # last period nobody is treated
+  w = apply(W, 1, any)                         # indicator for units that are treated at any time
+  T0 = unname(which(apply(W, 2, any))[1]-1)    # last period nobody is treated
   N0 = sum(!w)
 
   if(! (all(W[!w,] == 0) && all(W[,1:T0] == 0) && all(W[w, (T0+1):ncol(Y)]==1))) {

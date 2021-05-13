@@ -6,6 +6,9 @@
 \usage{
 synthdid_se(...)
 }
+\arguments{
+\item{...}{Any valid arguments for vcov.synthdid_estimate}
+}
 \description{
 Calculate the standard error of a synthetic diff in diff estimate. Deprecated. Use vcov.synthdid_estimate.
 }

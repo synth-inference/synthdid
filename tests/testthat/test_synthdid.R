@@ -177,5 +177,5 @@ test_that("California estimates have not changed", {
   sc = sc_estimate(setup$Y, setup$N0, setup$T0)
   did = did_estimate(setup$Y, setup$N0, setup$T0)
 
-  expect_equal(c(sdid, sc, did), c(-14.23324, -20.02022, -27.34911), tol = 1e-5)
+  expect_equal(c(did, sc, sdid), c(-27.34911, -20.02022, -15.55748), tol = 1e-5)
 })

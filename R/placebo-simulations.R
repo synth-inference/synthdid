@@ -6,15 +6,15 @@
 #' @param rank, the rank of the estimated signal component L
 #' @return a list with elements F, M, Sigma, pi as described in Section 3.1.1 
 #'         and an element ar_coef with the AR(2) model coefficients underlying the covariance Sigma
-#' @export estimate.dgp
-estimate.dgp = function(Y, assignment_vector, rank) {
+#' @export estimate_dgp
+estimate_dgp = function(Y, assignment_vector, rank) {
     N <- dim(Y)[1]
     T <- dim(Y)[2]
     overall_mean <- mean(Y)
     overall_sd <- norm(Y - overall_mean,'f')/sqrt(N*T)
     Y_norm <- (Y-overall_mean)/overall_sd
 
-    components <- decompose.Y(Y_norm, rank = rank)
+    components <- decompose_Y(Y_norm, rank = rank)
     M <- components$M
     F <- components$F
     E <- components$E
@@ -38,9 +38,9 @@ estimate.dgp = function(Y, assignment_vector, rank) {
 #' @param T1, the number of treated periods. 
 #' @return a list with 3 elements: the outcome matrix Y, the number of control units N0, and the number of control periods T0.
 #'         The first N0 rows of Y are for units assigned to control, the remaining rows are for units assigned to treatment.
-#' @export simulate.dgp
+#' @export simulate_dgp
 #' @importFrom mvtnorm rmvnorm
-simulate.dgp = function(parameters, N1, T1){
+simulate_dgp = function(parameters, N1, T1){
     F=parameters$F
     M=parameters$M
     Sigma = parameters$Sigma
@@ -49,7 +49,7 @@ simulate.dgp = function(parameters, N1, T1){
     N <- nrow(M)
     T <- ncol(M)
     
-    assignment <- randomize.treatment(pi,N,N1)
+    assignment <- randomize_treatment(pi,N,N1)
     N1 <- sum(assignment)
     N0 <- N - N1
     T0 <- T - T1
@@ -66,8 +66,8 @@ simulate.dgp = function(parameters, N1, T1){
 #' @param pi, the randomization probabilities
 #' @param N, the number of units
 #' @param N1, the cap on the number of treated units
-#' @param a binary vector of length N, with ones indicating assignment to treatment
-randomize.treatment = function(pi, N, N1){
+#' @return a binary vector of length N, with ones indicating assignment to treatment
+randomize_treatment = function(pi, N, N1){
     assignment_sim <- rbinom(N,1,pi)
     index_as <- which(assignment_sim == 1)
     if (sum(assignment_sim) > N1){
@@ -88,7 +88,7 @@ randomize.treatment = function(pi, N, N1){
 #' @param Y, the outcomes
 #' @param rank, the assumed rank of the signal component L=F+M
 #' @return a list with elements F, M, E, and unit_factors 
-decompose.Y = function(Y,rank) {
+decompose_Y = function(Y,rank) {
 	N <- dim(Y)[1]
 	T <- dim(Y)[2]
 	
@@ -156,10 +156,9 @@ ar2_correlation_matrix <- function(ar_coef,T) {
 #' @param x - one-dimensional vector of data;
 #' @param K - number of bins in the histogram;
 #' @param deg - degree of natural splines used in Poisson regression;
-#' @return a list with 2 fields, centers and density, which are K-dimensional vectors 
-#' containing the bin centers and estimated density within each bin respectively.
-#' @export lindsey.density.estimate
-lindsey.density.estimate <- function(x,K,deg){
+#' @return a list with 2 fields, centers and density, which are K-dimensional vectors containing the bin centers and estimated density within each bin respectively.
+#' @export lindsey_density_estimate
+lindsey_density_estimate <- function(x,K,deg){
     x_min <- min(x)
     x_max <- max(x)
     range_x <- x_max - x_min

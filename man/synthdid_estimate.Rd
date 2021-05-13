@@ -10,14 +10,15 @@ synthdid_estimate(
   N0,
   T0,
   X = array(dim = c(dim(Y), 0)),
-  zeta.omega = sd(apply(Y[1:N0, 1:T0], 1, diff)),
-  zeta.lambda = 1e-06 * zeta.omega,
+  noise.level = sd(apply(Y[1:N0, 1:T0], 1, diff)),
+  zeta.omega = ((nrow(Y) - N0) * (ncol(Y) - T0))^(1/4) * noise.level,
+  zeta.lambda = 1e-06 * noise.level,
   omega.intercept = TRUE,
   lambda.intercept = TRUE,
   weights = list(omega = NULL, lambda = NULL, vals = NULL),
   update.omega = is.null(weights$omega),
   update.lambda = is.null(weights$lambda),
-  min.decrease = 0.001 * sd(apply(Y[1:N0, 1:T0], 1, diff)),
+  min.decrease = 0.001 * noise.level,
   max.iter = 10000
 )
 }
@@ -30,9 +31,11 @@ synthdid_estimate(
 
 \item{X}{an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.}
 
-\item{zeta.omega}{Analogous for omega. Defaults to the standard deviation of first differences of Y.}
+\item{noise.level, }{an estimate of the noise standard deviation sigma. Defaults to the standard deviation of first differences of Y.}
 
-\item{zeta.lambda}{Its square is weight of the ridge penalty relative to MSE. Defaults to 0.}
+\item{zeta.omega}{Analogous for omega. Defaults to (N_tr T_post)^(1/4) * noise.level}
+
+\item{zeta.lambda}{Its square is weight of the ridge penalty relative to MSE. Defaults to an 'infinitesimal' value 1e-6 * noise.level}
 
 \item{omega.intercept}{Binary. Use an intercept when estimating omega.}
 
