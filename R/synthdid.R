@@ -1,14 +1,14 @@
-#' Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block.
+#' Computes the synthetic diff-in-diff estimate for an average treatment effect on a treated block.
 #' See Section 4.1 of the paper.
 #' @param Y the observation matrix.
 #' @param N0 the number of control units. Rows 1-N0 of Y correspond to the control units.
 #' @param T0 the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.
 #' @param X an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.
 #' @param noise.level, an estimate of the noise standard deviation sigma. Defaults to the standard deviation of first differences of Y.
-#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to an 'infinitesimal' value 1e-6 * noise.level
 #' @param zeta.omega Analogous for omega. Defaults to (N_tr T_post)^(1/4) * noise.level
-#' @param lambda.intercept Binary. Use an intercept when estimating lambda.
+#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to an 'infinitesimal' value 1e-6 * noise.level
 #' @param omega.intercept Binary. Use an intercept when estimating omega.
+#' @param lambda.intercept Binary. Use an intercept when estimating lambda.
 #' @param weights a list with fields lambda and omega. If non-null weights$lambda is passed,
 #'        we use them instead of estimating lambda weights. Same for weights$omega.
 #' @param update.lambda If true, solve for lambda using the passed value of weights$lambda only as an initialization.
@@ -17,16 +17,16 @@
 #' @param min.decrease Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease
 #' 		        in penalized MSE smaller than min.decrease^2.
 #' @param max.iter A fallback stopping criterion for our weight estimator. Stop after this number of iterations.
-#' @return An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
-#'         Weights contains the estimated weights lambda and omega and corresponding intercepts.
-#'         If covariates X are passedas well as regression coefficients beta if X is passed
-#'         Setup is a list describing the problem passed in: Y, N0, T0, X.
+#' @return An average treatment effect estimate with 'weights' and 'setup' attached as attributes.
+#'         'weights' contains the estimated weights lambda and omega and corresponding intercepts,
+#'         as well as regression coefficients beta if X is passed.
+#'         'setup' is a list describing the problem passed in: Y, N0, T0, X.
 #' @export synthdid_estimate
 #' @importFrom stats sd
 synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)), 
-			      noise.level = sd(apply(Y[1:N0,1:T0], 1, diff)),
+                              noise.level = sd(apply(Y[1:N0,1:T0], 1, diff)),
                               zeta.omega = ((nrow(Y)-N0)*(ncol(Y)-T0))^(1/4) * noise.level,  
-			      zeta.lambda = 1e-6*noise.level,
+                              zeta.lambda = 1e-6*noise.level,
                               omega.intercept = TRUE, lambda.intercept = TRUE, 
                               weights = list(omega = NULL, lambda = NULL, vals = NULL),
                               update.omega = is.null(weights$omega), update.lambda = is.null(weights$lambda), 
@@ -81,68 +81,73 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
 }
 
 #' synthdid_estimate for synthetic control estimates.
-#' Takes all the same parameters, but default, passes options for synthetic control
-#' with no intercept and a penalty term that defaults to the standard deviation of first differences of Y.
+#' Takes all the same parameters, but by default, passes options for synthetic control with no intercept
 #' @param Y the observation matrix.
 #' @param N0 the number of control units. Rows 1-N0 of Y correspond to the control units.
 #' @param T0 the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.
 #' @param X an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.
-#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to 0.
-#' @param zeta.omega Analogous for omega. Defaults to the standard deviation of first differences of Y.
-#' @param lambda.intercept Binary. Use an intercept when estimating lambda.
+#' @param noise.level, an estimate of the noise standard deviation sigma. Defaults to the standard deviation of first differences of Y.
+#' @param zeta.omega Analogous for omega. Defaults to (N_tr T_post)^(1/4) * noise.level
+#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to an 'infinitesimal' value 1e-6 * noise.level
 #' @param omega.intercept Binary. Use an intercept when estimating omega.
+#' @param lambda.intercept Binary. Use an intercept when estimating lambda.
 #' @param weights a list with fields lambda and omega. If non-null weights$lambda is passed,
 #'        we use them instead of estimating lambda weights. Same for weights$omega.
 #' @param min.decrease Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease
 #' 		        in penalized MSE smaller than min.decrease^2.
 #' @param max.iter A fallback stopping criterion for our weight estimator. Stop after this number of iterations.
-#' @return An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
-#'         Weights contains the estimated weights lambda and omega and corresponding intercepts.
-#'         If covariates X are passedas well as regression coefficients beta if X is passed
-#'         Setup is a list describing the problem passed in: Y, N0, T0, X.
+#' @return An average treatment effect estimate with 'weights' and 'setup' attached as attributes.
+#'         'weights' contains the estimated weights lambda and omega and corresponding intercepts,
+#'         as well as regression coefficients beta if X is passed.
+#'         'setup' is a list describing the problem passed in: Y, N0, T0, X.
 #' @export sc_estimate
 sc_estimate = function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
-                       zeta.lambda = 0, zeta.omega = sd(apply(Y[1:N0,1:T0], 1, diff)),
-                       lambda.intercept = FALSE, omega.intercept = FALSE,
+                       noise.level = sd(apply(Y[1:N0,1:T0], 1, diff)),
+                       zeta.omega = ((nrow(Y)-N0)*(ncol(Y)-T0))^(1/4) * noise.level,  
+                       zeta.lambda = 1e-6*noise.level,
+                       omega.intercept = FALSE, lambda.intercept = FALSE, 
                        weights = list(lambda = rep(0, T0), omega = NULL, vals = NULL),
-                       min.decrease = 1e-3 * sd(apply(Y[1:N0,1:T0], 1, diff)), max.iter = 1e4) {
+                       min.decrease = 1e-3 * noise.level, max.iter = 1e4) {
   estimate = synthdid_estimate(Y, N0, T0, X = X,
-    zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
-    lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,
-    weights = weights, min.decrease = min.decrease, max.iter = max.iter)
+                               noise.level = noise.level, zeta.omega = zeta.omega, zeta.lambda = zeta.lambda, 
+                               omega.intercept = omega.intercept, lambda.intercept = lambda.intercept, 
+                               weights = weights, min.decrease = min.decrease, max.iter = max.iter)
   attr(estimate, 'estimator') = "sc_estimate"
   estimate
 }
 
 #' synthdid_estimate for diff-in-diff estimates.
-#' Takes all the same parameters, but default, uses constant weights lambda and omega
+#' Takes all the same parameters, but by default, passes options to use constant weights lambda and omega
 #' @param Y the observation matrix.
 #' @param N0 the number of control units. Rows 1-N0 of Y correspond to the control units.
 #' @param T0 the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.
 #' @param X an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.
-#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to 0.
-#' @param zeta.omega Analogous for omega. Defaults to the standard deviation of first differences of Y.
-#' @param lambda.intercept Binary. Use an intercept when estimating lambda.
+#' @param noise.level, an estimate of the noise standard deviation sigma. Defaults to the standard deviation of first differences of Y.
+#' @param zeta.omega Analogous for omega. Defaults to (N_tr T_post)^(1/4) * noise.level
+#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to an 'infinitesimal' value 1e-6 * noise.level
 #' @param omega.intercept Binary. Use an intercept when estimating omega.
+#' @param lambda.intercept Binary. Use an intercept when estimating lambda.
 #' @param weights a list with fields lambda and omega. If non-null weights$lambda is passed,
 #'        we use them instead of estimating lambda weights. Same for weights$omega.
 #' @param min.decrease Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease
 #' 		        in penalized MSE smaller than min.decrease^2.
 #' @param max.iter A fallback stopping criterion for our weight estimator. Stop after this number of iterations.
-#' @return An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
-#'         Weights contains the estimated weights lambda and omega and corresponding intercepts.
-#'         If covariates X are passedas well as regression coefficients beta if X is passed
-#'         Setup is a list describing the problem passed in: Y, N0, T0, X.
+#' @return An average treatment effect estimate with 'weights' and 'setup' attached as attributes.
+#'         'weights' contains the estimated weights lambda and omega and corresponding intercepts,
+#'         as well as regression coefficients beta if X is passed.
+#'         'setup' is a list describing the problem passed in: Y, N0, T0, X.
 #' @export did_estimate
 did_estimate = function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
-                        zeta.lambda = 0, zeta.omega = sd(apply(Y[1:N0,1:T0], 1, diff)),
-                        lambda.intercept = FALSE, omega.intercept = FALSE,
+                        noise.level = sd(apply(Y[1:N0,1:T0], 1, diff)),
+                        zeta.omega = ((nrow(Y)-N0)*(ncol(Y)-T0))^(1/4) * noise.level,  
+                        zeta.lambda = 1e-6*noise.level,
+                        omega.intercept = TRUE, lambda.intercept = TRUE, 
                         weights = list(lambda = rep(1 / T0, T0), omega = rep(1 / N0, N0), vals = NULL),
-                        min.decrease = 1e-3 * sd(apply(Y[1:N0,1:T0], 1, diff)), max.iter = 1e4) {
+                        min.decrease = 1e-3 * noise.level, max.iter = 1e4) {
   estimate = synthdid_estimate(Y, N0, T0, X = X,
-    zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
-    lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,
-    weights = weights, min.decrease = 1e-3, max.iter = 1e4)
+                               noise.level = noise.level, zeta.omega = zeta.omega, zeta.lambda = zeta.lambda, 
+                               omega.intercept = omega.intercept, lambda.intercept = lambda.intercept, 
+                               weights = weights, min.decrease = min.decrease, max.iter = max.iter)
   attr(estimate, 'estimator') = "did_estimate"
   estimate
 }
