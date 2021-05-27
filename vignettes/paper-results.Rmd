@@ -18,7 +18,7 @@ pre, pre code, .sourceCode {
 </style>
 <!--/html_preserve-->
 
-```{r, knitr-opts, echo=FALSE}
+```{r knitr-opts, echo=FALSE}
 options(width=999)
 ```
 
@@ -63,6 +63,7 @@ estimators = list(sdid=synthdid_estimate,
 # California Proposition 99 Application
 
 ```{r california-estimation}
+set.seed(12345)
 data('california_prop99')
 setup = panel.matrices(california_prop99)
 
@@ -83,7 +84,7 @@ round(california.table[, c(3,2,1,4,5)], digits=1)
 
 ## Figure 1. Columns are DID, SC, SDID in that order.
 
-```{r, california-trends-plot, fig.width=15, fig.height=5, fig.path='figures/', dev=c('png', 'pdf')}
+```{r california-trends-plot, fig.width=15, fig.height=5, fig.path="figures/", dev=c("png", "pdf")}
 synthdid_plot(rev(estimates[1:3]), facet.vertical=FALSE, 
               control.name='control', treated.name='california', 
               lambda.comparable=TRUE, se.method = 'none', 
@@ -95,7 +96,7 @@ synthdid_plot(rev(estimates[1:3]), facet.vertical=FALSE,
           strip.background=element_blank(), strip.text.x = element_blank())
 ```
 
-```{r, california-units-plot, fig.width=15, fig.height=5, fig.path='figures/', dev=c('png', 'pdf')}
+```{r california-units-plot, fig.width=15, fig.height=5, fig.path="figures/", dev=c("png", "pdf")}
 synthdid_units_plot(rev(estimates[1:3]), se.method='none') + 
     theme(legend.background=element_blank(), legend.title = element_blank(), 
           legend.direction='horizontal', legend.position=c(.17,.07), 
@@ -204,51 +205,80 @@ simulators = list(
 
 ## Run simulations.
 * Do many point estimates, as these are fast, to estimate rmse and bias for Tables 2 and 3.
-* Do fewer standard error estimates, as these are slow, for coverage for Table 4
+* Do fewer standard error estimates, as these are slow, for coverage for Table 4.
 * Save results in replications/replication*.RDS. Assumes you've created the directory ./replications
 
 ### Details
-This is a long-running computation, taking roughly 3 days on a recent macbook air. It is written to save data as it runs, one file per replication, so it can be continued if interrupted. To continue, just rerun the loop: only replications for which these files are missing are run. As the %dorng% foreach loop gives each replication its own RNG state, computed as a function of the initial seed 12345, what is computed does not depend on whether the process is interrupted and continued.
+This is a long-running computation, taking roughly 3 days on a recent macbook air. It is written to save data as it runs, one file per replication, so it can be continued if interrupted. To continue, just rerun the loop: only replications for which these files are missing are run. 
 
-```{r, setup-simulations, message=FALSE}
-library(doRNG)
+The loop over replications gives each replication its own RNG seed, computed as 
+a function of the initial seed 12345. Within each replication, every call to
+a simulator, estimator, or variance estimator uses this replication-specific seed:
+we explicitly restore the seed before each call. As a result, changing the set of 
+simulations, estimators, or variance estimators considered does not change the results we get
+for any specific simulator/estimator/variance-estimator within a given replication. Nor does 
+interrupting and continuing the loop. 
+
+By using nextRNGStream to choose replication-specific seeds for the L'Ecuyer-CMRG RNG, 
+we get streams of random numbers that are more or less independent from replication to replication.
+See `help(nextRNGStream)`.
+
+```{r set-up-simulations}
+run.replication = function(seed, coverage.for=c()) { 
+    library(synthdid)
+    library(MCPanel)
+    
+    estimate = array(NA, dim = c(length(simulators), length(estimators), 4))
+    for (ss in 1:length(simulators)) {
+        set.seed(seed)
+        setup = simulators[[ss]]$run()
+        for (ee in 1:length(estimators)) {
+            set.seed(seed)
+            est = estimators[[ee]](setup$Y, setup$N0, setup$T0)
+            estimate[ss, ee, 1] = est
+            if (names(estimators)[ee] %in% coverage.for) {
+                methods = c('bootstrap', 'jackknife', 'placebo')
+                for (mm in 1:length(methods)) {
+                  set.seed(seed)
+                  estimate[ss, ee, mm + 1] = sqrt(vcov(est, methods = methods[mm]))
+                }
+            }
+        }
+    }
+    
+    estimate
+}
+```
+
+
+```{r run-simulations}
+library(parallel)
 library(doParallel)
 
 sim.replications  = 1000
 coverage.replications = 400
 coverage.estimators = c('sdid', 'sc', 'did')
 cores = 8
-```
 
-```{r run-simulations}
+# set up RNG seeds for each replication
+RNGkind("L'Ecuyer-CMRG")
+set.seed(12345)
+seeds = as.list(rep(NA, sim.replications))
+seeds[[1]] = .Random.seed
+for(rr in 2:length(seeds)) { seeds[[rr]] = nextRNGStream(seeds[[rr-1]]) }
+
 # set up workers
 cl = makeCluster(cores, outfile='simulations.log')
 registerDoParallel(cl, cores=cores)
 
 # run simulations
-set.seed(12345)
-estimates.list = foreach(rr = 1:sim.replications) %dorng% { 
+estimates.list = foreach(rr = 1:sim.replications) %dopar% { 
+    RNGkind("L'Ecuyer-CMRG")
     filename = sprintf('replications/replication%d.RDS', rr)
     if(!file.exists(filename)) {
-    
-        library(synthdid)
-        library(MCPanel)
         start.time = Sys.time()
-    
-        estimate = array(NA, dim=c(length(simulators), length(estimators), 4))
-        for(ss in 1:length(simulators)) {
-            setup = simulators[[ss]]$run()
-            for(ee in 1:length(estimators)) {
-                est = estimators[[ee]](setup$Y, setup$N0, setup$T0)
-                estimate[ss,ee,1] = est 
-                if(names(estimators)[ee] %in% coverage.estimators && rr <= coverage.replications) {
-                    estimate[ss,ee,2] = sqrt(vcov(est, method="bootstrap")) 
-                    estimate[ss,ee,3] = sqrt(vcov(est, method="jackknife"))
-                    estimate[ss,ee,4] = sqrt(vcov(est, method="placebo")) 
-                }
-            }
-        }
-    
+        estimate = run.replication(seeds[[rr]], coverage.for =
+            if(rr <= coverage.replications) { coverage.estimators } else { c() })
         saveRDS(estimate, file=filename)
         end.time = Sys.time()
         print(sprintf('replication %d ran for %1.0f hours/minutes/seconds, from %s to %s', 
@@ -349,7 +379,7 @@ error.densities = do.call(rbind, mapply(function(ss,ee) {
     }, grid$ss, grid$ee, SIMPLIFY=FALSE))
 ```
 
-```{r, error-density-plot, fig.width=8, fig.height=4, fig.path='figures/', dev=c('png', 'pdf')}
+```{r error-density-plot, fig.width=8, fig.height=4, fig.path="figures/", dev=c("png", "pdf")}
 library(ggplot2)
 
 show.sims       = error.densities$simulator %in% c('baseline', 'random')
