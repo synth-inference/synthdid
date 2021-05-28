@@ -169,13 +169,3 @@ test_that("treated effect shifts correctly with scalar shifts to the 4 blocks", 
   }
 })
 
-test_that("California estimates have not changed", {
-  data("california_prop99")
-  setup <- panel.matrices(california_prop99)
-
-  sdid = synthdid_estimate(setup$Y, setup$N0, setup$T0)
-  sc = sc_estimate(setup$Y, setup$N0, setup$T0)
-  did = did_estimate(setup$Y, setup$N0, setup$T0)
-
-  expect_equal(c(did, sc, sdid), c(-27.34911, -20.02022, -15.55748), tol = 1e-5)
-})

@@ -2,7 +2,7 @@
 % Please edit documentation in R/synthdid.R
 \name{synthdid_estimate}
 \alias{synthdid_estimate}
-\title{Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block.
+\title{Computes the synthetic diff-in-diff estimate for an average treatment effect on a treated block.
 See Section 4.1 of the paper.}
 \usage{
 synthdid_estimate(
@@ -55,12 +55,12 @@ in penalized MSE smaller than min.decrease^2.}
 \item{max.iter}{A fallback stopping criterion for our weight estimator. Stop after this number of iterations.}
 }
 \value{
-An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
-Weights contains the estimated weights lambda and omega and corresponding intercepts.
-If covariates X are passedas well as regression coefficients beta if X is passed
-Setup is a list describing the problem passed in: Y, N0, T0, X.
+An average treatment effect estimate with 'weights' and 'setup' attached as attributes.
+'weights' contains the estimated weights lambda and omega and corresponding intercepts,
+as well as regression coefficients beta if X is passed.
+'setup' is a list describing the problem passed in: Y, N0, T0, X.
 }
 \description{
-Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block.
+Computes the synthetic diff-in-diff estimate for an average treatment effect on a treated block.
 See Section 4.1 of the paper.
 }

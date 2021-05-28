@@ -79,7 +79,7 @@ california.table = rbind(unlist(estimates), unlist(standard.errors))
 rownames(california.table) = c('estimate', 'standard error')
 colnames(california.table) = toupper(names(estimators))
 
-round(california.table[, c(3,2,1,4,5)], digits=1)
+round(california.table[, c(3,2,1,5,4)], digits=1)
 ```
 
 ## Figure 1. Columns are DID, SC, SDID in that order.
@@ -219,27 +219,28 @@ simulations, estimators, or variance estimators considered does not change the r
 for any specific simulator/estimator/variance-estimator within a given replication. Nor does 
 interrupting and continuing the loop. 
 
-By using nextRNGStream to choose replication-specific seeds for the L'Ecuyer-CMRG RNG, 
+By using RNGSeq to choose replication-specific seeds for the L'Ecuyer-CMRG RNG, 
 we get streams of random numbers that are more or less independent from replication to replication.
-See `help(nextRNGStream)`.
+See `help(RNGseq)`.
 
 ```{r set-up-simulations}
 run.replication = function(seed, coverage.for=c()) { 
     library(synthdid)
     library(MCPanel)
+    library(rngtools)
     
     estimate = array(NA, dim = c(length(simulators), length(estimators), 4))
     for (ss in 1:length(simulators)) {
-        set.seed(seed)
+        setRNG(seed)
         setup = simulators[[ss]]$run()
         for (ee in 1:length(estimators)) {
-            set.seed(seed)
+            setRNG(seed)
             est = estimators[[ee]](setup$Y, setup$N0, setup$T0)
             estimate[ss, ee, 1] = est
             if (names(estimators)[ee] %in% coverage.for) {
                 methods = c('bootstrap', 'jackknife', 'placebo')
                 for (mm in 1:length(methods)) {
-                  set.seed(seed)
+                  setRNG(seed)
                   estimate[ss, ee, mm + 1] = sqrt(vcov(est, methods = methods[mm]))
                 }
             }
@@ -252,20 +253,16 @@ run.replication = function(seed, coverage.for=c()) {
 
 
 ```{r run-simulations}
-library(parallel)
+library(rngtools)
 library(doParallel)
 
 sim.replications  = 1000
 coverage.replications = 400
-coverage.estimators = c('sdid', 'sc', 'did')
+coverage.estimators = c('sdid', 'sc', 'did', 'difp')
 cores = 8
 
 # set up RNG seeds for each replication
-RNGkind("L'Ecuyer-CMRG")
-set.seed(12345)
-seeds = as.list(rep(NA, sim.replications))
-seeds[[1]] = .Random.seed
-for(rr in 2:length(seeds)) { seeds[[rr]] = nextRNGStream(seeds[[rr-1]]) }
+seeds = RNGseq(n=sim.replications, seed=12345)
 
 # set up workers
 cl = makeCluster(cores, outfile='simulations.log')
@@ -273,7 +270,6 @@ registerDoParallel(cl, cores=cores)
 
 # run simulations
 estimates.list = foreach(rr = 1:sim.replications) %dopar% { 
-    RNGkind("L'Ecuyer-CMRG")
     filename = sprintf('replications/replication%d.RDS', rr)
     if(!file.exists(filename)) {
         start.time = Sys.time()
@@ -303,7 +299,7 @@ stopCluster(cl)
 library(abind)
 
 estimates.list = foreach(rr = 1:sim.replications) %do% {
-    readRDS(sprintf('replications/replication%d.RDS', rr))
+    readRDS(sprintf('replications-no-se/replication%d.RDS', rr))
 }
 estimates = do.call(abind, c(estimates.list, list(rev.along=0))) 
 ```
