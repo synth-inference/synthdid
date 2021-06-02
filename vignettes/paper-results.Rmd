@@ -280,6 +280,22 @@ estimates.list = foreach(rr = 1:sim.replications) %dopar% {
         print(sprintf('replication %d ran for %1.0f hours/minutes/seconds, from %s to %s', 
                       rr, end.time-start.time, start.time, end.time))
         estimate
+    } else {
+        start.time = Sys.time()
+        print(sprintf('replication %d ran for %1.0f hours/minutes/seconds, from %s to %s', 
+                      rr, end.time-start.time, start.time, end.time))
+        
+        estimate = readRDS(filename)
+        if(rr <= coverage.replications) {
+            estimate.corrected = run.replication(seeds[[rr]], coverage.for = 'difp')
+            estimate[,names(estimators)=='difp',,]=estimate.corrected[,names(estimators)=='difp',,]
+        }
+        saveRDS(estimate, file=sprintf('replications-corrected/replication%d.RDS', rr))
+        
+        end.time = Sys.time()
+        print(sprintf('replication %d ran for %1.0f hours/minutes/seconds, from %s to %s', 
+                      rr, end.time-start.time, start.time, end.time))
+        estimate
     }
 }
 
@@ -299,7 +315,7 @@ stopCluster(cl)
 library(abind)
 
 estimates.list = foreach(rr = 1:sim.replications) %do% {
-    readRDS(sprintf('replications-no-se/replication%d.RDS', rr))
+    readRDS(sprintf('replications/replication%d.RDS', rr))
 }
 estimates = do.call(abind, c(estimates.list, list(rev.along=0))) 
 ```

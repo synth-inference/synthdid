@@ -74,9 +74,10 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
   attr(estimate, 'estimator') = "synthdid_estimate"
   attr(estimate, 'weights') = weights
   attr(estimate, 'setup') = list(Y = Y, X = X, N0 = N0, T0 = T0)
-  attr(estimate, 'opts') = list(zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
-				lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,
-				min.decrease = min.decrease, max.iter = max.iter)
+  attr(estimate, 'opts') = list(zeta.omega = zeta.omega, zeta.lambda = zeta.lambda,
+                                omega.intercept = omega.intercept, lambda.intercept = lambda.intercept,
+                                update.omega = update.omega, update.lambda = update.lambda,
+                                min.decrease = min.decrease, max.iter=max.iter)
   return(estimate)
 }
 
