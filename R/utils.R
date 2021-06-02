@@ -1,19 +1,3 @@
-#' Jackknife standard error of function `theta` at samples `x`.
-#' @param x vector of samples
-#' @param theta a function which returns a scalar estimate
-#' @importFrom stats var
-#' @keywords internal
-jackknife = function(x, theta) {
-  n = length(x)
-  u = rep(0, n)
-  for (i in 1:n) {
-    u[i] = theta(x[-i])
-  }
-  jack.se = sqrt(((n - 1) / n) * (n - 1) * var(u))
-
-  jack.se
-}
-
 # collapse Y to an N0+1 x T0+1 vector by averaging the last N1=nrow(Y)-N0 rows and T1=ncol(Y)-T0 columns
 collapsed.form = function(Y, N0, T0) {
   N = nrow(Y); T = ncol(Y)

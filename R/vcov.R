@@ -45,13 +45,17 @@ synthdid_se = function(...) { sqrt(vcov(...)) }
 # The bootstrap se: Algorithm 2 of Arkhangelsky et al.
 bootstrap_se = function(estimate, replications) { sqrt((replications-1)/replications) * sd(bootstrap_sample(estimate, replications)) }
 bootstrap_sample = function(estimate, replications) { 
-    estimator = attr(estimate, 'estimator')
     setup = attr(estimate, 'setup')
     opts = attr(estimate, 'opts')
+    weights = attr(estimate, 'weights')
     if (setup$N0 == nrow(setup$Y) - 1) { return(NA) }
     theta = function(ind) {
 	if(all(ind <= setup$N0) || all(ind > setup$N0)) { NA }
-	else {do.call(estimator, c(list(Y=setup$Y[sort(ind),], N0=sum(ind <= setup$N0), T0=setup$T0, X=setup$X[sort(ind), ,]), opts))}
+	else {
+	    weights.boot = weights
+	    weights.boot$omega = sum_normalize(weights$omega[sort(ind[ind <= setup$N0])])
+	    do.call(synthdid_estimate, c(list(Y=setup$Y[sort(ind),], N0=sum(ind <= setup$N0), T0=setup$T0, X=setup$X[sort(ind), ,], weights=weights.boot), opts))
+	}
     }
     bootstrap.estimates = rep(NA, replications)
     count = 0
@@ -66,31 +70,52 @@ bootstrap_sample = function(estimate, replications) {
 # The fixed-weights jackknife estimate of variance: Algorithm 3 of Arkhangelsky et al.
 # if weights = NULL is passed explicitly, calculates the usual jackknife estimate of variance.
 jackknife_se = function(estimate, weights = attr(estimate, 'weights')) { 
-    estimator = attr(estimate, 'estimator')
     setup = attr(estimate, 'setup')
     opts = attr(estimate, 'opts')
     if (setup$N0 == nrow(setup$Y) - 1) { return(NA) }
-    sum_normalize = function(x) { x / sum(x) }
     theta = function(ind) {
 	weights.jk = weights
 	if (!is.null(weights)) { weights.jk$omega = sum_normalize(weights$omega[ind[ind <= setup$N0]]) }
-	estimate.jk = do.call(estimator, 
+	estimate.jk = do.call(synthdid_estimate, 
 	    c(list(Y=setup$Y[ind, ], N0=sum(ind <= setup$N0), T0=setup$T0, X = setup$X[ind, , ], weights = weights.jk), opts))
     }
     jackknife(1:nrow(setup$Y), theta)
 }
 
+#' Jackknife standard error of function `theta` at samples `x`.
+#' @param x vector of samples
+#' @param theta a function which returns a scalar estimate
+#' @importFrom stats var
+#' @keywords internal
+jackknife = function(x, theta) {
+  n = length(x)
+  u = rep(0, n)
+  for (i in 1:n) {
+    u[i] = theta(x[-i])
+  }
+  jack.se = sqrt(((n - 1) / n) * (n - 1) * var(u))
+
+  jack.se
+}
+
+
+
 # The placebo se: Algorithm 4 of Arkhangelsky et al.
 placebo_se = function(estimate, replications) {
-    estimator = attr(estimate, 'estimator')
     setup = attr(estimate, 'setup')
     opts = attr(estimate, 'opts')
+    weights = attr(estimate, 'weights')
     N1 = nrow(setup$Y) - setup$N0
     if (setup$N0 <= N1) { stop('must have more controls than treated units to use the placebo se') }
     theta = function(ind) {
-      do.call(estimator, c(list(Y=setup$Y[ind,], N0=length(ind)-N1,  T0=setup$T0,  X=setup$X[ind, ,]), opts))
+	N0 = length(ind)-N1
+	weights.boot = weights
+	weights.boot$omega = sum_normalize(weights$omega[ind[1:N0]])
+        do.call(synthdid_estimate, c(list(Y=setup$Y[ind,], N0=N0,  T0=setup$T0,  X=setup$X[ind, ,], weights=weights.boot), opts))
     }
     sqrt((replications-1)/replications) * sd(replicate(replications, theta(sample(1:setup$N0))))
 }
+
+sum_normalize = function(x) { x / sum(x) }
 
 

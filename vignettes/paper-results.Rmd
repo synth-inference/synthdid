@@ -280,22 +280,6 @@ estimates.list = foreach(rr = 1:sim.replications) %dopar% {
         print(sprintf('replication %d ran for %1.0f hours/minutes/seconds, from %s to %s', 
                       rr, end.time-start.time, start.time, end.time))
         estimate
-    } else {
-        start.time = Sys.time()
-        print(sprintf('replication %d ran for %1.0f hours/minutes/seconds, from %s to %s', 
-                      rr, end.time-start.time, start.time, end.time))
-        
-        estimate = readRDS(filename)
-        if(rr <= coverage.replications) {
-            estimate.corrected = run.replication(seeds[[rr]], coverage.for = 'difp')
-            estimate[,names(estimators)=='difp',,]=estimate.corrected[,names(estimators)=='difp',,]
-        }
-        saveRDS(estimate, file=sprintf('replications-corrected/replication%d.RDS', rr))
-        
-        end.time = Sys.time()
-        print(sprintf('replication %d ran for %1.0f hours/minutes/seconds, from %s to %s', 
-                      rr, end.time-start.time, start.time, end.time))
-        estimate
     }
 }
 
@@ -403,7 +387,7 @@ error.densities$Estimator = toupper(error.densities$estimator)
 
 ggplot(error.densities[show.sims & show.estimators, ]) + 
     geom_line(aes(x=x,y=y,color=Estimator)) + geom_vline(xintercept=0, linetype=3) + 
-    facet_wrap(~Title) + xlab('estimate') + ylab('density') + 
+    facet_wrap(~Title) + xlab('error') + ylab('density') + 
     theme_light() + theme(legend.position=c(.94,.88), 
                           legend.background=element_blank(), 
                           legend.title=element_blank()) 

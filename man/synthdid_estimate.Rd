@@ -15,11 +15,12 @@ synthdid_estimate(
   zeta.lambda = 1e-06 * noise.level,
   omega.intercept = TRUE,
   lambda.intercept = TRUE,
-  weights = list(omega = NULL, lambda = NULL, vals = NULL),
+  weights = list(omega = NULL, lambda = NULL),
   update.omega = is.null(weights$omega),
   update.lambda = is.null(weights$lambda),
   min.decrease = 0.001 * noise.level,
-  max.iter = 10000
+  max.iter = 10000,
+  sparsify = function(v) {     v[v <= max(v)/4] = 0     v/sum(v) }
 )
 }
 \arguments{
@@ -53,6 +54,10 @@ If false, use it exactly as passed. Defaults to false if a non-null value of wei
 in penalized MSE smaller than min.decrease^2.}
 
 \item{max.iter}{A fallback stopping criterion for our weight estimator. Stop after this number of iterations.}
+
+\item{sparsify:}{a function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape, which must sum to one.
+If not null, we try to estimate sparse weights via a second round of Frank-Wolfe optimization
+initialized at sparsify( the solution to the first round ).}
 }
 \value{
 An average treatment effect estimate with 'weights' and 'setup' attached as attributes.

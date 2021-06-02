@@ -3,22 +3,9 @@
 \name{did_estimate}
 \alias{did_estimate}
 \title{synthdid_estimate for diff-in-diff estimates.
-Takes all the same parameters, but by default, passes options to use constant weights lambda and omega}
+Takes all the same parameters, but by default, passes options to use the diff-in-diff estimator}
 \usage{
-did_estimate(
-  Y,
-  N0,
-  T0,
-  X = array(dim = c(dim(Y), 0)),
-  noise.level = sd(apply(Y[1:N0, 1:T0], 1, diff)),
-  zeta.omega = ((nrow(Y) - N0) * (ncol(Y) - T0))^(1/4) * noise.level,
-  zeta.lambda = 1e-06 * noise.level,
-  omega.intercept = TRUE,
-  lambda.intercept = TRUE,
-  weights = list(lambda = rep(1/T0, T0), omega = rep(1/N0, N0), vals = NULL),
-  min.decrease = 0.001 * noise.level,
-  max.iter = 10000
-)
+did_estimate(Y, N0, T0, ...)
 }
 \arguments{
 \item{Y}{the observation matrix.}
@@ -27,33 +14,12 @@ did_estimate(
 
 \item{T0}{the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.}
 
-\item{X}{an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.}
-
-\item{noise.level, }{an estimate of the noise standard deviation sigma. Defaults to the standard deviation of first differences of Y.}
-
-\item{zeta.omega}{Analogous for omega. Defaults to (N_tr T_post)^(1/4) * noise.level}
-
-\item{zeta.lambda}{Its square is weight of the ridge penalty relative to MSE. Defaults to an 'infinitesimal' value 1e-6 * noise.level}
-
-\item{omega.intercept}{Binary. Use an intercept when estimating omega.}
-
-\item{lambda.intercept}{Binary. Use an intercept when estimating lambda.}
-
-\item{weights}{a list with fields lambda and omega. If non-null weights$lambda is passed,
-we use them instead of estimating lambda weights. Same for weights$omega.}
-
-\item{min.decrease}{Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease
-in penalized MSE smaller than min.decrease^2.}
-
-\item{max.iter}{A fallback stopping criterion for our weight estimator. Stop after this number of iterations.}
+\item{...}{additional  options for synthdid_estimate}
 }
 \value{
-An average treatment effect estimate with 'weights' and 'setup' attached as attributes.
-'weights' contains the estimated weights lambda and omega and corresponding intercepts,
-as well as regression coefficients beta if X is passed.
-'setup' is a list describing the problem passed in: Y, N0, T0, X.
+an object like that returned by synthdid_estimate
 }
 \description{
 synthdid_estimate for diff-in-diff estimates.
-Takes all the same parameters, but by default, passes options to use constant weights lambda and omega
+Takes all the same parameters, but by default, passes options to use the diff-in-diff estimator
 }
