@@ -21,6 +21,8 @@
 #' @param sparsify A function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape, which must sum to one. 
 #'                  If not null, we try to estimate sparse weights via a second round of Frank-Wolfe optimization
 #'                  initialized at sparsify( the solution to the first round ).
+#' @param max.iter.pre.sparsify Analogous to max.iter, but for the pre-sparsification first-round of optimization.
+#'     		                Not used if sparsify=NULL.
 #' @return An average treatment effect estimate with 'weights' and 'setup' attached as attributes.
 #'         'weights' contains the estimated weights lambda and omega and corresponding intercepts,
 #'         as well as regression coefficients beta if X is passed.
@@ -33,12 +35,14 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
                               omega.intercept = TRUE, lambda.intercept = TRUE, 
                               weights = list(omega = NULL, lambda = NULL),
                               update.omega = is.null(weights$omega), update.lambda = is.null(weights$lambda), 
-                              min.decrease = 1e-3 * noise.level, max.iter = 1e4, 
-			      sparsify = function(v) { v[v <= max(v)/4] = 0; v/sum(v) }) {
+                              min.decrease = 1e-5 * noise.level, max.iter = 1e4, 
+			      sparsify = function(v) { v[v <= max(v)/4] = 0; v/sum(v) },
+			      max.iter.pre.sparsify = 100) {
   stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2, 3), dim(X)[1:2] == dim(Y), is.list(weights),
     is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0,
     !is.null(weights$lambda) || update.lambda, !is.null(weights$omega) || update.omega)
   if (length(dim(X)) == 2) { dim(X) = c(dim(X), 1) }
+  if (is.null(sparsify)) { max.iter.pre.sparsify = max.iter }
   N1 = nrow(Y) - N0
   T1 = ncol(Y) - T0
 
@@ -48,9 +52,11 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
     weights$omega.vals = NULL
     if (update.lambda) {
       Yc = collapsed.form(Y, N0, T0)
-      lambda.opt = sc.weight.fw(Yc[1:N0, ], zeta = zeta.lambda, intercept = lambda.intercept, lambda=weights$lambda, min.decrease = min.decrease, max.iter = max.iter)
+      lambda.opt = sc.weight.fw(Yc[1:N0, ], zeta = zeta.lambda, intercept = lambda.intercept, lambda=weights$lambda,
+				min.decrease = min.decrease, max.iter = max.iter.pre.sparsify)
       if(!is.null(sparsify)) { 
-	lambda.opt = sc.weight.fw(Yc[1:N0, ], zeta = zeta.lambda, intercept = lambda.intercept, lambda=sparsify(lambda.opt$lambda), min.decrease = min.decrease, max.iter = max.iter)
+	lambda.opt = sc.weight.fw(Yc[1:N0, ], zeta = zeta.lambda, intercept = lambda.intercept, lambda=sparsify(lambda.opt$lambda), 
+				  min.decrease = min.decrease, max.iter = max.iter)
       }
       weights$lambda = lambda.opt$lambda
       weights$lambda.vals = lambda.opt$vals
@@ -58,9 +64,11 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
     }
     if (update.omega) {
       Yc = collapsed.form(Y, N0, T0)
-      omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, lambda=weights$omega, min.decrease = min.decrease, max.iter = max.iter)
+      omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, lambda=weights$omega, 
+			       min.decrease = min.decrease, max.iter = max.iter.pre.sparsify)
       if(!is.null(sparsify)) { 
-	omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, lambda=sparsify(omega.opt$lambda), min.decrease = min.decrease, max.iter = max.iter)
+	omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, lambda=sparsify(omega.opt$lambda), 
+			         min.decrease = min.decrease, max.iter = max.iter)
       }
       weights$omega = omega.opt$lambda
       weights$omega.vals = omega.opt$vals
@@ -101,7 +109,7 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
 #' @export sc_estimate
 sc_estimate = function(Y, N0, T0, ...) { 
   estimate = synthdid_estimate(Y, N0, T0, 
-			       weights = list(lambda = rep(0, T0), omega = NULL), 
+			       weights = list(lambda = rep(0, T0)), 
 			       omega.intercept = FALSE, lambda.intercept = FALSE, ...)
   attr(estimate, 'estimator') = "sc_estimate"
   estimate
