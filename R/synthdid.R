@@ -1,24 +1,24 @@
 #' Computes the synthetic diff-in-diff estimate for an average treatment effect on a treated block.
 #'
-#' See Section 4.1 of the paper.
+#' See 'Synthetic Difference in Differences' by Arkhangelsky et al. This implements Algorithm 1.
 #' @param Y the observation matrix.
-#' @param N0 the number of control units. Rows 1-N0 of Y correspond to the control units.
-#' @param T0 the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.
+#' @param N0 the number of control units (N_co in the paper). Rows 1-N0 of Y correspond to the control units.
+#' @param T0 the number of pre-treatment time steps (T_pre in the paper). Columns 1-T0 of Y correspond to pre-treatment time steps.
 #' @param X an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.
 #' @param noise.level, an estimate of the noise standard deviation sigma. Defaults to the standard deviation of first differences of Y.
-#' @param zeta.omega Analogous for omega. Defaults to (N_tr T_post)^(1/4) * noise.level
+#' @param zeta.omega Analogous for omega. Defaults to the value (N_tr T_post)^(1/4) * noise.level proposed in Arkhangelsky et al. 
 #' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to an 'infinitesimal' value 1e-6 * noise.level
 #' @param omega.intercept Binary. Use an intercept when estimating omega.
 #' @param lambda.intercept Binary. Use an intercept when estimating lambda.
 #' @param weights a list with fields lambda and omega. If non-null weights$lambda is passed,
 #'        we use them instead of estimating lambda weights. Same for weights$omega.
-#' @param update.lambda If true, solve for lambda using the passed value of weights$lambda only as an initialization.
-#'        If false, use it exactly as passed. Defaults to false if a non-null value of weights$lambda is passed.
-#' @param update.omega  Analogous.
+#' @param update.omega If true, solve for omega using the passed value of weights$omega only as an initialization.
+#'        If false, use it exactly as passed. Defaults to false if a non-null value of weights$omega is passed.
+#' @param update.lambda  Analogous.
 #' @param min.decrease Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease
 #' 		        in penalized MSE smaller than min.decrease^2.
 #' @param max.iter A fallback stopping criterion for our weight estimator. Stop after this number of iterations.
-#' @param sparsify: a function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape, which must sum to one. 
+#' @param sparsify A function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape, which must sum to one. 
 #'                  If not null, we try to estimate sparse weights via a second round of Frank-Wolfe optimization
 #'                  initialized at sparsify( the solution to the first round ).
 #' @return An average treatment effect estimate with 'weights' and 'setup' attached as attributes.
