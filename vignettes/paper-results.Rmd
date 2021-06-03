@@ -241,7 +241,7 @@ run.replication = function(seed, coverage.for=c()) {
                 methods = c('bootstrap', 'jackknife', 'placebo')
                 for (mm in 1:length(methods)) {
                   setRNG(seed)
-                  estimate[ss, ee, mm + 1] = sqrt(vcov(est, methods = methods[mm]))
+                  estimate[ss, ee, mm + 1] = sqrt(vcov(est, method = methods[mm]))
                 }
             }
         }
