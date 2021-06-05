@@ -6,8 +6,10 @@
 #' @param T0 the number of pre-treatment time steps (T_pre in the paper). Columns 1-T0 of Y correspond to pre-treatment time steps.
 #' @param X an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.
 #' @param noise.level, an estimate of the noise standard deviation sigma. Defaults to the standard deviation of first differences of Y.
-#' @param zeta.omega Analogous for omega. Defaults to the value (N_tr T_post)^(1/4) * noise.level proposed in Arkhangelsky et al. 
-#' @param zeta.lambda Its square is weight of the ridge penalty relative to MSE. Defaults to an 'infinitesimal' value 1e-6 * noise.level
+#' @param eta.omega  determines the tuning parameter zeta.omega = eta.omega * noise.level. Defaults to the value (N_tr T_post)^(1/4).
+#' @param eta.lambda analogous for lambda.  Defaults to an 'infinitesimal' value 1e-6.
+#' @param zeta.omega if passed, overrides the default zeta.omega = eta.omega * noise.level. Deprecated.
+#' @param zeta.lambda analogous for lambda.
 #' @param omega.intercept Binary. Use an intercept when estimating omega.
 #' @param lambda.intercept Binary. Use an intercept when estimating lambda.
 #' @param weights a list with fields lambda and omega. If non-null weights$lambda is passed,
@@ -30,8 +32,8 @@
 #' @export synthdid_estimate
 synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)), 
                               noise.level = sd(apply(Y[1:N0,1:T0], 1, diff)),
-                              zeta.omega = ((nrow(Y)-N0)*(ncol(Y)-T0))^(1/4) * noise.level,  
-                              zeta.lambda = 1e-6*noise.level,
+                              eta.omega = ((nrow(Y)-N0)*(ncol(Y)-T0))^(1/4), eta.lambda = 1e-6, 
+                              zeta.omega  = eta.omega  * noise.level,  zeta.lambda = eta.lambda * noise.level,
                               omega.intercept = TRUE, lambda.intercept = TRUE, 
                               weights = list(omega = NULL, lambda = NULL),
                               update.omega = is.null(weights$omega), update.lambda = is.null(weights$lambda), 
@@ -101,16 +103,17 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
 
 #' synthdid_estimate for synthetic control estimates.
 #' Takes all the same parameters, but by default, passes options to use the synthetic control estimator
+#' By default, this uses only 'infinitesimal' ridge regularization when estimating the weights.
 #' @param Y the observation matrix.
 #' @param N0 the number of control units. Rows 1-N0 of Y correspond to the control units.
 #' @param T0 the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.
+#' @param eta.omega determines the level of ridge regularization, zeta.omega = eta.omega * noise.level, as in synthdid_estimate.
 #' @param ... additional options for synthdid_estimate
 #' @return an object like that returned by synthdid_estimate
 #' @export sc_estimate
-sc_estimate = function(Y, N0, T0, ...) { 
-  estimate = synthdid_estimate(Y, N0, T0, 
-			       weights = list(lambda = rep(0, T0)), 
-			       omega.intercept = FALSE, lambda.intercept = FALSE, ...)
+sc_estimate = function(Y, N0, T0, eta.omega = 1e-6, ...) { 
+  estimate = synthdid_estimate(Y, N0, T0, eta.omega = eta.omega, 
+			       weights = list(lambda = rep(0, T0)), omega.intercept = FALSE, ...)
   attr(estimate, 'estimator') = "sc_estimate"
   estimate
 }

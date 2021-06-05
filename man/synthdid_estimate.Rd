@@ -10,16 +10,19 @@ synthdid_estimate(
   T0,
   X = array(dim = c(dim(Y), 0)),
   noise.level = sd(apply(Y[1:N0, 1:T0], 1, diff)),
-  zeta.omega = ((nrow(Y) - N0) * (ncol(Y) - T0))^(1/4) * noise.level,
-  zeta.lambda = 1e-06 * noise.level,
+  eta.omega = ((nrow(Y) - N0) * (ncol(Y) - T0))^(1/4),
+  eta.lambda = 1e-06,
+  zeta.omega = eta.omega * noise.level,
+  zeta.lambda = eta.lambda * noise.level,
   omega.intercept = TRUE,
   lambda.intercept = TRUE,
   weights = list(omega = NULL, lambda = NULL),
   update.omega = is.null(weights$omega),
   update.lambda = is.null(weights$lambda),
-  min.decrease = 0.001 * noise.level,
+  min.decrease = 1e-05 * noise.level,
   max.iter = 10000,
-  sparsify = function(v) {     v[v <= max(v)/4] = 0     v/sum(v) }
+  sparsify = function(v) {     v[v <= max(v)/4] = 0     v/sum(v) },
+  max.iter.pre.sparsify = 100
 )
 }
 \arguments{
@@ -33,9 +36,13 @@ synthdid_estimate(
 
 \item{noise.level, }{an estimate of the noise standard deviation sigma. Defaults to the standard deviation of first differences of Y.}
 
-\item{zeta.omega}{Analogous for omega. Defaults to the value (N_tr T_post)^(1/4) * noise.level proposed in Arkhangelsky et al.}
+\item{eta.omega}{determines the tuning parameter zeta.omega = eta.omega * noise.level. Defaults to the value (N_tr T_post)^(1/4).}
 
-\item{zeta.lambda}{Its square is weight of the ridge penalty relative to MSE. Defaults to an 'infinitesimal' value 1e-6 * noise.level}
+\item{eta.lambda}{analogous for lambda.  Defaults to an 'infinitesimal' value 1e-6.}
+
+\item{zeta.omega}{if passed, overrides the default zeta.omega = eta.omega * noise.level. Deprecated.}
+
+\item{zeta.lambda}{analogous for lambda.}
 
 \item{omega.intercept}{Binary. Use an intercept when estimating omega.}
 
@@ -57,6 +64,9 @@ in penalized MSE smaller than min.decrease^2.}
 \item{sparsify}{A function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape, which must sum to one.
 If not null, we try to estimate sparse weights via a second round of Frank-Wolfe optimization
 initialized at sparsify( the solution to the first round ).}
+
+\item{max.iter.pre.sparsify}{Analogous to max.iter, but for the pre-sparsification first-round of optimization.
+Not used if sparsify=NULL.}
 }
 \value{
 An average treatment effect estimate with 'weights' and 'setup' attached as attributes.

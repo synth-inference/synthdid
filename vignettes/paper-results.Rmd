@@ -54,7 +54,7 @@ difp_estimate = function(Y, N0, T0) {
 } 
 
 estimators = list(sdid=synthdid_estimate, 
-                  sc=sc_estimate, 
+                  sc = sc_estimate,
                   did=did_estimate, 
                   mc=mc_estimate, 
                   difp=difp_estimate)
@@ -223,96 +223,131 @@ By using RNGSeq to choose replication-specific seeds for the L'Ecuyer-CMRG RNG,
 we get streams of random numbers that are more or less independent from replication to replication.
 See `help(RNGseq)`.
 
-```{r set-up-simulations}
-run.replication = function(seed, coverage.for=c()) { 
-    library(synthdid)
-    library(MCPanel)
-    library(rngtools)
-    
-    estimate = array(NA, dim = c(length(simulators), length(estimators), 4))
-    for (ss in 1:length(simulators)) {
-        setRNG(seed)
-        setup = simulators[[ss]]$run()
-        for (ee in 1:length(estimators)) {
-            setRNG(seed)
-            est = estimators[[ee]](setup$Y, setup$N0, setup$T0)
-            estimate[ss, ee, 1] = est
-            if (names(estimators)[ee] %in% coverage.for) {
-                methods = c('bootstrap', 'jackknife', 'placebo')
-                for (mm in 1:length(methods)) {
-                  setRNG(seed)
-                  estimate[ss, ee, mm + 1] = sqrt(vcov(est, method = methods[mm]))
-                }
-            }
-        }
-    }
-    
-    estimate
-}
-```
-
-
 ```{r run-simulations}
-library(rngtools)
-library(doParallel)
-
 sim.replications  = 1000
-coverage.replications = 400
-coverage.estimators = c('sdid', 'sc', 'did', 'difp')
-cores = 8
+coverage.replications = 0
+coverage.estimators = c('sdid','sc', 'did', 'difp')
+coverage.sims = c('baseline',  'gun.law', 'abortion', 'random', 'hours', 'urate', 
+                  'T1.is.one', 'N1.is.one', 'blocksize.is.one', 
+                  'resample.200', 'resample.400', 
+                  'penn.democracy', 'penn.education', 'penn.random')
+se.methods = c('bootstrap', 'jackknife', 'placebo')
 
 # set up RNG seeds for each replication
+library(rngtools)
 seeds = RNGseq(n=sim.replications, seed=12345)
 
-# set up workers
-cl = makeCluster(cores, outfile='simulations.log')
-registerDoParallel(cl, cores=cores)
+# set up simulation grid 
+grid = expand.grid(ss = 1:length(simulators),
+                   ee = 1:length(estimators),
+                   rr = 1:sim.replications)
+grid$estimate.se = names(simulators[grid$ss]) %in%  coverage.sims &
+                         names(estimators[grid$ee]) %in%  coverage.estimators &
+                         grid$rr <= coverage.replications
 
-# run simulations
-estimates.list = foreach(rr = 1:sim.replications) %dopar% { 
-    filename = sprintf('replications/replication%d.RDS', rr)
-    if(!file.exists(filename)) {
-        start.time = Sys.time()
-        estimate = run.replication(seeds[[rr]], coverage.for =
-            if(rr <= coverage.replications) { coverage.estimators } else { c() })
-        saveRDS(estimate, file=filename)
-        end.time = Sys.time()
-        print(sprintf('replication %d ran for %1.0f hours/minutes/seconds, from %s to %s', 
-                      rr, end.time-start.time, start.time, end.time))
-        estimate
-    }
+# associate a grid row to an output filename
+output.file = function(row) { 
+    sprintf('simulations/simulation-%s-%s-%d.rds', 
+            names(simulators)[row$ss], names(estimators)[row$ee], row$rr)
 }
-
-# shut down workers
-stopCluster(cl)
+rows.finished = function() {
+    output.files = sapply(1:nrow(grid), function(ii) { output.file(grid[ii,]) })
+    file.exists(output.files)
+}
 ```
 
-## Load estimates from disk and concatenate them into an array
-`estimates` will be a #simulations x #estimators x #estimands x #replications array where the 4 estimands are 
+```{r run-simulations}
+run.simulation = function(row) { 
+    setRNG(seeds[[row$rr]])
+    setup = simulators[[row$ss]]$run()
+    estimate = estimators[[row$ee]](setup$Y, setup$N0, setup$T0)
+    se.estimates = sapply(se.methods, function(method) {
+        setRNG(seeds[[row$rr]])
+        if(row$estimate.se) { sqrt(vcov(estimate, method = method)) } else { NA }
+    })
+    cbind(data.frame(simulation = names(simulators)[row$ss],
+                     estimator = names(estimators)[row$ee],
+                     replication = row$rr,
+                     estimate = c(estimate)),
+          t(as.data.frame(se.estimates)))
+}
+```
 
-1. the point estimate
-2. the bootstrap estimate of standard error
-3. the jackknife estimate of standard error
-4. the placebo estimate of standard errror
+```{r run-simulations}
+library(doFuture)
+library(future.batchtools)
+library(future)
+registerDoFuture()
+
+# set up worker processes
+cluster = FALSE
+if(cluster) {
+    # use multiple nodes on a Slurm Cluster
+    # an appropriate Slurm template must exist in ...
+    # we include one for the Sherlock Cluster at Stanford
+    plan(batchtools_slurm,
+         resources=list(ntasks=100, ncpus=1, walltime=120, memory=1024))
+} else {
+    # use multiple processes on this this computer
+    plan(multisession, workers = 8)
+} 
+```
+
+```{r run-simulations}
+# run sims
+foreach(ii = which(!rows.finished())) %dopar% { 
+    row = grid[ii,]
+    start.time = Sys.time()
+    
+    library(rngtools)
+    library(synthdid)
+    library(MCPanel)
+        
+    output.row = run.simulation(row)
+    saveRDS(output.row, file=output.file(row))
+        
+    end.time = Sys.time()
+    cat(sprintf('simulation %d/%d=%0.2f ran for %1.1f, from %s to %s, outputting to %s\n', 
+                  ii, nrow(grid), ii/nrow(grid), 
+                  end.time-start.time, start.time, end.time, 
+                  output.file(row)), file='simulations.log') 
+    NULL
+}
+```
+
+## Load output from disk and concatenate into a data frame
 
 ```{r load-estimates}
-library(abind)
-
-estimates.list = foreach(rr = 1:sim.replications) %do% {
-    readRDS(sprintf('replications/replication%d.RDS', rr))
+estimates = foreach(ii = which(rows.finished()), .combine=rbind) %do% {
+  readRDS(output.file(grid[ii,]))
 }
-estimates = do.call(abind, c(estimates.list, list(rev.along=0))) 
 ```
 
 ## Compute summary statistics from simulations
 
 ```{r summary-stats}
-rmse = apply(estimates, c(1,2), function(x) { sqrt(mean(x[1,]^2)) })
-bias = apply(estimates, c(1,2), function(x) { mean(x[1,]) })
-coverage = lapply(2:4, function(se) {
-    apply(estimates[,,,1:coverage.replications],
-          c(1,2), function(x) { mean(abs(x[1,] / x[se,]) <= qnorm(.975))  })
-})
+library(dplyr)
+library(tidyr)
+library(tibble)
+
+estimates$simulation = factor(estimates$simulation,  levels=names(simulators))
+estimates$estimator  = factor(estimates$estimator,   levels=names(estimators))
+
+summaries = estimates %>%
+    group_by(simulation, estimator) %>% 
+        summarize(rmse = sqrt(mean(estimate^2)), 
+                  bias = mean(estimate),
+                  bootstrap.coverage = mean(abs(estimate/bootstrap) <= qnorm(.975), na.rm=TRUE),
+                  jackknife.coverage = mean(abs(estimate/jackknife) <= qnorm(.975), na.rm=TRUE),
+                  placebo.coverage   = mean(abs(estimate/placebo) <= qnorm(.975),   na.rm=TRUE),
+                  coverage.count     = sum(!(is.na(placebo) | is.na(bootstrap))))
+point.columns = c('rmse', 'bias')
+coverage.columns = c('bootstrap.coverage', 'jackknife.coverage', 'placebo.coverage')
+```
+
+```{r summary-stats}
+# assert that we had no unintended NAs in the coverage
+stopifnot(all(summaries$coverage.count %in% c(0, coverage.replications)))
 ```
 
 ## Point Estimation: Tables 2 and 3
@@ -320,11 +355,11 @@ coverage = lapply(2:4, function(se) {
 
 ```{r simulator-info}
 sim.info = do.call(rbind, lapply(simulators, function(sim) { 
-    data.frame(F.scale  =  sqrt(mean(sim$params$F^2)), 
-               M.scale  =  sqrt(mean(sim$params$M^2)),
-               noise.scale  =  sqrt(mean(diag(sim$params$Sigma))),
-               ar.lag1      =  sim$params$ar_coef[1],
-               ar.lag2      =  sim$params$ar_coef[2])
+    data.frame(F_scale  =  sqrt(mean(sim$params$F^2)), 
+               M_scale  =  sqrt(mean(sim$params$M^2)),
+               noise_scale  =  sqrt(mean(diag(sim$params$Sigma))),
+               ar_lag1      =  sim$params$ar_coef[1],
+               ar_lag2      =  sim$params$ar_coef[2])
 }))
 ```
 
@@ -332,24 +367,22 @@ sim.info = do.call(rbind, lapply(simulators, function(sim) {
 In the paper, this is split into Tables 2 and 3, with CPS sims in the former and PENN sims in the latter. Also save in point_table.tab.
 
 ```{r point-estimate-table}
-point.table = cbind(sim.info, as.data.frame(cbind(rmse, bias)))
-rownames(point.table) = names(simulators)
-colnames(point.table) = c('F', 'M', 'Sigma', 'ar:lag1', 'ar:lag2', 
-                          sprintf('rmse:%s', names(estimators)), 
-                          sprintf('bias:%s', names(estimators)))
+point.summaries = summaries[,c('simulation', 'estimator', point.columns)] %>% 
+    pivot_wider(names_from=estimator, values_from=all_of(point.columns)) %>%
+        column_to_rownames('simulation')
+point.table = cbind(sim.info, point.summaries)
+
 write.table(round(point.table,2),  file='point_table.tab')
-round(point.table, digits=3)
+round(point.table, digits=3)[,-c(1:5)]
 ```
 
 ## Display a coverage summary table. 
 A subset of these rows are in Table 4 of the paper. Also save in coverage_table.tab.
 
 ```{r coverage-table}
-coverage.table = do.call(cbind, coverage)
-rownames(coverage.table) = names(simulators)
-colnames(coverage.table) = c(sprintf('bootstrap:%s',  names(estimators)),
-                             sprintf('jackknife:%s',  names(estimators)),
-                             sprintf('placebo:%s',    names(estimators)))
+coverage.table = summaries[,c('simulation', 'estimator', coverage.columns)] %>%
+    pivot_wider(names_from=estimator, values_from=all_of(coverage.columns)) %>%
+        column_to_rownames('simulation')
 keep = !is.na(coverage.table[1,])
 
 write.table(round(coverage.table[,keep],2), file='coverage_table.tab')
@@ -379,7 +412,7 @@ error.densities = do.call(rbind, mapply(function(ss,ee) {
 library(ggplot2)
 
 show.sims       = error.densities$simulator %in% c('baseline', 'random')
-show.estimators = error.densities$estimator %in% c('did', 'sc', 'sdid')
+show.estimators = error.densities$estimator %in% c('did', 'sc', 'sdid', 'difp', 'mc')
 # reformat the information in $simulator and $estimator for display in the plot title and legend
 error.densities$Title = ifelse(error.densities$simulator == 'baseline', 
                                'Minimum Wage Assignment', 'Random Assignment')
@@ -392,3 +425,4 @@ ggplot(error.densities[show.sims & show.estimators, ]) +
                           legend.background=element_blank(), 
                           legend.title=element_blank()) 
 ```
+
