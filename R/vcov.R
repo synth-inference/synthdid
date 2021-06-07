@@ -69,10 +69,11 @@ bootstrap_sample = function(estimate, replications) {
 
 # The fixed-weights jackknife estimate of variance: Algorithm 3 of Arkhangelsky et al.
 # if weights = NULL is passed explicitly, calculates the usual jackknife estimate of variance.
+# returns NA if there is one treated unit or, for the fixed-weights jackknife, one control with nonzero weight
 jackknife_se = function(estimate, weights = attr(estimate, 'weights')) { 
     setup = attr(estimate, 'setup')
     opts = attr(estimate, 'opts')
-    if (setup$N0 == nrow(setup$Y) - 1) { return(NA) }
+    if (setup$N0 == nrow(setup$Y) - 1 || (!is.null(weights) && sum(weights$omega != 0) == 1)) { return(NA) }
     theta = function(ind) {
 	weights.jk = weights
 	if (!is.null(weights)) { weights.jk$omega = sum_normalize(weights$omega[ind[ind <= setup$N0]]) }
@@ -116,6 +117,12 @@ placebo_se = function(estimate, replications) {
     sqrt((replications-1)/replications) * sd(replicate(replications, theta(sample(1:setup$N0))))
 }
 
-sum_normalize = function(x) { x / sum(x) }
+sum_normalize = function(x) { 
+    if(sum(x) != 0) { x / sum(x) }
+    else { rep(1/length(x), length(x)) } 
+    # if given a vector of zeros, return uniform weights
+    # this fine when used in bootstrap and placebo standard errors, where it is used only for initialization 
+    # for jackknife standard errors, where it isn't, we handle the case of a vector of zeros without calling this function.
+}
 
 
