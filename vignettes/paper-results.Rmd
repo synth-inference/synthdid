@@ -18,8 +18,26 @@ pre, pre code, .sourceCode {
 </style>
 <!--/html_preserve-->
 
-```{r knitr-opts, echo=FALSE}
+```{r knitr-opts, echo=FALSE, purl=FALSE}
 options(width=999)
+```
+
+```{r imports, echo=FALSE}
+library(synthdid)
+library(MCPanel)
+
+library(rngtools)
+
+library(future)
+library(doFuture)
+library(future.batchtools)
+```
+
+```{r imports-notebook-only, echo=FALSE, purl=FALSE}
+library(dplyr)
+library(tidyr)
+library(tibble)
+library(ggplot2)
 ```
 
 ## Summary
@@ -38,9 +56,6 @@ The second section runs the placebo simulations discussed in Section 3 and then 
 We also include variants sc_reg and difp_reg which, like sdid, use a ridge penalty when estimating the synthetic control weights $\omega$. These use the same regularization-strength parameter $\zeta$ as sdid, defined in Algorithm 1 of [Arkhangelsky et al.](https://arxiv.org/abs/1812.09970)
 
 ```{r define-estimators}
-library(synthdid)
-library(MCPanel)
-
 mc_estimate = function(Y, N0, T0) {
     N1=nrow(Y)-N0
     T1=ncol(Y)-T0
@@ -79,7 +94,7 @@ estimators = list(did=did_estimate,
 
 # California Proposition 99 Application
 
-```{r california-estimation}
+```{r california-estimation, purl=FALSE}
 data('california_prop99')
 setup = panel.matrices(california_prop99)
 
@@ -92,7 +107,7 @@ standard.errors = mapply(function(estimate, name) {
 ```
 
 ## Table 1
-```{r california-table}
+```{r california-table, purl=FALSE}
 california.table = rbind(unlist(estimates), unlist(standard.errors))
 rownames(california.table) = c('estimate', 'standard error')
 colnames(california.table) = toupper(names(estimators))
@@ -102,7 +117,7 @@ round(california.table, digits=1)
 
 ## Figure 1. Columns are DID, SC, SDID in that order.
 
-```{r california-trends-plot, fig.width=15, fig.height=5, fig.path="figures/", dev=c("png", "pdf")}
+```{r california-trends-plot, fig.width=15, fig.height=5, fig.path="figures/", dev=c("png", "pdf"), purl=FALSE}
 synthdid_plot(estimates[1:3], facet.vertical=FALSE, 
               control.name='control', treated.name='california', 
               lambda.comparable=TRUE, se.method = 'none', 
@@ -114,7 +129,7 @@ synthdid_plot(estimates[1:3], facet.vertical=FALSE,
           strip.background=element_blank(), strip.text.x = element_blank())
 ```
 
-```{r california-units-plot, fig.width=15, fig.height=5, fig.path="figures/", dev=c("png", "pdf")}
+```{r california-units-plot, fig.width=15, fig.height=5, fig.path="figures/", dev=c("png", "pdf"), purl=FALSE}
 synthdid_units_plot(rev(estimates[1:3]), se.method='none') + 
     theme(legend.background=element_blank(), legend.title = element_blank(), 
           legend.direction='horizontal', legend.position=c(.17,.07), 
@@ -255,10 +270,6 @@ coverage.sims = c('baseline',  'gun.law', 'abortion', 'random', 'hours', 'urate'
 se.methods = c('bootstrap', 'jackknife', 'placebo')
 cluster = FALSE
 
-# set up RNG seeds for each replication
-library(rngtools)
-seeds = RNGseq(n=sim.replications, seed=12345)
-
 # set up simulation grid 
 grid = expand.grid(ss = 1:length(simulators),
                    ee = 1:length(estimators),
@@ -276,6 +287,15 @@ rows.finished = function() {
     output.files = sapply(1:nrow(grid), function(ii) { output.file(grid[ii,]) })
     file.exists(output.files)
 }
+```
+
+```{r set-up-seeds}
+# set up RNG seeds for each replication.
+# We need to pass a L'Ecuyer-type seed: a vector of 7 integers starting with 10407 like initial.seed below.
+# If we pass a simple integer seed, the first call in a vanilla R session (R --vanilla) differs from subsequent ones.
+# To get initial_seed I run: 'library(rngtools); ignore=RNGseq(n=1, seed=12345); initial.seed=RNGseq(n=1,seed=12345)'.
+initial.seed = c(10407, -2132566924,  1638542565, 108172386, -1884566405, -1838154368, -250773631)
+seeds = RNGseq(n=sim.replications, seed=initial.seed)
 ```
 
 ```{r set-up-simulations}
@@ -296,14 +316,10 @@ run.simulation = function(row) {
 ```
 
 ```{r create-workers-for-simulations}
-library(doFuture)
-library(future.batchtools)
-library(future)
-registerDoFuture()
-
 # kill warning that the futures library can't determine that we're 
 # using and deterministically seeding the L'Ecuyer RNG
 options('future.options.rng.onMisuse', 'ignore') 
+registerDoFuture()
 
 # set up worker processes
 if(cluster) {
@@ -339,7 +355,7 @@ foreach(ii = which(!rows.finished())) %dopar% {
 
 ## Load output from disk and concatenate into a data frame
 
-```{r load-estimates}
+```{r load-estimates, purl=FALSE}
 estimates = foreach(ii = which(rows.finished()), .combine=rbind) %do% {
   readRDS(output.file(grid[ii,]))
 }
@@ -349,25 +365,20 @@ estimates$estimator  = factor(estimates$estimator,   levels=names(estimators))
 
 To share data, check that simulations are complete and save concatenated data frame as one file.
 
-```{r}
+```{r, purl=FALSE}
 stopifnot(all(rows.finished()))
 saveRDS(estimates, 'all-simulations.rds')
 ```
 
 To use shared data, load concatenated data frame from file.
 
-```{r}
+```{r, purl=FALSE}
 estimates = readRDS('all-simulations.rds')
 ```
 
 ## Compute summary statistics from simulations
 
-```{r summary-stats}
-library(dplyr)
-library(tidyr)
-library(tibble)
-
-
+```{r summary-stats, purl=FALSE}
 summaries = estimates %>%
     group_by(simulation, estimator) %>% 
         summarize(rmse = sqrt(mean(estimate^2)), 
@@ -384,7 +395,7 @@ Our standard error estimators can be undefined in some instances, returning NA.
 This happens to the bootstrap and jacknife if there is only one treated unit and to the jackknife
 if there is only one control with nonzero weight. As we see in the table below, this happens in one replication of the urate simulation. We compute coverage over the replications for which each standard error estimator is defined passing na.rm=TRUE to mean above.
 
-```{r summary-stats-check}
+```{r summary-stats-check, purl=FALSE}
 summaries[!(summaries$coverage.count %in% c(0, coverage.replications)), 
            c('simulation', 'estimator', 'coverage.count')]
 ```
@@ -392,7 +403,7 @@ summaries[!(summaries$coverage.count %in% c(0, coverage.replications)),
 ## Point Estimation: Tables 2 and 3
 ### Compute summary info about simulator designs to include in Table 2.
 
-```{r simulator-info}
+```{r simulator-info, purl=FALSE}
 sim.info = do.call(rbind, lapply(simulators, function(sim) { 
     data.frame(F_scale  =  sqrt(mean(sim$params$F^2)), 
                M_scale  =  sqrt(mean(sim$params$M^2)),
@@ -405,7 +416,7 @@ sim.info = do.call(rbind, lapply(simulators, function(sim) {
 ## Display a point estimate summary table 
 In the paper, this is split into Tables 2 and 3, with CPS sims in the former and PENN sims in the latter.
 
-```{r point-estimate-table}
+```{r point-estimate-table, purl=FALSE}
 point.summaries = summaries[,c('simulation', 'estimator', point.columns)] %>% 
     pivot_wider(names_from=estimator, values_from=all_of(point.columns)) %>%
         column_to_rownames('simulation')
@@ -420,7 +431,7 @@ round(point.table, digits=3)[,c(7,11,9,12)]
 ## Display a coverage summary table. 
 A subset of these rows are in Table 4 of the paper.
 
-```{r coverage-table}
+```{r coverage-table, purl=FALSE}
 coverage.table = summaries[,c('simulation', 'estimator', coverage.columns)] %>%
     pivot_wider(names_from=estimator, values_from=all_of(coverage.columns)) %>%
         column_to_rownames('simulation')
@@ -432,7 +443,7 @@ round(coverage.table[rownames(coverage.table) %in% coverage.sims, keep], digits=
 ## Plot the error distribution of the estimates (Figure 2)
 We plot an estimate of error density function for the baseline CPS setting and the minimum wage assignment variant. This is Figure 2. 
 
-```{r error-density-setup}
+```{r error-density-setup, purl=FALSE}
 grid = expand.grid(ss=1:length(simulators), ee=1:length(estimators))
 error.densities = do.call(rbind, mapply(function(ss,ee) {
     errors = estimates[estimates$simulation == names(simulators)[ss] & 
@@ -445,9 +456,7 @@ error.densities = do.call(rbind, mapply(function(ss,ee) {
     }, grid$ss, grid$ee, SIMPLIFY=FALSE))
 ```
 
-```{r error-density-plot, fig.width=8, fig.height=4, fig.path="figures/", dev=c("png", "pdf")}
-library(ggplot2)
-
+```{r error-density-plot, fig.width=8, fig.height=4, fig.path="figures/", dev=c("png", "pdf"), purl=FALSE}
 show.sims       = error.densities$simulator %in% c('baseline', 'random')
 show.estimators = error.densities$estimator %in% c('did', 'sc', 'sdid')
 # reformat the information in $simulator and $estimator for display in the plot title and legend
