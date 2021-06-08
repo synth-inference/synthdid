@@ -22,7 +22,7 @@ pre, pre code, .sourceCode {
 options(width=999)
 ```
 
-```{r imports, echo=FALSE}
+```{r imports, message=FALSE}
 library(synthdid)
 library(MCPanel)
 
@@ -33,7 +33,7 @@ library(doFuture)
 library(future.batchtools)
 ```
 
-```{r imports-notebook-only, echo=FALSE, purl=FALSE}
+```{r imports-notebook-only, message=FALSE, purl=FALSE}
 library(dplyr)
 library(tidyr)
 library(tibble)
@@ -329,7 +329,7 @@ if(cluster) {
 } 
 ```
 
-```{r run-simulations}
+```{r run-simulations, echo=FALSE}
 # run sims
 foreach(ii = which(!rows.finished())) %dopar% { 
     row = grid[ii,]
@@ -363,14 +363,14 @@ estimates$estimator  = factor(estimates$estimator,   levels=names(estimators))
 
 To share data, check that simulations are complete and save concatenated data frame as one file.
 
-```{r, purl=FALSE}
+```{r purl=FALSE}
 stopifnot(all(rows.finished()))
 saveRDS(estimates, 'all-simulations.rds')
 ```
 
 To use shared data, load concatenated data frame from file.
 
-```{r, purl=FALSE}
+```{r purl=FALSE}
 estimates = readRDS('all-simulations.rds')
 ```
 
