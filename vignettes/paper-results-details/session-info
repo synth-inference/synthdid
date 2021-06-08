@@ -1,9 +1,11 @@
 Code was run on two platforms:
 1. A 2020 Macbook Air (M1) running R 4.0.5, used for the California Prop99 example and aggregation and plotting of the results from the simulations
 2. A cluster of x86_64 machines running R 4.0.2, used to run the simulations themselves 
-To run code on the cluster, the notebook paper-simulations.Rmd was converted to a script by: 
-   calling knitr::purl('paper-simulations.Rmd') and, in the "configure simulations" section of the resulting file paper-simulations.R, changing cluster=FALSE to cluster=TRUE
-The resulting 'simulations/*.rds' files were then copied from the cluster to ./vignettes, and the notebook was run to generate plots and tables
+To run code using the cluster:
+i.   The notebook paper-simulations.Rmd was converted to a script by calling knitr::purl('paper-simulations.Rmd').
+ii.  This script, and the slurm template file batchtools.slurm.tmpl, were put in the same folder on the cluster and the script is run.
+iii. The resulting 'simulations/*.rds' files were then copied from the cluster to the vignettes directory and the notebook was run to generate plots and tables
+Simply running the notebook on a computer like platform 1 should yield essentially the same results, but take a few days.
 
 While we did not run all the simulations on platform 1, we ran some and checked them against what we got on platform 2 by running test-cross-platform.R. Results were essentially identical, with differences on the order of 1e-13 or smaller, except for the MC estimator: the MCPanel library uses the C++ std::default_random_engine RNG to choose folds for cross-validation, which does not guarantee identical results on different platforms. Among the 5500 simulations on which we compared results for the MC estimator on our two platforms, the absolute difference of point estimates had the following quantiles.
           0%          10%          20%          30%          40%          50%          60%          70%          80%          90%         100% 

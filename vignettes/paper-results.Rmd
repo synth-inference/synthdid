@@ -243,12 +243,10 @@ simulators = list(
 
 ### Details
 This is a long-running computation, taking roughly 3 days on a recent macbook air. It is written to save data as it runs, one file per simulation, so it can be continued if interrupted. To continue, just rerun the loop: only simulation for which these files are missing are run. 
+It can also be run on a slurm cluster, and will do so if a correctly configured template file batchtools.slurm.tmpl is present.
+We include the one we use in the paper-results-details directory.
 
-It can also be run on a slurm cluster: set `cluster=TRUE` below and ensure the template file batchtools.slurm.tmpl
-is correctly configured. We include one for the Sherlock cluster at Stanford.
-
-The loop gives each replication of a simulation its own RNG seed, computed as 
-a function of the initial seed 12345. Within each replication, every call to
+The loop gives each replication of a simulation its own RNG seed. Within each replication, every call to
 a simulator, estimator, or variance estimator uses this replication-specific seed:
 we explicitly restore the seed before each call. As a result, changing the set of 
 simulations, estimators, or variance estimators considered does not change the results we get
@@ -268,7 +266,7 @@ coverage.sims = c('baseline',  'gun.law', 'abortion', 'random', 'hours', 'urate'
                   'resample.200', 'resample.400', 
                   'penn.democracy', 'penn.education', 'penn.random')
 se.methods = c('bootstrap', 'jackknife', 'placebo')
-cluster = FALSE
+cluster = file.exists('batchtools.slurm.tmpl')
 
 # set up simulation grid 
 grid = expand.grid(ss = 1:length(simulators),
