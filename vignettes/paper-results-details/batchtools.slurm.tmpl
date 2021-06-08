@@ -30,13 +30,12 @@ if (!"ncpus" %in% names(resources)) {
 }
 
 if (!"walltime" %in% names(resources)) {
-  # Default time format is minutes but we later divide by 60 so set time in secs.
-  # Set 48 hours by default. This is excessive for drake's built-in examples.
-  resources$walltime = 48 * 3600
+  # Default time format is minutes but we later divide by 60 so set time in secs. 
+  resources$walltime = 2 * 3600
 }
 
 if (!"memory" %in% names(resources)) {
-  resources$memory=256
+  resources$memory=1024
 }
 
 -%>
@@ -48,7 +47,7 @@ if (!"memory" %in% names(resources)) {
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=<%= resources$ncpus %>
 #SBATCH --mem-per-cpu=<%= resources$memory %>
-#SBATCH --partition=athey
+#SBATCH --partition=normal
 
 <%= if (array.jobs) sprintf("#SBATCH --array=1-%i", nrow(jobs)) else "" %>
 

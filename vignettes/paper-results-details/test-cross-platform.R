@@ -1,5 +1,5 @@
-dir.1 = 'simulations'
-dir.2 = 'from-cluster/simulations'
+dir.1 = 'simulations-local'
+dir.2 = 'simulations'
 differences = do.call(rbind, lapply(intersect(list.files(dir.1), list.files(dir.2)), function(filename) {
     x=readRDS(sprintf('%s/%s', dir.1, filename))
     y=readRDS(sprintf('%s/%s', dir.2, filename))

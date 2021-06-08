@@ -322,7 +322,7 @@ registerDoFuture()
 # set up worker processes
 if(cluster) {
     # use multiple nodes on a Slurm Cluster
-    plan(batchtools_slurm, resources=list(ntasks=100, ncpus=1, memory=1024))
+    plan(batchtools_slurm, workers=1000, resources=list(ncpus=1, memory=1024))
 } else {
     # use multiple processes on this this computer
     plan(multisession, workers = 8)
