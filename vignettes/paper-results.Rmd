@@ -136,6 +136,16 @@ synthdid_units_plot(rev(estimates[1:3]), se.method='none') +
           strip.background=element_blank(), strip.text.x = element_blank())
 ```
 
+### Table 7 and 8: Unit and Time weights
+
+```{r}
+unit.weights = synthdid_controls(estimates[1:3], weight.type='omega', mass=1, sort.by=3)
+time.weights = synthdid_controls(estimates[1:3], weight.type='lambda', mass=1, sort.by=3)
+
+round(unit.weights, digits=3)
+round(time.weights, digits=3)
+```
+
 # Placebo Simulations
 
 ## load data 

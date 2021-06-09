@@ -20,7 +20,7 @@ synthdid_controls = function(estimates, sort.by = 1, mass = .9, weight.type = 'o
   colnames(tab) = names(estimates)
 
   # truncate table to retain a weight sum of at least mass for each unit
-  tab.len = max(apply(tab, 2, function(col) { Position(function(x) { x >= mass }, cumsum(col), nomatch=0) }))
+  tab.len = max(apply(tab, 2, function(col) { Position(function(x) { x >= mass }, cumsum(col), nomatch=nrow(tab)) }))
   tab[1:tab.len, , drop=FALSE]
 }
 
