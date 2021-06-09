@@ -34,6 +34,7 @@ library(future.batchtools)
 ```
 
 ```{r imports-notebook-only, message=FALSE, purl=FALSE}
+library(xtable)
 library(dplyr)
 library(tidyr)
 library(tibble)
@@ -139,11 +140,17 @@ synthdid_units_plot(rev(estimates[1:3]), se.method='none') +
 ### Table 7 and 8: Unit and Time weights
 
 ```{r}
-unit.weights = synthdid_controls(estimates[1:3], weight.type='omega', mass=1, sort.by=3)
-time.weights = synthdid_controls(estimates[1:3], weight.type='lambda', mass=1, sort.by=3)
+unit.weights = synthdid_controls(estimates[1:3], weight.type='omega', mass=1)
+time.weights = synthdid_controls(estimates[1:3], weight.type='lambda', mass=1)
 
-round(unit.weights, digits=3)
-round(time.weights, digits=3)
+unit.table = xtable(round(unit.weights[rev(1:nrow(unit.weights)), ], 3))
+time.table = xtable(round(time.weights, 3))
+
+print(unit.table, type='latex', file='figures/table-california-unit-weights.tex')
+print(time.table, type='latex', file='figures/table-california-time-weights.tex')
+
+unit.table
+time.table
 ```
 
 # Placebo Simulations
