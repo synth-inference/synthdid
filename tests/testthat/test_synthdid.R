@@ -2,8 +2,8 @@ test_that("a simple workflow doesn't error", {
   setup = random.low.rank()
   tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
   se = sqrt(vcov(tau.hat))
-  se.jackknife = sqrt(vcov(tau.hat, method='jackknife'))
-  se.placebo   = sqrt(vcov(tau.hat, method='placebo'))
+  se.jackknife = sqrt(vcov(tau.hat, method='jackknife', replications = 10))
+  se.placebo   = sqrt(vcov(tau.hat, method='placebo', replications = 10))
 
   print(tau.hat)
   summary(tau.hat)
@@ -31,7 +31,7 @@ test_that("adjustment for covariates works: random noise less influential if pas
   tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
   tau.hat.noise = synthdid_estimate(setup$Y+X,setup$N0,setup$T0)
   tau.hat.cov = synthdid_estimate(setup$Y+X,setup$N0,setup$T0,X)
-  se = synthdid_se(tau.hat)
+  se = synthdid_se(tau.hat, replications = 10)
 
   expect_lt(abs(tau.hat - tau.hat.cov), abs(tau.hat - tau.hat.noise))
 })
@@ -168,4 +168,3 @@ test_that("treated effect shifts correctly with scalar shifts to the 4 blocks", 
     }
   }
 })
-
