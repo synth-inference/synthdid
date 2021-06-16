@@ -347,42 +347,44 @@ if(cluster) {
 ```
 
 ```{r run-simulations, echo=FALSE}
-# run sims
-foreach(ii = which(!rows.finished())) %dopar% { 
-    row = grid[ii,]
-    start.time = Sys.time()
-    
-    library(rngtools)
-    library(synthdid)
-    library(MCPanel)
-        
-    output.row = run.simulation(row)
-    saveRDS(output.row, file=output.file(row))
-        
-    end.time = Sys.time()
-    cat(sprintf('simulation %d/%d=%0.2f ran for %1.1f, from %s to %s, outputting to %s\n', 
-                  ii, nrow(grid), ii/nrow(grid), 
-                  end.time-start.time, start.time, end.time, 
-                  output.file(row)), file='simulations.log') 
-    NULL
-}
+# uncomment to run sims
+# foreach(ii = which(!rows.finished())) %dopar% { 
+#     row = grid[ii,]
+#     start.time = Sys.time()
+#     
+#     library(rngtools)
+#     library(synthdid)
+#     library(MCPanel)
+#         
+#     output.row = run.simulation(row)
+#     saveRDS(output.row, file=output.file(row))
+#         
+#     end.time = Sys.time()
+#     cat(sprintf('simulation %d/%d=%0.2f ran for %1.1f, from %s to %s, outputting to %s\n', 
+#                   ii, nrow(grid), ii/nrow(grid), 
+#                   end.time-start.time, start.time, end.time, 
+#                   output.file(row)), file='simulations.log') 
+#     NULL
+# }
 ```
 
 ## Load output from disk and concatenate into a data frame
 
 ```{r load-estimates, purl=FALSE}
-estimates = foreach(ii = which(rows.finished()), .combine=rbind) %do% {
-  readRDS(output.file(grid[ii,]))
-}
-estimates$simulation = factor(estimates$simulation,  levels=names(simulators))
-estimates$estimator  = factor(estimates$estimator,   levels=names(estimators))
+# uncomment to run sims
+# estimates = foreach(ii = which(rows.finished()), .combine=rbind) %do% {
+#   readRDS(output.file(grid[ii,]))
+# }
+# estimates$simulation = factor(estimates$simulation,  levels=names(simulators))
+# estimates$estimator  = factor(estimates$estimator,   levels=names(estimators))
 ```
 
 To share data, check that simulations are complete and save concatenated data frame as one file.
 
 ```{r purl=FALSE}
-stopifnot(all(rows.finished()))
-saveRDS(estimates, 'all-simulations.rds')
+# uncomment to run sims
+# stopifnot(all(rows.finished()))
+# saveRDS(estimates, 'all-simulations.rds')
 ```
 
 To use shared data, load concatenated data frame from file.
