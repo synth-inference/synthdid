@@ -26,4 +26,3 @@ test_that("did point estimate agrees with the reference implementation", {
 		 c(synthdid:::did.reference(setup$Y, setup$N0, setup$T0)), tol=tol)
 })
 }
-

@@ -20,7 +20,7 @@
 #' @param min.decrease Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease
 #' 		        in penalized MSE smaller than min.decrease^2.
 #' @param max.iter A fallback stopping criterion for our weight estimator. Stop after this number of iterations.
-#' @param sparsify A function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape, which must sum to one. 
+#' @param sparsify A function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape, which must sum to one.
 #'                  If not null, we try to estimate sparse weights via a second round of Frank-Wolfe optimization
 #'                  initialized at sparsify( the solution to the first round ).
 #' @param max.iter.pre.sparsify Analogous to max.iter, but for the pre-sparsification first-round of optimization.
@@ -30,14 +30,14 @@
 #'         as well as regression coefficients beta if X is passed.
 #'         'setup' is a list describing the problem passed in: Y, N0, T0, X.
 #' @export synthdid_estimate
-synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)), 
+synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
                               noise.level = sd(apply(Y[1:N0,1:T0], 1, diff)),
-                              eta.omega = ((nrow(Y)-N0)*(ncol(Y)-T0))^(1/4), eta.lambda = 1e-6, 
+                              eta.omega = ((nrow(Y)-N0)*(ncol(Y)-T0))^(1/4), eta.lambda = 1e-6,
                               zeta.omega  = eta.omega  * noise.level,  zeta.lambda = eta.lambda * noise.level,
-                              omega.intercept = TRUE, lambda.intercept = TRUE, 
+                              omega.intercept = TRUE, lambda.intercept = TRUE,
                               weights = list(omega = NULL, lambda = NULL),
-                              update.omega = is.null(weights$omega), update.lambda = is.null(weights$lambda), 
-                              min.decrease = 1e-5 * noise.level, max.iter = 1e4, 
+                              update.omega = is.null(weights$omega), update.lambda = is.null(weights$lambda),
+                              min.decrease = 1e-5 * noise.level, max.iter = 1e4,
 			      sparsify = function(v) { v[v <= max(v)/4] = 0; v/sum(v) },
 			      max.iter.pre.sparsify = 100) {
   stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2, 3), dim(X)[1:2] == dim(Y), is.list(weights),
@@ -56,8 +56,8 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
       Yc = collapsed.form(Y, N0, T0)
       lambda.opt = sc.weight.fw(Yc[1:N0, ], zeta = zeta.lambda, intercept = lambda.intercept, lambda=weights$lambda,
 				min.decrease = min.decrease, max.iter = max.iter.pre.sparsify)
-      if(!is.null(sparsify)) { 
-	lambda.opt = sc.weight.fw(Yc[1:N0, ], zeta = zeta.lambda, intercept = lambda.intercept, lambda=sparsify(lambda.opt$lambda), 
+      if(!is.null(sparsify)) {
+	lambda.opt = sc.weight.fw(Yc[1:N0, ], zeta = zeta.lambda, intercept = lambda.intercept, lambda=sparsify(lambda.opt$lambda),
 				  min.decrease = min.decrease, max.iter = max.iter)
       }
       weights$lambda = lambda.opt$lambda
@@ -66,10 +66,10 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
     }
     if (update.omega) {
       Yc = collapsed.form(Y, N0, T0)
-      omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, lambda=weights$omega, 
+      omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, lambda=weights$omega,
 			       min.decrease = min.decrease, max.iter = max.iter.pre.sparsify)
-      if(!is.null(sparsify)) { 
-	omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, lambda=sparsify(omega.opt$lambda), 
+      if(!is.null(sparsify)) {
+	omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, lambda=sparsify(omega.opt$lambda),
 			         min.decrease = min.decrease, max.iter = max.iter)
       }
       weights$omega = omega.opt$lambda
@@ -111,8 +111,8 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
 #' @param ... additional options for synthdid_estimate
 #' @return an object like that returned by synthdid_estimate
 #' @export sc_estimate
-sc_estimate = function(Y, N0, T0, eta.omega = 1e-6, ...) { 
-  estimate = synthdid_estimate(Y, N0, T0, eta.omega = eta.omega, 
+sc_estimate = function(Y, N0, T0, eta.omega = 1e-6, ...) {
+  estimate = synthdid_estimate(Y, N0, T0, eta.omega = eta.omega,
 			       weights = list(lambda = rep(0, T0)), omega.intercept = FALSE, ...)
   attr(estimate, 'estimator') = "sc_estimate"
   estimate
@@ -126,7 +126,7 @@ sc_estimate = function(Y, N0, T0, eta.omega = 1e-6, ...) {
 #' @param ... additional  options for synthdid_estimate
 #' @return an object like that returned by synthdid_estimate
 #' @export did_estimate
-did_estimate = function(Y, N0, T0, ...) {  
+did_estimate = function(Y, N0, T0, ...) {
   estimate = synthdid_estimate(Y, N0, T0, weights = list(lambda = rep(1 / T0, T0), omega = rep(1 / N0, N0)), ...)
   attr(estimate, 'estimator') = "did_estimate"
   estimate
@@ -164,4 +164,3 @@ synthdid_effect_curve = function(estimate) {
   tau.curve = tau.sc[setup$T0 + (1:T1)] - c(tau.sc[1:setup$T0] %*% weights$lambda)
   tau.curve
 }
-
