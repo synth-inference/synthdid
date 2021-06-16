@@ -21,7 +21,7 @@ synthdid_estimate(
   update.lambda = is.null(weights$lambda),
   min.decrease = 1e-05 * noise.level,
   max.iter = 10000,
-  sparsify = function(v) {     v[v <= max(v)/4] = 0     v/sum(v) },
+  sparsify = sparsify_function,
   max.iter.pre.sparsify = 100
 )
 }

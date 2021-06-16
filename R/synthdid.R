@@ -1,3 +1,8 @@
+#' A function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape to
+#' be passed onto synthdid_estimate.
+#' @param v a vector
+sparsify_function = function(v) { v[v <= max(v)/4] = 0; v/sum(v) }
+
 #' Computes the synthetic diff-in-diff estimate for an average treatment effect on a treated block.
 #'
 #' See 'Synthetic Difference in Differences' by Arkhangelsky et al. This implements Algorithm 1.
@@ -38,7 +43,7 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
                               weights = list(omega = NULL, lambda = NULL),
                               update.omega = is.null(weights$omega), update.lambda = is.null(weights$lambda),
                               min.decrease = 1e-5 * noise.level, max.iter = 1e4,
-			      sparsify = function(v) { v[v <= max(v)/4] = 0; v/sum(v) },
+			      sparsify = sparsify_function,
 			      max.iter.pre.sparsify = 100) {
   stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2, 3), dim(X)[1:2] == dim(Y), is.list(weights),
     is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0,
