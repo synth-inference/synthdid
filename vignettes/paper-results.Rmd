@@ -22,12 +22,6 @@ pre, pre code, .sourceCode {
 options(width=999)
 ```
 
-```{r setup, message=FALSE}
-library(synthdid)
-library(ggplot2)
-set.seed(12345)
-```
-
 ```{r imports, message=FALSE}
 library(synthdid)
 library(MCPanel)
@@ -50,7 +44,7 @@ library(ggplot2)
 ## Summary
 In this vignette, we generate the figures and tables from [Arkhangelsky et al.](https://arxiv.org/abs/1812.09970).
 The first section, on the California Proposition 99 application, generates Table 1 and Figure 1.
-The second section runs the placebo simulations discussed in Section 3 and then summarizes them by generating Tables 2-4 and Figure 2.
+The second section runs the placebo simulations discussed in Section 3 and then summarizes them by generating Tables 2-4 and Figure 2. 
 
 
 ## The estimators considered
@@ -77,22 +71,22 @@ mc_placebo_se = function(Y, N0, T0, replications=200) {
     theta = function(ind) { mc_estimate(Y[ind,], length(ind)-N1, T0) }
     sqrt((replications-1)/replications) * sd(replicate(replications, theta(sample(1:N0))))
 }                
+                                       
+difp_estimate = function(Y, N0, T0) { 
+    synthdid_estimate(Y, N0, T0, weights=list(lambda=rep(1/T0, T0)), eta.omega=1e-6) 
+} 
 
-difp_estimate = function(Y, N0, T0) {
-    synthdid_estimate(Y, N0, T0, weights=list(lambda=rep(1/T0, T0)), eta.omega=1e-6)
-}
-
-sc_estimate_reg = function(Y, N0, T0) {
+sc_estimate_reg = function(Y, N0, T0) { 
     sc_estimate(Y, N0, T0, eta.omega=((nrow(Y)-N0)*(ncol(Y)-T0))^(1/4))
 }
-difp_estimate_reg = function(Y, N0, T0) {
-    synthdid_estimate(Y, N0, T0, weights=list(lambda=rep(1/T0, T0)))
-}
+difp_estimate_reg = function(Y, N0, T0) { 
+    synthdid_estimate(Y, N0, T0, weights=list(lambda=rep(1/T0, T0))) 
+} 
 
 
-estimators = list(did=did_estimate,
+estimators = list(did=did_estimate, 
                   sc=sc_estimate,
-                  sdid=synthdid_estimate,
+                  sdid=synthdid_estimate, 
                   difp=difp_estimate,
                   mc = mc_estimate,
                   sc_reg = sc_estimate_reg,
@@ -106,9 +100,9 @@ data('california_prop99')
 setup = panel.matrices(california_prop99)
 
 estimates = lapply(estimators, function(estimator) { estimator(setup$Y, setup$N0, setup$T0) } )
-standard.errors = mapply(function(estimate, name) {
+standard.errors = mapply(function(estimate, name) { 
   set.seed(12345)
-  if(name == 'mc') { mc_placebo_se(setup$Y, setup$N0, setup$T0) }
+  if(name == 'mc') { mc_placebo_se(setup$Y, setup$N0, setup$T0) } 
   else {             sqrt(vcov(estimate, method='placebo'))     }
 }, estimates, names(estimators))
 ```
@@ -125,21 +119,21 @@ round(california.table, digits=1)
 ## Figure 1. Columns are DID, SC, SDID in that order.
 
 ```{r california-trends-plot, fig.width=15, fig.height=5, fig.path="figures/", dev=c("png", "pdf"), purl=FALSE}
-synthdid_plot(estimates[1:3], facet.vertical=FALSE,
-              control.name='control', treated.name='california',
-              lambda.comparable=TRUE, se.method = 'none',
+synthdid_plot(estimates[1:3], facet.vertical=FALSE, 
+              control.name='control', treated.name='california', 
+              lambda.comparable=TRUE, se.method = 'none', 
               trajectory.linetype = 1, line.width=.75, effect.curvature=-.4,
-              trajectory.alpha=.7, effect.alpha=.7,
-              diagram.alpha=1, onset.alpha=.7) +
-    theme(legend.position=c(.26,.07), legend.direction='horizontal',
+              trajectory.alpha=.7, effect.alpha=.7, 
+              diagram.alpha=1, onset.alpha=.7) + 
+    theme(legend.position=c(.26,.07), legend.direction='horizontal', 
           legend.key=element_blank(), legend.background=element_blank(),
           strip.background=element_blank(), strip.text.x = element_blank())
 ```
 
 ```{r california-units-plot, fig.width=15, fig.height=5, fig.path="figures/", dev=c("png", "pdf"), purl=FALSE}
-synthdid_units_plot(rev(estimates[1:3]), se.method='none') +
-    theme(legend.background=element_blank(), legend.title = element_blank(),
-          legend.direction='horizontal', legend.position=c(.17,.07),
+synthdid_units_plot(rev(estimates[1:3]), se.method='none') + 
+    theme(legend.background=element_blank(), legend.title = element_blank(), 
+          legend.direction='horizontal', legend.position=c(.17,.07), 
           strip.background=element_blank(), strip.text.x = element_blank())
 ```
 
@@ -161,13 +155,13 @@ time.table
 
 # Placebo Simulations
 
-## load data
+## load data 
 
 ```{r load-penn-and-cps-data}
 last.col = function(X) { X[, ncol(X)] }
 
 data(CPS)
-Y.logwage      = panel.matrices(CPS, treatment='min_wage', outcome='log_wage', treated.last=FALSE)$Y
+Y.logwage      = panel.matrices(CPS, treatment='min_wage', outcome='log_wage', treated.last=FALSE)$Y 
 Y.hours        = panel.matrices(CPS, treatment='min_wage', outcome='hours',    treated.last=FALSE)$Y
 Y.urate        = panel.matrices(CPS, treatment='min_wage', outcome='urate',    treated.last=FALSE)$Y
 w.minwage      = last.col(panel.matrices(CPS, treatment='min_wage',   treated.last=FALSE)$W)
@@ -190,7 +184,7 @@ is used to define them by modifying an extant dgp specification.
 * To specify the dgp parameters, we pass in a set of baseline parameters as estimated by estimate.dgp
   and a set of functions `F`, `M`, etc. with names corresponding to those parameters which compute
   the actual parameters for the simulator as functions of the corresponding baseline parameter
-* If a numeric value of resample is passed, in each simulation resample that number of units,
+* If a numeric value of resample is passed, in each simulation resample that number of units, 
   i.e., rows from `L = M + F`, to use in the simulation design. This is used in some rows of Table 4.
 
 This returns a list with two elements.
@@ -200,46 +194,46 @@ This returns a list with two elements.
 
 ```{r define-simulations-setup}
 simulator = function(params = cps.baseline.params,
-                     F=function(x){x}, M=function(x){x},
-                     Sigma = function(x){x}, pi = function(x){x},
+                     F=function(x){x}, M=function(x){x}, 
+                     Sigma = function(x){x}, pi = function(x){x}, 
                      ar_coef = function(x){x},
                      N1=default$N1, T1=default$T1, resample=NULL) {
-
-    updated.params = list(F=F(params$F), M=M(params$M),
-                          Sigma=Sigma(params$Sigma), pi = pi(params$pi),
+    
+    updated.params = list(F=F(params$F), M=M(params$M), 
+                          Sigma=Sigma(params$Sigma), pi = pi(params$pi), 
                           ar_coef=ar_coef(params$ar_coef))
-
+    
     list(params=updated.params, N1=N1, T1=T1,
-         run=function() {
+         run=function() { 
              if(!is.numeric(resample)) {
-                simulate_dgp(updated.params, N1, T1)
+                simulate_dgp(updated.params, N1, T1) 
              } else {       
                 ind = sample.int(nrow(updated.params$F), size=resample, replace=TRUE)
                 resampled.params=updated.params
                 resampled.params$F=updated.params$F[ind,]
                 resampled.params$M=updated.params$M[ind,]
-                simulate_dgp(resampled.params, N1, T1)
-            }
+                simulate_dgp(resampled.params, N1, T1) 
+            } 
         })
 }    
 ```
 
 ## Define simulators.
-* Simulators use `Sigma`, not `ar_coef`, to generate noise, so updating `ar_coef` doesn't affect the simulations.
+* Simulators use `Sigma`, not `ar_coef`, to generate noise, so updating `ar_coef` doesn't affect the simulations. 
 * We do update `ar_coef` below so `$params` has the correct coefficients. These will be shown in Table 2.
 
 ```{r define-simulations}
 simulators = list(
     baseline   =  simulator(),
     # Modified outcome model
-    no.corr    =  simulator(Sigma=function(Sigma) { diag(nrow(Sigma)) * norm(Sigma,'f')/sqrt(nrow(Sigma))},
+    no.corr    =  simulator(Sigma=function(Sigma) { diag(nrow(Sigma)) * norm(Sigma,'f')/sqrt(nrow(Sigma))}, 
                             ar_coef=function(coefs) { 0*coefs }),
-    no.M       =  simulator(M=function(M) { 0*M }),
+    no.M       =  simulator(M=function(M) { 0*M }), 
     no.F       =  simulator(F=function(F) { 0*F }),
     only.noise =  simulator(M=function(M) { 0*M }, F=function(F) {0*F}),
     no.noise   =  simulator(Sigma=function(Sigma) { 0*Sigma }, ar_coef=function(coefs) { 0*coefs }),
     # Modified assignment process
-    gun.law    =  simulator(estimate_dgp(Y.logwage, w.gunlaw,   default$rank)),
+    gun.law    =  simulator(estimate_dgp(Y.logwage, w.gunlaw,   default$rank)), 
     abortion   =  simulator(estimate_dgp(Y.logwage, w.abortion, default$rank)),
     random     =  simulator(pi=function(pi) { rep(.5,length(pi)) }),
     # Modified outcome variable
@@ -255,7 +249,7 @@ simulators = list(
     # penn world table (Table 3)
     penn.democracy  = simulator(estimate_dgp(Y.loggdp,  w.democracy, default$rank)),
     penn.education  = simulator(estimate_dgp(Y.loggdp,  w.education, default$rank)),
-    penn.random     = simulator(estimate_dgp(Y.loggdp,  w.education, default$rank),
+    penn.random     = simulator(estimate_dgp(Y.loggdp,  w.education, default$rank), 
                                 pi=function(pi) { rep(.5,length(pi)) }))
 ```
 
@@ -265,18 +259,18 @@ simulators = list(
 * Save results in simulations/simulations*.rds. Assumes the directory simulations exists.
 
 ### Details
-This is a long-running computation, taking roughly 3 days on a recent macbook air. It is written to save data as it runs, one file per simulation, so it can be continued if interrupted. To continue, just rerun the loop: only simulation for which these files are missing are run.
+This is a long-running computation, taking roughly 3 days on a recent macbook air. It is written to save data as it runs, one file per simulation, so it can be continued if interrupted. To continue, just rerun the loop: only simulation for which these files are missing are run. 
 It can also be run on a slurm cluster, and will do so if a correctly configured template file batchtools.slurm.tmpl is present.
 We include the one we use in the paper-results-details directory.
 
 The loop gives each replication of a simulation its own RNG seed. Within each replication, every call to
 a simulator, estimator, or variance estimator uses this replication-specific seed:
-we explicitly restore the seed before each call. As a result, changing the set of
+we explicitly restore the seed before each call. As a result, changing the set of 
 simulations, estimators, or variance estimators considered does not change the results we get
-for any specific simulator/estimator/variance-estimator within a given replication. Nor does
-interrupting and continuing the loop.
+for any specific simulator/estimator/variance-estimator within a given replication. Nor does 
+interrupting and continuing the loop. 
 
-By using RNGSeq to choose replication-specific seeds for the L'Ecuyer-CMRG RNG,
+By using RNGSeq to choose replication-specific seeds for the L'Ecuyer-CMRG RNG, 
 we get streams of random numbers that are more or less independent from replication to replication.
 See `help(RNGseq)`.
 
@@ -284,14 +278,14 @@ See `help(RNGseq)`.
 sim.replications  = 1000
 coverage.replications = 400
 coverage.estimators = c('sdid','sc', 'did', 'difp')
-coverage.sims = c('baseline',  'gun.law', 'abortion', 'random', 'hours', 'urate',
-                  'T1.is.one', 'N1.is.one', 'blocksize.is.one',
-                  'resample.200', 'resample.400',
+coverage.sims = c('baseline',  'gun.law', 'abortion', 'random', 'hours', 'urate', 
+                  'T1.is.one', 'N1.is.one', 'blocksize.is.one', 
+                  'resample.200', 'resample.400', 
                   'penn.democracy', 'penn.education', 'penn.random')
 se.methods = c('bootstrap', 'jackknife', 'placebo')
 cluster = file.exists('batchtools.slurm.tmpl')
 
-# set up simulation grid
+# set up simulation grid 
 grid = expand.grid(ss = 1:length(simulators),
                    ee = 1:length(estimators),
                    rr = 1:sim.replications)
@@ -300,8 +294,8 @@ grid$estimate.se = names(simulators[grid$ss]) %in%  coverage.sims &
                          grid$rr <= coverage.replications
 
 # associate a grid row to an output filename
-output.file = function(row) {
-    sprintf('simulations/simulation-%s-%s-%d.rds',
+output.file = function(row) { 
+    sprintf('simulations/simulation-%s-%s-%d.rds', 
             names(simulators)[row$ss], names(estimators)[row$ee], row$rr)
 }
 rows.finished = function() {
@@ -320,7 +314,7 @@ seeds = RNGseq(n=sim.replications, seed=initial.seed)
 ```
 
 ```{r set-up-simulations}
-run.simulation = function(row) {
+run.simulation = function(row) { 
     setRNG(seeds[[row$rr]])
     setup = simulators[[row$ss]]$run()
     estimate = estimators[[row$ee]](setup$Y, setup$N0, setup$T0)
@@ -337,9 +331,9 @@ run.simulation = function(row) {
 ```
 
 ```{r create-workers-for-simulations}
-# kill warning that the futures library can't determine that we're
+# kill warning that the futures library can't determine that we're 
 # using and deterministically seeding the L'Ecuyer RNG
-options('future.options.rng.onMisuse', 'ignore')
+options('future.options.rng.onMisuse', 'ignore') 
 registerDoFuture()
 
 # set up worker processes
@@ -349,12 +343,12 @@ if(cluster) {
 } else {
     # use multiple processes on this this computer
     plan(multisession, workers = 8)
-}
+} 
 ```
 
 ```{r run-simulations, echo=FALSE}
 # uncomment to run sims
-# foreach(ii = which(!rows.finished())) %dopar% {
+# foreach(ii = which(!rows.finished())) %dopar% { 
 #     row = grid[ii,]
 #     start.time = Sys.time()
 #     
@@ -366,10 +360,10 @@ if(cluster) {
 #     saveRDS(output.row, file=output.file(row))
 #         
 #     end.time = Sys.time()
-#     cat(sprintf('simulation %d/%d=%0.2f ran for %1.1f, from %s to %s, outputting to %s\n',
-#                   ii, nrow(grid), ii/nrow(grid),
-#                   end.time-start.time, start.time, end.time,
-#                   output.file(row)), file='simulations.log')
+#     cat(sprintf('simulation %d/%d=%0.2f ran for %1.1f, from %s to %s, outputting to %s\n', 
+#                   ii, nrow(grid), ii/nrow(grid), 
+#                   end.time-start.time, start.time, end.time, 
+#                   output.file(row)), file='simulations.log') 
 #     NULL
 # }
 ```
@@ -403,8 +397,8 @@ estimates = readRDS('all-simulations.rds')
 
 ```{r summary-stats, purl=FALSE}
 summaries = estimates %>%
-    group_by(simulation, estimator) %>%
-        summarize(rmse = sqrt(mean(estimate^2)),
+    group_by(simulation, estimator) %>% 
+        summarize(rmse = sqrt(mean(estimate^2)), 
                   bias = mean(estimate),
                   bootstrap.coverage = mean(abs(estimate/bootstrap) <= qnorm(.975), na.rm=TRUE),
                   jackknife.coverage = mean(abs(estimate/jackknife) <= qnorm(.975), na.rm=TRUE),
@@ -419,7 +413,7 @@ This happens to the bootstrap and jacknife if there is only one treated unit and
 if there is only one control with nonzero weight. As we see in the table below, this happens in one replication of the urate simulation. We compute coverage over the replications for which each standard error estimator is defined passing na.rm=TRUE to mean above.
 
 ```{r summary-stats-check, purl=FALSE}
-summaries[!(summaries$coverage.count %in% c(0, coverage.replications)),
+summaries[!(summaries$coverage.count %in% c(0, coverage.replications)), 
            c('simulation', 'estimator', 'coverage.count')]
 ```
 
@@ -427,8 +421,8 @@ summaries[!(summaries$coverage.count %in% c(0, coverage.replications)),
 ### Compute summary info about simulator designs to include in Table 2.
 
 ```{r simulator-info, purl=FALSE}
-sim.info = do.call(rbind, lapply(simulators, function(sim) {
-    data.frame(F_scale  =  sqrt(mean(sim$params$F^2)),
+sim.info = do.call(rbind, lapply(simulators, function(sim) { 
+    data.frame(F_scale  =  sqrt(mean(sim$params$F^2)), 
                M_scale  =  sqrt(mean(sim$params$M^2)),
                noise_scale  =  sqrt(mean(diag(sim$params$Sigma))),
                ar_lag1      =  sim$params$ar_coef[1],
@@ -436,22 +430,22 @@ sim.info = do.call(rbind, lapply(simulators, function(sim) {
 }))
 ```
 
-## Display a point estimate summary table
+## Display a point estimate summary table 
 In the paper, this is split into Tables 2 and 3, with CPS sims in the former and PENN sims in the latter.
 
 ```{r point-estimate-table, purl=FALSE}
-point.summaries = summaries[,c('simulation', 'estimator', point.columns)] %>%
+point.summaries = summaries[,c('simulation', 'estimator', point.columns)] %>% 
     pivot_wider(names_from=estimator, values_from=all_of(point.columns)) %>%
         column_to_rownames('simulation')
 point.table = cbind(sim.info, point.summaries)
 
 # display table, leaving out non-default regularization choices
-round(point.table, digits=3)[, -c(11,12,18,19)]
+round(point.table, digits=3)[, -c(11,12,18,19)] 
 # display table comparing default and non-default regularization choices
 round(point.table, digits=3)[,c(7,11,9,12)]
 ```
 
-## Display a coverage summary table.
+## Display a coverage summary table. 
 A subset of these rows are in Table 4 of the paper.
 
 ```{r coverage-table, purl=FALSE}
@@ -464,15 +458,15 @@ round(coverage.table[rownames(coverage.table) %in% coverage.sims, keep], digits=
 ```
 
 ## Plot the error distribution of the estimates (Figure 2)
-We plot an estimate of error density function for the baseline CPS setting and the minimum wage assignment variant. This is Figure 2.
+We plot an estimate of error density function for the baseline CPS setting and the minimum wage assignment variant. This is Figure 2. 
 
 ```{r error-density-setup, purl=FALSE}
 grid = expand.grid(ss=1:length(simulators), ee=1:length(estimators))
 error.densities = do.call(rbind, mapply(function(ss,ee) {
-    errors = estimates[estimates$simulation == names(simulators)[ss] &
+    errors = estimates[estimates$simulation == names(simulators)[ss] & 
                        estimates$estimator  == names(estimators)[ee], 'estimate']
-    density.estimate = lindsey_density_estimate(errors, K = 100, deg = 3)
-    data.frame(x=density.estimate$centers,
+    density.estimate = lindsey_density_estimate(errors, K = 100, deg = 3) 
+    data.frame(x=density.estimate$centers, 
                y=density.estimate$density,
                simulator=names(simulators)[ss],
                estimator=names(estimators)[ee])
@@ -483,14 +477,14 @@ error.densities = do.call(rbind, mapply(function(ss,ee) {
 show.sims       = error.densities$simulator %in% c('baseline', 'random')
 show.estimators = error.densities$estimator %in% c('did', 'sc', 'sdid')
 # reformat the information in $simulator and $estimator for display in the plot title and legend
-error.densities$Title = ifelse(error.densities$simulator == 'baseline',
+error.densities$Title = ifelse(error.densities$simulator == 'baseline', 
                                'Minimum Wage Assignment', 'Random Assignment')
 error.densities$Estimator = toupper(error.densities$estimator)
 
-ggplot(error.densities[show.sims & show.estimators, ]) +
-    geom_line(aes(x=x,y=y,color=Estimator)) + geom_vline(xintercept=0, linetype=3) +
-    facet_wrap(~Title) + xlab('error') + ylab('density') +
-    theme_light() + theme(legend.position=c(.94,.88),
-                          legend.background=element_blank(),
-                          legend.title=element_blank())
+ggplot(error.densities[show.sims & show.estimators, ]) + 
+    geom_line(aes(x=x,y=y,color=Estimator)) + geom_vline(xintercept=0, linetype=3) + 
+    facet_wrap(~Title) + xlab('error') + ylab('density') + 
+    theme_light() + theme(legend.position=c(.94,.88), 
+                          legend.background=element_blank(), 
+                          legend.title=element_blank()) 
 ```
