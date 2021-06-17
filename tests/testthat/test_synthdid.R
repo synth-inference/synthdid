@@ -6,7 +6,7 @@ test_that("a simple workflow doesn't error", {
   se.placebo   = sqrt(vcov(tau.hat, method='placebo', replications = 10))
 
   print(tau.hat)
-  summary(tau.hat)
+  summary(tau.hat, fast = TRUE)
   plot(tau.hat)
 
   expect_equal(1, 1)
