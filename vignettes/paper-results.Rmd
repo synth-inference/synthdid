@@ -24,11 +24,11 @@ options(width=999)
 
 ```{r setup, message=FALSE}
 # Install packages from "session-info" file:
+install.packages(c('doFuture', 'future.batchtools', 'rngtools'))
+install.packages(c('dplyr', 'tidyr', 'tibble', 'ggplot2', 'devtools'))
+
 devtools::install_github('cran/glmnet',              ref='f4fc95ab49efaad9b6e1728a7c840bc6159501dc')
 devtools::install_github('susanathey/MCPanel',       ref='6b2706fd7c35f3266048ceb22a7e9a61ae1774da')
-
-install.packages(c('doFuture', 'future.batchtools', 'rngtools'))
-install.packages(c('dplyr', 'tidyr', 'tibble', 'ggplot2'))
 ```
 
 ```{r imports, message=FALSE}
