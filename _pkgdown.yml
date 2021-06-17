@@ -6,7 +6,7 @@ navbar:
   - text: "More on Plotting"
     href: articles/more-plotting.html
   - text: "Paper results"
-    href: reference/paper-results.html
+    href: articles/paper-results.html
   - text: "Reference"
     href: reference/index.html
   right:

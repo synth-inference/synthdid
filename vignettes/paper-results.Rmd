@@ -22,7 +22,7 @@ pre, pre code, .sourceCode {
 options(width=999)
 ```
 
-```{r setup, message=FALSE}
+```{r setup, echo=FALSE}
 # Install packages from "session-info" file:
 install.packages(c('doFuture', 'future.batchtools', 'rngtools'))
 install.packages(c('dplyr', 'tidyr', 'tibble', 'ggplot2', 'devtools', 'xtable'))
