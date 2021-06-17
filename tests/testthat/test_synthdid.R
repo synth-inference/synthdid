@@ -1,8 +1,8 @@
 test_that("a simple workflow doesn't error", {
   setup = random.low.rank()
   tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
-  se = sqrt(vcov(tau.hat))
-  se.jackknife = sqrt(vcov(tau.hat, method='jackknife', replications = 10))
+  se = sqrt(vcov(tau.hat, replications = 10))
+  se.jackknife = sqrt(vcov(tau.hat, method='jackknife'))
   se.placebo   = sqrt(vcov(tau.hat, method='placebo', replications = 10))
 
   print(tau.hat)
