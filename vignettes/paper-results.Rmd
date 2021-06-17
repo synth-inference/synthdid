@@ -22,6 +22,13 @@ pre, pre code, .sourceCode {
 options(width=999)
 ```
 
+```{r, echo=FALSE}
+ragg_png = function(..., res = 192) {
+  ragg::agg_png(..., res = res, units = "in")
+}
+knitr::opts_chunk$set(dev = "ragg_png", fig.ext = "png")
+```
+
 ```{r setup, echo=FALSE}
 # Install packages from "session-info" file:
 install.packages(c('doFuture', 'future.batchtools', 'rngtools'))
