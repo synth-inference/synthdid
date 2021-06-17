@@ -71,6 +71,6 @@ steps:
       git commit --allow-empty -m "Update gh-pages ***NO_CI***"
       git push --force https://$(GITHUB_PAT)@github.com/synth-inference/synthdid.git HEAD:gh-pages
     displayName: 'Publish GitHub Pages'
-    # condition: |
-      # and(not(eq(variables['Build.Reason'], 'PullRequest')),
-      # eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    condition: |
+      and(not(eq(variables['Build.Reason'], 'PullRequest')),
+      eq(variables['Build.SourceBranch'], 'refs/heads/master'))
