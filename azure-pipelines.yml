@@ -31,7 +31,9 @@ steps:
       brew install pandoc # Vignettes/pkgdown sites
     displayName: Setup R
   - script: |
-      sudo Rscript -e "install.packages(c('CVXR'), type='source')" 
+      # install `gmp` CVXR requirement from source as binary breaks (bad linking) on CI image.
+      sudo Rscript -e "install.packages('https://cran.r-project.org/src/contrib/gmp_0.6-2.tar.gz', repos = NULL, type = 'source')"
+      sudo Rscript -e "install.packages('CVXR')"
       ./run.sh run_tests
     displayName: Test R package
   - script: ./run.sh dump_logs_by_extension "fail"

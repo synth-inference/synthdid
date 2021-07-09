@@ -12,7 +12,6 @@
 #'   \item{Year}{Year, integer}
 #'   \item{PacksPerCapita}{per-capita cigarette consumption, numeric}
 #'   \item{treated}{the treatmed indicator 0: control, 1: treated, numeric}
-#'   ...
 #' }
 #' @source Abadie, Alberto, Alexis Diamond, and Jens Hainmueller.
 #'  "Synthetic control methods for comparative case studies: Estimating the effect of California’s tobacco control program."
@@ -28,5 +27,44 @@
 #' # where N is the number of units and T the time periods.
 #' setup <- panel.matrices(california_prop99)
 #' }
+#'
+NULL
+
+#' PENN
+#'
+#' @docType data
+#' @name PENN
+#'
+#' @format A data frame with 3219 rows and 5 variables.
+#' \describe{
+#'   \item{country}{country}
+#'   \item{year}{year}
+#'   \item{log_gdp}{log_gdp}
+#'   \item{dem}{dem}
+#'   \item{educ}{educ}
+#' }
+#'
+#' @usage data(PENN)
+#'
+NULL
+
+#' CPS
+#'
+#' @docType data
+#' @name CPS
+#'
+#' @format A data frame with 2000 rows and 8 variables.
+#' \describe{
+#'   \item{state}{state}
+#'   \item{year}{year}
+#'   \item{log_wage}{log_wage}
+#'   \item{hours}{hours}
+#'   \item{urate}{urate}
+#'   \item{min_wage}{min_wage}
+#'   \item{open_carry}{open_carry}
+#'   \item{abort_ban}{abort_ban}
+#' }
+#'
+#' @usage data(CPS)
 #'
 NULL

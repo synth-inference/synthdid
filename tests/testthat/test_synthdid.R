@@ -1,10 +1,12 @@
 test_that("a simple workflow doesn't error", {
   setup = random.low.rank()
   tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
-  se = synthdid_se(tau.hat)
+  se = sqrt(vcov(tau.hat, replications = 10))
+  se.jackknife = sqrt(vcov(tau.hat, method='jackknife'))
+  se.placebo   = sqrt(vcov(tau.hat, method='placebo', replications = 10))
 
   print(tau.hat)
-  summary(tau.hat)
+  summary(tau.hat, fast = TRUE)
   plot(tau.hat)
 
   expect_equal(1, 1)
@@ -29,7 +31,7 @@ test_that("adjustment for covariates works: random noise less influential if pas
   tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
   tau.hat.noise = synthdid_estimate(setup$Y+X,setup$N0,setup$T0)
   tau.hat.cov = synthdid_estimate(setup$Y+X,setup$N0,setup$T0,X)
-  se = synthdid_se(tau.hat)
+  se = synthdid_se(tau.hat, replications = 10)
 
   expect_lt(abs(tau.hat - tau.hat.cov), abs(tau.hat - tau.hat.noise))
 })
@@ -165,15 +167,4 @@ test_that("treated effect shifts correctly with scalar shifts to the 4 blocks", 
       expect_equal(c(estimate.shift), c(estimate) - c, tol = 1e-10)
     }
   }
-})
-
-test_that("California estimates have not changed", {
-  data("california_prop99")
-  setup <- panel.matrices(california_prop99)
-
-  sdid = synthdid_estimate(setup$Y, setup$N0, setup$T0)
-  sc = sc_estimate(setup$Y, setup$N0, setup$T0)
-  did = did_estimate(setup$Y, setup$N0, setup$T0)
-
-  expect_equal(c(sdid, sc, did), c(-14.23324, -20.02022, -27.34911), tol = 1e-5)
 })

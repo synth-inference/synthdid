@@ -11,7 +11,6 @@ A data frame with 1209 rows and 4 variables:
 \item{Year}{Year, integer}
 \item{PacksPerCapita}{per-capita cigarette consumption, numeric}
 \item{treated}{the treatmed indicator 0: control, 1: treated, numeric}
-...
 }
 }
 \source{

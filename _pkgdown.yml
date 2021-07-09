@@ -5,6 +5,8 @@ navbar:
     href: articles/synthdid.html
   - text: "More on Plotting"
     href: articles/more-plotting.html
+  - text: "Paper results"
+    href: articles/paper-results.html
   - text: "Reference"
     href: reference/index.html
   right:

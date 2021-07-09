@@ -3,21 +3,9 @@
 \name{did_estimate}
 \alias{did_estimate}
 \title{synthdid_estimate for diff-in-diff estimates.
-Takes all the same parameters, but default, uses constant weights lambda and omega}
+Takes all the same parameters, but by default, passes options to use the diff-in-diff estimator}
 \usage{
-did_estimate(
-  Y,
-  N0,
-  T0,
-  X = array(dim = c(dim(Y), 0)),
-  zeta.lambda = 0,
-  zeta.omega = sd(apply(Y[1:N0, 1:T0], 1, diff)),
-  lambda.intercept = FALSE,
-  omega.intercept = FALSE,
-  weights = list(lambda = rep(1/T0, T0), omega = rep(1/N0, N0), vals = NULL),
-  min.decrease = 0.001 * sd(apply(Y[1:N0, 1:T0], 1, diff)),
-  max.iter = 10000
-)
+did_estimate(Y, N0, T0, ...)
 }
 \arguments{
 \item{Y}{the observation matrix.}
@@ -26,31 +14,12 @@ did_estimate(
 
 \item{T0}{the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.}
 
-\item{X}{an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.}
-
-\item{zeta.lambda}{Its square is weight of the ridge penalty relative to MSE. Defaults to 0.}
-
-\item{zeta.omega}{Analogous for omega. Defaults to the standard deviation of first differences of Y.}
-
-\item{lambda.intercept}{Binary. Use an intercept when estimating lambda.}
-
-\item{omega.intercept}{Binary. Use an intercept when estimating omega.}
-
-\item{weights}{a list with fields lambda and omega. If non-null weights$lambda is passed,
-we use them instead of estimating lambda weights. Same for weights$omega.}
-
-\item{min.decrease}{Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease
-in penalized MSE smaller than min.decrease^2.}
-
-\item{max.iter}{A fallback stopping criterion for our weight estimator. Stop after this number of iterations.}
+\item{...}{additional  options for synthdid_estimate}
 }
 \value{
-An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
-Weights contains the estimated weights lambda and omega and corresponding intercepts.
-If covariates X are passedas well as regression coefficients beta if X is passed
-Setup is a list describing the problem passed in: Y, N0, T0, X.
+an object like that returned by synthdid_estimate
 }
 \description{
 synthdid_estimate for diff-in-diff estimates.
-Takes all the same parameters, but default, uses constant weights lambda and omega
+Takes all the same parameters, but by default, passes options to use the diff-in-diff estimator
 }

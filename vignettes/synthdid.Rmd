@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, echo = FALSE}
+```{r echo=FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ragg_png = function(..., res = 192) {
   ragg::agg_png(..., res = res, units = "in")
@@ -18,6 +18,7 @@ knitr::opts_chunk$set(dev = "ragg_png", fig.ext = "png")
 ```{r setup}
 library(synthdid)
 library(ggplot2)
+set.seed(12345)
 ```
 
 # Example use 
@@ -39,7 +40,7 @@ setup = panel.matrices(california_prop99)
 tau.hat = synthdid_estimate(setup$Y, setup$N0, setup$T0)
 
 tau.hat
-summary(tau.hat)
+print(summary(tau.hat))
 
 se = sqrt(vcov(tau.hat, method='placebo'))
 sprintf('point estimate: %1.2f', tau.hat)
@@ -69,8 +70,8 @@ sprintf('95%% CI (%1.2f, %1.2f)', tau.hat - 1.96 * se, tau.hat + 1.96 * se)
   the real world, we get a treatment effect. We show it with a black arrow. 
   We show a 95% confidence interval with two gray arrows: 
   one for the upper confidence bound and one for the lower.
-  
-```{r, fig.width=7, fig.height=4}
+
+```{r fig.width=7, fig.height=4}
 plot(tau.hat, se.method='placebo')
 ```
 
@@ -82,7 +83,7 @@ plot(tau.hat, se.method='placebo')
   The black horizontal line shows the actual effect; 
   the gray ones show the endpoints of a 95% confidence interval.
 
-```{r, fig.width=7, fig.height=4}
+```{r fig.width=7, fig.height=4}
 synthdid_units_plot(tau.hat, se.method='placebo')
 ```
 
@@ -90,36 +91,40 @@ synthdid_units_plot(tau.hat, se.method='placebo')
 When the synthetic control and treated trajectories are far from one another,
 it can be hard to see how parallel they are. Pass overlay=1 to plot to overlay them. 
 
-```{r, fig.width=7, fig.height=4}
+```{r fig.width=7, fig.height=4}
 plot(tau.hat, overlay=1,  se.method='placebo')
 ```
 Pass values between zero and one to shift the control's trajectory
 toward California.
-```{r, fig.width=7, fig.height=4}
+```{r fig.width=7, fig.height=4}
 plot(tau.hat, overlay=.8, se.method='placebo')
 ```
 
 # Compare to other estimators
 We compare to synthetic control and diff-in-diff. 
-This reproduces Figure 1 of Arkhangelsky et al.
 ```{r}
 tau.sc   = sc_estimate(setup$Y, setup$N0, setup$T0)
 tau.did  = did_estimate(setup$Y, setup$N0, setup$T0)
 estimates = list(tau.did, tau.sc, tau.hat)
 names(estimates) = c('Diff-in-Diff', 'Synthetic Control', 'Synthetic Diff-in-Diff')
 ```
-```{r, fig.width=7, fig.height=4}
+
+```{r}
+print(unlist(estimates))
+```
+
+```{r fig.width=7, fig.height=4}
 synthdid_plot(estimates, se.method='placebo')
 ```
-```{r, fig.width=15, fig.height=5}
+```{r fig.width=15, fig.height=5}
 synthdid_units_plot(estimates, se.method='placebo')
 ```
 
 # Customize plots 
 Arguments to plotting functions can change the transparency, line thickness, etc. of individual elements.
 The output of every plotting function is a ggplot, so you can change theme, legend position, etc. as usual.
-We'll use these to match the style of Arkhangelsky et al.
-```{r, fig.width=15, fig.height=5}
+We'll use these to match the style of Figure 1 in Arkhangelsky et al.
+```{r fig.width=15, fig.height=5}
 synthdid_plot(estimates, facet.vertical=FALSE, 
               control.name='control', treated.name='california', 
               lambda.comparable=TRUE, se.method = 'none', 
@@ -133,5 +138,5 @@ synthdid_plot(estimates, facet.vertical=FALSE,
 synthdid_units_plot(estimates, se.method='none') + 
     theme(legend.background=element_blank(), legend.title = element_blank(), 
           legend.direction='horizontal', legend.position=c(.17,.07), 
-	  strip.background=element_blank(), strip.text.x = element_blank())
+          strip.background=element_blank(), strip.text.x = element_blank())
 ```

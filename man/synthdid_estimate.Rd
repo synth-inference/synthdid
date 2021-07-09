@@ -2,37 +2,47 @@
 % Please edit documentation in R/synthdid.R
 \name{synthdid_estimate}
 \alias{synthdid_estimate}
-\title{Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block.
-See Section 4.1 of the paper.}
+\title{Computes the synthetic diff-in-diff estimate for an average treatment effect on a treated block.}
 \usage{
 synthdid_estimate(
   Y,
   N0,
   T0,
   X = array(dim = c(dim(Y), 0)),
-  zeta.omega = sd(apply(Y[1:N0, 1:T0], 1, diff)),
-  zeta.lambda = 1e-06 * zeta.omega,
+  noise.level = sd(apply(Y[1:N0, 1:T0], 1, diff)),
+  eta.omega = ((nrow(Y) - N0) * (ncol(Y) - T0))^(1/4),
+  eta.lambda = 1e-06,
+  zeta.omega = eta.omega * noise.level,
+  zeta.lambda = eta.lambda * noise.level,
   omega.intercept = TRUE,
   lambda.intercept = TRUE,
-  weights = list(omega = NULL, lambda = NULL, vals = NULL),
+  weights = list(omega = NULL, lambda = NULL),
   update.omega = is.null(weights$omega),
   update.lambda = is.null(weights$lambda),
-  min.decrease = 0.001 * sd(apply(Y[1:N0, 1:T0], 1, diff)),
-  max.iter = 10000
+  min.decrease = 1e-05 * noise.level,
+  max.iter = 10000,
+  sparsify = sparsify_function,
+  max.iter.pre.sparsify = 100
 )
 }
 \arguments{
 \item{Y}{the observation matrix.}
 
-\item{N0}{the number of control units. Rows 1-N0 of Y correspond to the control units.}
+\item{N0}{the number of control units (N_co in the paper). Rows 1-N0 of Y correspond to the control units.}
 
-\item{T0}{the number of pre-treatment time steps. Columns 1-T0 of Y correspond to pre-treatment time steps.}
+\item{T0}{the number of pre-treatment time steps (T_pre in the paper). Columns 1-T0 of Y correspond to pre-treatment time steps.}
 
 \item{X}{an optional 3-D array of time-varying covariates. Shape should be N X T X C for C covariates.}
 
-\item{zeta.omega}{Analogous for omega. Defaults to the standard deviation of first differences of Y.}
+\item{noise.level, }{an estimate of the noise standard deviation sigma. Defaults to the standard deviation of first differences of Y.}
 
-\item{zeta.lambda}{Its square is weight of the ridge penalty relative to MSE. Defaults to 0.}
+\item{eta.omega}{determines the tuning parameter zeta.omega = eta.omega * noise.level. Defaults to the value (N_tr T_post)^(1/4).}
+
+\item{eta.lambda}{analogous for lambda.  Defaults to an 'infinitesimal' value 1e-6.}
+
+\item{zeta.omega}{if passed, overrides the default zeta.omega = eta.omega * noise.level. Deprecated.}
+
+\item{zeta.lambda}{analogous for lambda.}
 
 \item{omega.intercept}{Binary. Use an intercept when estimating omega.}
 
@@ -41,23 +51,29 @@ synthdid_estimate(
 \item{weights}{a list with fields lambda and omega. If non-null weights$lambda is passed,
 we use them instead of estimating lambda weights. Same for weights$omega.}
 
-\item{update.omega}{Analogous.}
+\item{update.omega}{If true, solve for omega using the passed value of weights$omega only as an initialization.
+If false, use it exactly as passed. Defaults to false if a non-null value of weights$omega is passed.}
 
-\item{update.lambda}{If true, solve for lambda using the passed value of weights$lambda only as an initialization.
-If false, use it exactly as passed. Defaults to false if a non-null value of weights$lambda is passed.}
+\item{update.lambda}{Analogous.}
 
 \item{min.decrease}{Tunes a stopping criterion for our weight estimator. Stop after an iteration results in a decrease
 in penalized MSE smaller than min.decrease^2.}
 
 \item{max.iter}{A fallback stopping criterion for our weight estimator. Stop after this number of iterations.}
+
+\item{sparsify}{A function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape, which must sum to one.
+If not null, we try to estimate sparse weights via a second round of Frank-Wolfe optimization
+initialized at sparsify( the solution to the first round ).}
+
+\item{max.iter.pre.sparsify}{Analogous to max.iter, but for the pre-sparsification first-round of optimization.
+Not used if sparsify=NULL.}
 }
 \value{
-An average treatment effect estimate, 'weights' and 'setup' attached as attributes.
-Weights contains the estimated weights lambda and omega and corresponding intercepts.
-If covariates X are passedas well as regression coefficients beta if X is passed
-Setup is a list describing the problem passed in: Y, N0, T0, X.
+An average treatment effect estimate with 'weights' and 'setup' attached as attributes.
+'weights' contains the estimated weights lambda and omega and corresponding intercepts,
+as well as regression coefficients beta if X is passed.
+'setup' is a list describing the problem passed in: Y, N0, T0, X.
 }
 \description{
-Computes synthetic diff-in-diff estimate for an average treatment effect on a treated block.
-See Section 4.1 of the paper.
+See 'Synthetic Difference in Differences' by Arkhangelsky et al. This implements Algorithm 1.
 }

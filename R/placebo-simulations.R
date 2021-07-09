@@ -1,0 +1,181 @@
+#' Estimates the DGP parameters used in the placebo studies in Sections 3 and 5 
+#' of the synthetic difference in differences paper. Described there in Section 3.1.1.
+#' 
+#' @param Y, an NxT matrix of outcomes
+#' @param assignment_vector, an Nx1 vector of treatment assignments
+#' @param rank, the rank of the estimated signal component L
+#' @return a list with elements F, M, Sigma, pi as described in Section 3.1.1 
+#'         and an element ar_coef with the AR(2) model coefficients underlying the covariance Sigma
+#' @export estimate_dgp
+estimate_dgp = function(Y, assignment_vector, rank) {
+    N <- dim(Y)[1]
+    T <- dim(Y)[2]
+    overall_mean <- mean(Y)
+    overall_sd <- norm(Y - overall_mean,'f')/sqrt(N*T)
+    Y_norm <- (Y-overall_mean)/overall_sd
+
+    components <- decompose_Y(Y_norm, rank = rank)
+    M <- components$M
+    F <- components$F
+    E <- components$E
+    unit_factors <- components$unit_factors
+
+    ar_coef <- round(fit_ar2(E),2)
+    cor_matrix <- ar2_correlation_matrix(ar_coef,T)
+    scale_sd <- norm(t(E)%*%E/N,'f')/norm(cor_matrix,'f')
+    cov_mat <- cor_matrix*scale_sd
+
+    assign_prob <- glm(assignment_vector~unit_factors,family = 'binomial')$fitted.values
+    return(list(F=F, M=M, Sigma=cov_mat,pi=assign_prob, ar_coef=ar_coef))
+}
+
+
+#' Simulates data from DGPs used in the placebo studies in Sections 3 and 5 
+#' of the synthetic difference in differences paper. Described there in Section 3.1.1.
+#' 
+#' @param parameters, a list of dgp parameters (F,M,Sigma,pi) as output by estimate.dgp
+#' @param N1, a cap on the number of treated units,
+#' @param T1, the number of treated periods. 
+#' @return a list with 3 elements: the outcome matrix Y, the number of control units N0, and the number of control periods T0.
+#'         The first N0 rows of Y are for units assigned to control, the remaining rows are for units assigned to treatment.
+#' @export simulate_dgp
+#' @importFrom mvtnorm rmvnorm
+simulate_dgp = function(parameters, N1, T1){
+    F=parameters$F
+    M=parameters$M
+    Sigma = parameters$Sigma
+    pi = parameters$pi
+    
+    N <- nrow(M)
+    T <- ncol(M)
+    
+    assignment <- randomize_treatment(pi,N,N1)
+    N1 <- sum(assignment)
+    N0 <- N - N1
+    T0 <- T - T1
+	    
+    Y = F + M + rmvnorm(N, sigma = Sigma)
+    return(list(Y=Y[order(assignment), ], N0=N0, T0=T0))
+    # order units by treatment, so treated units are at the bottom of our data matrix in accordance with our convention
+}
+
+
+#' randomize treatment to n units with probability pi
+#' then if the number of treated units is zero, assign treatment to one unit uniformly at random 
+#' and  if the number of treated units exceeds a cap, remove treatment uniformly at random so it is exactly that cap
+#' @param pi, the randomization probabilities
+#' @param N, the number of units
+#' @param N1, the cap on the number of treated units
+#' @return a binary vector of length N, with ones indicating assignment to treatment
+randomize_treatment = function(pi, N, N1){
+    assignment_sim <- rbinom(N,1,pi)
+    index_as <- which(assignment_sim == 1)
+    if (sum(assignment_sim) > N1){
+	index_pert <- sample(index_as,N1)
+	assignment_sim <- rep(0,N)
+	assignment_sim[index_pert] <- 1
+    } else if (sum(assignment_sim) == 0){
+	index_pert <- sample(1:N,N1)
+	assignment_sim <- rep(0,N)
+	assignment_sim[index_pert] <- 1
+    }
+    return(assignment_sim)
+}	
+
+
+#' Decompose Y into components F, M, and E as described in Section 3.1.1
+#' also computes a set of 'unit factors': the first [rank] left singular vectors from SVD(Y)
+#' @param Y, the outcomes
+#' @param rank, the assumed rank of the signal component L=F+M
+#' @return a list with elements F, M, E, and unit_factors 
+decompose_Y = function(Y,rank) {
+	N <- dim(Y)[1]
+	T <- dim(Y)[2]
+	
+	svd_data_mat <- svd(Y)
+	factor_unit <- as.matrix(svd_data_mat$u[,1:rank]*sqrt(N))
+	factor_time <- as.matrix(svd_data_mat$v[,1:rank]*sqrt(T))
+	
+	magnitude <- svd_data_mat$d[1:rank]/sqrt(N*T)
+	L <- factor_unit%*%diag(magnitude, nrow = rank, ncol = rank)%*%t(factor_time)
+
+	E <- Y-L
+	F <- outer(rowMeans(L),rep(1,T)) + outer(rep(1,N),colMeans(L)) - mean(L)
+	M <- L - F
+
+	return(list(F=F, M=M, E=E, unit_factors=factor_unit))
+}
+
+#' Estimate ar2 coefficients from iid time series
+#' @param  E, a matrix with those time series as rows 
+#' @return a vector of ar2 coefficients: c(lag-1-coefficient, lag-2-coefficient)
+fit_ar2 <- function(E){
+	
+	T_full <- dim(E)[2]
+	E_ts <- E[,3:T_full]
+	E_lag_1 <- E[,2:(T_full-1)]
+	E_lag_2 <- E[,1:(T_full-2)]
+
+	a_1 <- sum(diag(E_lag_1%*%t(E_lag_1)))
+	a_2 <- sum(diag(E_lag_2%*%t(E_lag_2)))
+	a_3 <- sum(diag(E_lag_1%*%t(E_lag_2)))
+
+	matrix_factor <- rbind(c(a_1,a_3),c(a_3,a_2))
+
+	b_1 <- sum(diag(E_lag_1%*%t(E_ts)))
+	b_2 <- sum(diag(E_lag_2%*%t(E_ts)))
+
+	ar_coef <- solve(matrix_factor)%*%c(b_1,b_2)
+	return(ar_coef)
+}
+
+#' compute the correlation matrix of a time series generated by an ar2 model
+#' @param ar_coef, the coefficients of the ar2 model: c(lag-1-coefficient, lag-2-coefficient)
+#' @param T, the length of the time series
+#' @return the correlation matrix
+ar2_correlation_matrix <- function(ar_coef,T) {
+
+	result <- rep(0,T)
+	result[1] <- 1
+	result[2] <- ar_coef[1]/(1-ar_coef[2])
+	for (t in 3:T){
+		result[t] <-  ar_coef[1]*result[t-1] + ar_coef[2]*result[t-2] 
+	}
+	
+	index_matrix <- outer(1:T, 1:T, function(x,y){ abs(y-x)+1 })
+	cor_matrix <- matrix(result[index_matrix],ncol = T,nrow = T)
+	
+	return(cor_matrix)
+}
+
+#' Computes a density estimator by smoothing a histogram using Poisson regression.
+#' Implementation of "Lindsey's method", as descrbied in Chapter 10 of 
+#' "Computer age statistical inference: algorithms, evidence, and data science' 
+#' by Bradley Efron and Trevor Hastie (2016).
+#'
+#' @param x - one-dimensional vector of data;
+#' @param K - number of bins in the histogram;
+#' @param deg - degree of natural splines used in Poisson regression;
+#' @return a list with 2 fields, centers and density, which are K-dimensional vectors containing the bin centers and estimated density within each bin respectively.
+#' @export lindsey_density_estimate
+lindsey_density_estimate <- function(x,K,deg){
+    x_min <- min(x)
+    x_max <- max(x)
+    range_x <- x_max - x_min
+    low_x <- x_min - 0.2*range_x                                        # 20% step outside of range of x
+    up_x <- x_max + 0.2*range_x
+    range_full <-up_x- low_x
+    splits <- seq(low_x,up_x,length.out = K+1)                          # split the range into K segments
+    mesh_size <- splits[2] - splits[1]
+    centers <- (splits[-1]+splits[-(K+1)])/2
+    counts <- as.vector(table(cut(x,splits,include.lowest = TRUE)))     # counts the points in each segment
+    scale <- sum(counts)*mesh_size
+    
+    data_matrix <- splines::ns(centers, df = deg)
+    pois_reg_res <- glm(counts~data_matrix, family = 'poisson')
+    counts_pois <- exp(pois_reg_res$linear.predictors)                  # smoothed counts
+    dens_pois <- counts_pois/scale
+    
+    return(list(centers=centers, density=dens_pois))
+}
+

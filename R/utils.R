@@ -1,19 +1,3 @@
-#' Jackknife standard error of function `theta` at samples `x`.
-#' @param x vector of samples
-#' @param theta a function which returns a scalar estimate
-#' @importFrom stats var
-#' @keywords internal
-jackknife = function(x, theta) {
-  n = length(x)
-  u = rep(0, n)
-  for (i in 1:n) {
-    u[i] = theta(x[-i])
-  }
-  jack.se = sqrt(((n - 1) / n) * (n - 1) * var(u))
-
-  jack.se
-}
-
 # collapse Y to an N0+1 x T0+1 vector by averaging the last N1=nrow(Y)-N0 rows and T1=ncol(Y)-T0 columns
 collapsed.form = function(Y, N0, T0) {
   N = nrow(Y); T = ncol(Y)
@@ -36,19 +20,21 @@ pairwise.sum.decreasing = function(x, y) {
 #' Convert a long (balanced) panel to a wide matrix
 #'
 #' Converts a data set in panel form to matrix format required by synthdid estimators.
-#' A typical long panel date set look like \[unit, time, outcome, treatment\]. Synthdid
-#' requires a balanced panel where each unit is observed at all time periods. This function
-#' converts the data set to a num.units * num.time.periods sized matrix where the first N0
-#' rows are treated units, and the first T0 columns are the pre-tretment period.
+#' A typical long panel date set looks like \[unit, time, outcome, treatment\]. Synthdid
+#' requires a balanced panel with simultaneous adoption of treatment: each unit must be observed
+#' at all times, and all treated units must begin treatment simultaneosly. This function
+#' creates num.units x num.time.periods matrices Y and W of outcomes and treatment indicators.
+#' In these matrices, columns are sorted by time, and by default (when treated.last=TRUE),
+#' rows for control units appear before those of treated units. 
 #'
 #' @param panel A data.frame with columns consisting of units, time, outcome, and treatment indicator.
 #' @param unit The column number/name corresponding to the unit identifier. Default is 1.
 #' @param time The column number/name corresponding to the time identifier. Default is 2.
 #' @param outcome The column number/name corresponding to the outcome identifier. Default is 3.
 #' @param treatment The column number/name corresponding to the treatment status. Default is 4.
-#'
+#' @param treated.last Should we sort the rows of Y and W so treated units are last. If FALSE, sort by unit number/name. Default is TRUE.
 #' @return A list with entries `Y`: the data matrix, `N0`: the number of control units, `T0`:
-#'  the number of time periods before treatment.
+#'  the number of time periods before treatment, `W`: the matrix of treatment indicators.
 #'
 #' @examples
 #' \donttest{
@@ -63,7 +49,7 @@ pairwise.sum.decreasing = function(x, y) {
 #' }
 #'
 #' @export
-panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4) {
+panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4, treated.last = TRUE) {
   # TODO: add support for covariates X, i.e. could keep all other columns
   keep = c(unit, time, outcome, treatment)
   if (!all(keep %in% 1:ncol(panel) | keep %in% colnames(panel))) {
@@ -98,21 +84,23 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4)
     stop("Input `panel` must be a balanced panel: it must have an observation for every unit at every time.")
   }
 
-  treated.units = unique(panel[panel[, treatment] == 1, unit])
-  treated.unit = panel[, unit] %in% treated.units
-  panel = panel[order(treated.unit, panel[, unit], panel[, time]), ]
+  panel = panel[order(panel[, unit], panel[, time]), ]
   num.years = length(unique(panel[, time]))
   num.units = length(unique(panel[, unit]))
   Y = matrix(panel[,outcome], num.units, num.years, byrow = TRUE,
              dimnames = list(unique(panel[,unit]), unique(panel[,time])))
   W = matrix(panel[,treatment], num.units, num.years, byrow = TRUE,
              dimnames = list(unique(panel[,unit]), unique(panel[,time])))
-  N0 = num.units - sum(W[, num.years])
-  T0 = num.years - sum(W[num.units, ])
-  if(! (all(W[1:N0,] == 0) && all(W[,1:T0] == 0) && all(W[N0+1,T0+1]==1))) {
+  w = apply(W, 1, any)                         # indicator for units that are treated at any time
+  T0 = unname(which(apply(W, 2, any))[1]-1)    # last period nobody is treated
+  N0 = sum(!w)
+
+  if(! (all(W[!w,] == 0) && all(W[,1:T0] == 0) && all(W[w, (T0+1):ncol(Y)]==1))) {
     stop("The package cannot use this data. Treatment adoption is not simultaneous.")
   }
-  list(Y = Y, N0 = N0, T0 = T0, W = W)
+
+  unit.order = if(treated.last) { order(W[,T0+1], rownames(Y)) } else { 1:nrow(Y) }
+  list(Y = Y[unit.order, ], N0 = N0, T0 = T0, W = W[unit.order, ])
 }
 
 #' Get timesteps from panel matrix Y
