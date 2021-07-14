@@ -7,6 +7,9 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+### Set display options
+
+
 <!--html_preserve-->
 <style>
 pre, pre code, .sourceCode {
@@ -20,17 +23,18 @@ pre, pre code, .sourceCode {
 
 ```{r knitr-opts, echo=FALSE, purl=FALSE}
 options(width=999)
+
+if(Sys.getenv('HTML-DOCS')) {
+    ragg_png = function(..., res = 192) {
+      ragg::agg_png(..., res = res, units = "in")
+    }
+    knitr::opts_chunk$set(dev = "ragg_png", fig.ext = "png")
+}
 ```
 
-```{r, echo=FALSE}
-ragg_png = function(..., res = 192) {
-  ragg::agg_png(..., res = res, units = "in")
-}
-knitr::opts_chunk$set(dev = "ragg_png", fig.ext = "png")
-```
+### Load required packages, installing if necessary
 
 ```{r setup, echo=FALSE}
-# Install packages from "session-info" file:
 install.packages(c('doFuture', 'future.batchtools', 'rngtools'))
 install.packages(c('dplyr', 'tidyr', 'tibble', 'ggplot2', 'devtools', 'xtable'))
 
@@ -274,6 +278,8 @@ simulators = list(
 * Do fewer standard error estimates, as these are slow, for coverage for Table 4.
 * Save results in simulations/simulations*.rds. Assumes the directory simulations exists.
 
+To auto-generate documentation, we'll want to rerun this notebook having already run the simulations. We'll save the results we need in 'all-simulations.rds', so if it's present we skip this step.
+
 ### Details
 This is a long-running computation, taking roughly 3 days on a recent macbook air. It is written to save data as it runs, one file per simulation, so it can be continued if interrupted. To continue, just rerun the loop: only simulation for which these files are missing are run.
 It can also be run on a slurm cluster, and will do so if a correctly configured template file batchtools.slurm.tmpl is present.
@@ -318,6 +324,10 @@ rows.finished = function() {
     output.files = sapply(1:nrow(grid), function(ii) { output.file(grid[ii,]) })
     file.exists(output.files)
 }
+combined.data.written = function() { 
+    file.exists('all-simulations.rds')
+}
+
 ```
 
 ```{r set-up-seeds}
@@ -363,44 +373,43 @@ if(cluster) {
 ```
 
 ```{r run-simulations, echo=FALSE}
-# uncomment to run sims
-# foreach(ii = which(!rows.finished())) %dopar% {
-#     row = grid[ii,]
-#     start.time = Sys.time()
-#     
-#     library(rngtools)
-#     library(synthdid)
-#     library(MCPanel)
-#         
-#     output.row = run.simulation(row)
-#     saveRDS(output.row, file=output.file(row))
-#         
-#     end.time = Sys.time()
-#     cat(sprintf('simulation %d/%d=%0.2f ran for %1.1f, from %s to %s, outputting to %s\n',
-#                   ii, nrow(grid), ii/nrow(grid),
-#                   end.time-start.time, start.time, end.time,
-#                   output.file(row)), file='simulations.log')
-#     NULL
-# }
+if(!file.exists('all-simulations.rds')) 
+foreach(ii = which(!rows.finished())) %dopar% {
+    row = grid[ii,]
+    start.time = Sys.time()
+     
+    library(rngtools)
+    library(synthdid)
+    library(MCPanel)
+         
+    output.row = run.simulation(row)
+    saveRDS(output.row, file=output.file(row))
+         
+     end.time = Sys.time()
+     cat(sprintf('simulation %d/%d=%0.2f ran for %1.1f, from %s to %s, outputting to %s\n',
+                   ii, nrow(grid), ii/nrow(grid),
+                   end.time-start.time, start.time, end.time,
+                   output.file(row)), file='simulations.log')
+     NULL
+}
 ```
 
 ## Load output from disk and concatenate into a data frame
+To share data, check that simulations are complete and save concatenated data frame as one file. 
 
 ```{r load-estimates, purl=FALSE}
-# uncomment to run sims
-# estimates = foreach(ii = which(rows.finished()), .combine=rbind) %do% {
-#   readRDS(output.file(grid[ii,]))
-# }
-# estimates$simulation = factor(estimates$simulation,  levels=names(simulators))
-# estimates$estimator  = factor(estimates$estimator,   levels=names(estimators))
-```
+if(!file.exists('all-simulations.rds')) {
+    
+estimates = foreach(ii = which(rows.finished()), .combine=rbind) %do% {
+    readRDS(output.file(grid[ii,]))
+}
+estimates$simulation = factor(estimates$simulation,  levels=names(simulators))
+estimates$estimator  = factor(estimates$estimator,   levels=names(estimators))
 
-To share data, check that simulations are complete and save concatenated data frame as one file.
+stopifnot(all(rows.finished()))
+saveRDS(estimates, 'all-simulations.rds')
 
-```{r purl=FALSE}
-# uncomment to run sims
-# stopifnot(all(rows.finished()))
-# saveRDS(estimates, 'all-simulations.rds')
+}
 ```
 
 To use shared data, load concatenated data frame from file.
