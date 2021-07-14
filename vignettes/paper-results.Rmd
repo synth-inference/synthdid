@@ -24,7 +24,7 @@ pre, pre code, .sourceCode {
 ```{r knitr-opts, echo=FALSE, purl=FALSE}
 options(width=999)
 
-if(Sys.getenv('HTML-DOCS')) {
+if(Sys.getenv('HTML-DOCS', unset=NULL)) {
     ragg_png = function(..., res = 192) {
       ragg::agg_png(..., res = res, units = "in")
     }
