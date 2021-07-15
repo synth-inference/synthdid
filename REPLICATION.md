@@ -3,7 +3,7 @@ This file provides information sufficient to replicate the tables and figures in
 for example via the commands
 ```
 install.packages('devtools')
-devtools::install_github('synth-inference/synthdid', ref='paper:sdid')
+devtools::install_github('synth-inference/synthdid', ref='sdid-paper')
 ```
 then running the RMarkdown notebook [paper-results](vignettes/paper-results.Rmd) will do it, installing all other packages necessary
 and writing figures and tables to the directory [vignettes/figures](vignettes/figures). This will take a few days to run on an 8-core machine; we include
