@@ -28,12 +28,14 @@ data('PENN')
 This data was sourced as follows.
 1. The California cigarette tax (Proposition 99) dataset is available as a part of
 [*Synth* matlab toolbox](https://web.stanford.edu/~jhain/Synth_Matlab/Synth_MATLAB.zip), in the file 'MLAB_data.txt'.
-2. The CPS data is available from the US Census Bureau; DETAILS TO FILL IN.
-Along with it, we use two state level policy indicators,
+2. The CPS data is available from the US Census Bureau. We use a subset of this data; see the appendix of [Synthetic Difference in Differences](https://arxiv.org/abs/1812.09970) for details.
+Along with it, we use three state level policy indicators,
 which are included with the CPS data in our package.
   - [Minimum wage](http://www.dol.gov/whd/state/stateMinWageHis.htm)
   - [Open-carry gun law](https://lawcenter.giffords.org/gun-laws/policy-areas/guns-in-public/open-carry)
-3. The Penn World Table data is available for download [here](www.ggdc.net/pwt).
+  - [Partial birth abortion bans](https://www.guttmacher.org/state-policy/explore/overview-abortion-laws)
+3. The Penn World Table data is available for download [here](www.ggdc.net/pwt). We use a subset of this data;
+see the appendix of [Synthetic Difference in Differences](https://arxiv.org/abs/1812.09970) for details.
 
 # Computational Requirements
 
