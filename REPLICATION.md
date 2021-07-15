@@ -6,14 +6,14 @@ install.packages('devtools')
 devtools::install_github('synth-inference/synthdid', ref='paper:sdid')
 ```
 then running the RMarkdown notebook [paper-results](vignettes/paper-results.Rmd) will do it, installing all other packages necessary
-and writing figures and tables to the directory 'vignettes/figures'. This will take a few days to run on an 8-core machine; we include
+and writing figures and tables to the directory [vignettes/figures](vignettes/figures). This will take a few days to run on an 8-core machine; we include
 [instructions](#using-a-cluster) for the use of a cluster with the slurm scheduler.
 
 With the exception of the package *MCPanel* (and its dependency *glmnet*), which implements the matrix completion estimator
 of [Athey et al.](https://arxiv.org/abs/1710.10251), we do not fix the versions of other packages to the versions we used, as we anticipate that updates to them will be
-backward compatible. Because *MCPanel* uses a platform-dependent random number generator in its cross-validation scheme, results involving the matrix completion estimator do vary slightly from platform to platform. The package versions and platforms that were used are described in the section on [Computational Requirements](#package-versions) below.
+backward compatible. Because *MCPanel* uses a platform-dependent random number generator in its cross-validation scheme, results involving the matrix completion estimator do vary slightly from platform to platform. The package versions and platforms that were used are described [here](#package-versions).
 
-# Data and Code Availability Statement
+# Data and Code Availability
 
 All code used is included in the *synthdid* package,
 available on github as described above. All datasets used are provided in the package.
@@ -27,19 +27,17 @@ data('PENN')
 
 This data was sourced as follows.
 1. The California cigarette tax (Proposition 99) dataset is available as a part of
-*Synth* matlab toolbox (https://web.stanford.edu/~jhain/Synth_Matlab/Synth_MATLAB.zip),
-in the 'MLAB_data.txt'.
+[*Synth* matlab toolbox](https://web.stanford.edu/~jhain/Synth_Matlab/Synth_MATLAB.zip), in the file 'MLAB_data.txt'.
 2. The CPS data is available from the US Census Bureau; DETAILS TO FILL IN.
 Along with it, we use two state level policy indicators,
 which are included with the CPS data in our package.
-  - Minimum wage: http://www.dol.gov/whd/state/stateMinWageHis.htm
-  - Open-carry gun law: https://lawcenter.giffords.org/gun-laws/policy-areas/guns-in-public/open-carry/
+  - [Minimum wage](http://www.dol.gov/whd/state/stateMinWageHis.htm)
+  - [Open-carry gun law](https://lawcenter.giffords.org/gun-laws/policy-areas/guns-in-public/open-carry)
 3. The Penn World Table data is available for download [here](www.ggdc.net/pwt).
 
 # Computational Requirements
 
-The core of the *synthdid* R package is implemented in pure R, with few
-dependencies, and should run on R versions 3 and 4 on most platforms.
+The *synthdid* R package is implemented in pure R with few dependencies. It should run on R versions 3 and 4 on most platforms.
 We've used the following.
 
 1. A 2020 Macbook Air (M1) running R 4.0.5.
@@ -62,7 +60,7 @@ Simply running the notebook on a single computer, e.g. the Macbook Air, should y
 
 
 While we did not run all the simulations on the Macbook Air, we ran some and checked them against what we got on the cluster using using [this script](vignettes/paper-results-details/test-cross-platform.R.).
-Results were essentially identical, with differences on the order of 1e-13 or smaller, except for the MC estimator: the MCPanel library uses the C++ std::default_random_engine RNG to choose folds for cross-validation, which does not guarantee identical results on different platforms.
+Results were essentially identical, with differences on the order of 1e-13 or smaller, except for the MC estimator: the *MCPanel* library uses the C++ std::default_random_engine RNG to choose folds for cross-validation, which does not guarantee identical results on different platforms.
 Among the 5500 simulations on which we compared results for the MC estimator on our two platforms, the absolute difference of point estimates had the following quantiles.
 
 ```
