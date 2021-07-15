@@ -6,8 +6,9 @@ install.packages('devtools')
 devtools::install_github('synth-inference/synthdid', ref='sdid-paper')
 ```
 then running the RMarkdown notebook [paper-results](vignettes/paper-results.Rmd) will do it, installing all other packages necessary
-and writing figures and tables to the directory [vignettes/figures](vignettes/figures). This will take a few days to run on an 8-core machine; we include
-[instructions](#using-a-cluster) for the use of a cluster with the slurm scheduler.
+and writing figures and tables to the directory [vignettes/figures](vignettes/figures). We include [saved simulation results](vignettes/all-simulations.rds) 
+in the package --- delete this file before running the notebook to rerun them. 
+This will take a few days to run on an 8-core machine; we include [instructions](#using-a-cluster) for the use of a cluster with the slurm scheduler. 
 
 With the exception of the package *MCPanel* (and its dependency *glmnet*), which implements the matrix completion estimator
 of [Athey et al.](https://arxiv.org/abs/1710.10251), we do not fix the versions of other packages to the versions we used, as we anticipate that updates to them will be
