@@ -7,4 +7,4 @@ This data is used by Abadie, Diamond, and Hainmueller (2010) and included in the
 
 3. [PENN](PENN.csv)
 
-In [setup](setup), we include code for processing the source data into the csv files included here.
+The source data, as well as code that processes it into the csv files included here, is included in [inst/extdata](inst/extdata).
