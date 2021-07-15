@@ -2,7 +2,7 @@ Code was run on two platforms:
 1. A 2020 Macbook Air (M1) running R 4.0.5, used for the California Prop99 example and aggregation and plotting of the results from the simulations
 2. A cluster of x86_64 machines running R 4.0.2, used to run the simulations themselves 
 To run code using the cluster:
-i.   The notebook paper-simulations.Rmd was converted to a script by calling knitr::purl('paper-simulations.Rmd').
+i.   The notebook paper-simulations.Rmd was converted to a script by calling knitr::purl('paper-results.Rmd').
 ii.  This script, and the slurm template file batchtools.slurm.tmpl, were put in the same folder on the cluster and the script is run.
 iii. The resulting 'simulations/*.rds' files were then copied from the cluster to the vignettes directory and the notebook was run to generate plots and tables
 Simply running the notebook on a computer like platform 1 should yield essentially the same results, but take a few days.

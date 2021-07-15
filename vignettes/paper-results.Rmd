@@ -452,9 +452,16 @@ point.summaries = summaries[,c('simulation', 'estimator', point.columns)] %>%
 point.table = cbind(sim.info, point.summaries)
 
 # display table, leaving out non-default regularization choices
-round(point.table, digits=3)[, -c(11,12,18,19)]
+display.point.table = round(point.table[, c(1:5,8:6,10,9,15:13,17,16)], digits=3) 
+display.point.table
 # display table comparing default and non-default regularization choices
-round(point.table, digits=3)[,c(7,11,9,12)]
+reg.comparison.table = round(point.table[, c(7,11,9,12)], digits=3)
+reg.comparison.table 
+
+# write tables as latex
+print(xtable(display.point.table[1:14,]), type='latex', file='figures/cps-table.tex')
+print(xtable(display.point.table[17:19,]), type='latex', file='figures/penn-table.tex')
+print(xtable(reg.comparison.table), type='latex', file='figures/reg-comparison-table.tex')
 ```
 
 ## Display a coverage summary table.
@@ -464,9 +471,13 @@ A subset of these rows are in Table 4 of the paper.
 coverage.table = summaries[,c('simulation', 'estimator', coverage.columns)] %>%
     pivot_wider(names_from=estimator, values_from=all_of(coverage.columns)) %>%
         column_to_rownames('simulation')
-keep = !is.na(coverage.table[1,])
 
-round(coverage.table[rownames(coverage.table) %in% coverage.sims, keep], digits=2)
+display.coverage.table = round(coverage.table[c(1,7:19), c(3:1,10:8,17:15)], digits=2)
+display.coverage.table
+
+print(xtable(display.coverage.table, align='|l|rrr|rrr|rrr|'), 
+             hline.after = c(1,6,9,11,14) , NA.string = '---',
+      type='latex', file='figures/coverage-table.tex')
 ```
 
 ## Plot the error distribution of the estimates (Figure 2)
