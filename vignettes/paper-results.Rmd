@@ -24,7 +24,7 @@ pre, pre code, .sourceCode {
 ```{r knitr-opts, echo=FALSE, purl=FALSE}
 options(width=999)
 
-if(Sys.getenv('HTML-DOCS', unset=NULL)) {
+if(Sys.getenv('HTML_DOCS') != "") {
     ragg_png = function(..., res = 192) {
       ragg::agg_png(..., res = res, units = "in")
     }
@@ -159,7 +159,7 @@ synthdid_units_plot(rev(estimates[1:3]), se.method='none') +
 
 ### Table 7 and 8: Unit and Time weights
 
-```{r}
+```{r california-weights-tables, purl=FALSE}
 unit.weights = synthdid_controls(estimates[1:3], weight.type='omega', mass=1)
 time.weights = synthdid_controls(estimates[1:3], weight.type='lambda', mass=1)
 
@@ -281,7 +281,7 @@ simulators = list(
 To auto-generate documentation, we'll want to rerun this notebook having already run the simulations. We'll save the results we need in 'all-simulations.rds', so if it's present we skip this step.
 
 ### Details
-This is a long-running computation, taking roughly 3 days on a recent macbook air. It is written to save data as it runs, one file per simulation, so it can be continued if interrupted. To continue, just rerun the loop: only simulation for which these files are missing are run.
+This is a long-running computation, taking roughly 3 days on a 2021 macbook air. It is written to save data as it runs, one file per simulation, so it can be continued if interrupted. To continue, just rerun the loop: only simulation for which these files are missing are run.
 It can also be run on a slurm cluster, and will do so if a correctly configured template file batchtools.slurm.tmpl is present.
 We include the one we use in the paper-results-details directory.
 
@@ -324,10 +324,6 @@ rows.finished = function() {
     output.files = sapply(1:nrow(grid), function(ii) { output.file(grid[ii,]) })
     file.exists(output.files)
 }
-combined.data.written = function() { 
-    file.exists('all-simulations.rds')
-}
-
 ```
 
 ```{r set-up-seeds}
@@ -359,7 +355,7 @@ run.simulation = function(row) {
 ```{r create-workers-for-simulations}
 # kill warning that the futures library can't determine that we're
 # using and deterministically seeding the L'Ecuyer RNG
-options('future.options.rng.onMisuse', 'ignore')
+options('future.rng.onMisuse', 'ignore')
 registerDoFuture()
 
 # set up worker processes
@@ -431,15 +427,6 @@ summaries = estimates %>%
                   coverage.count     = sum(!(is.na(placebo) | is.na(bootstrap) | is.na(jackknife))))
 point.columns = c('rmse', 'bias')
 coverage.columns = c('bootstrap.coverage', 'jackknife.coverage', 'placebo.coverage')
-```
-
-Our standard error estimators can be undefined in some instances, returning NA.
-This happens to the bootstrap and jacknife if there is only one treated unit and to the jackknife
-if there is only one control with nonzero weight. As we see in the table below, this happens in one replication of the urate simulation. We compute coverage over the replications for which each standard error estimator is defined passing na.rm=TRUE to mean above.
-
-```{r summary-stats-check, purl=FALSE}
-summaries[!(summaries$coverage.count %in% c(0, coverage.replications)),
-           c('simulation', 'estimator', 'coverage.count')]
 ```
 
 ## Point Estimation: Tables 2 and 3
