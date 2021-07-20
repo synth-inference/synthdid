@@ -88,8 +88,10 @@ cbind(rep(rownames(data_assign), ncol(data_mat_wage)),rep(1979:2018, each = nrow
 as.vector(data_mat_wage),as.vector(data_mat_hours),as.vector(data_mat_urate),data_assign[,1],data_assign[,2],data_assign[,3]))
 
 names(cps_matrix) <- c('state','year','log_wage','hours','urate','min_wage','open_carry','abort_ban')
-write.table(cps_matrix , file = 'cps_matrix.csv',row.names = FALSE, sep=";", dec='.', quote=FALSE)
+cps_matrix[1:1950,6:8] <- FALSE
 
+
+write.table(cps_matrix , file = 'cps_matrix.csv',row.names = FALSE, sep=";", dec='.',quote = FALSE)
 
 
 
