@@ -459,9 +459,9 @@ reg.comparison.table = round(point.table[, c(7,11,9,12)], digits=3)
 reg.comparison.table 
 
 # write tables as latex
-print(xtable(display.point.table[1:14,]), type='latex', file='figures/cps-table.tex')
-print(xtable(display.point.table[17:19,]), type='latex', file='figures/penn-table.tex')
-print(xtable(reg.comparison.table), type='latex', file='figures/reg-comparison-table.tex')
+print(xtable(display.point.table[1:14,], digits=3), type='latex', file='figures/cps-table.tex')
+print(xtable(display.point.table[17:19,], digits=3), type='latex', file='figures/penn-table.tex')
+print(xtable(reg.comparison.table, digits=3), type='latex', file='figures/reg-comparison-table.tex')
 ```
 
 ## Display a coverage summary table.
