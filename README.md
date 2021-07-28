@@ -19,6 +19,7 @@ Some helpful links for getting started:
 - The [R package documentation](https://synth-inference.github.io/synthdid/) contains usage examples and method reference.
 - The [online vignettes](https://synth-inference.github.io/synthdid/articles/more-plotting.html) contains a gallery of plot examples.
 - For community questions and answers around usage, see [Github issues page](https://github.com/synth-inference/synthdid/issues).
+- For information on reproducing the results of Arkhangelsky et al (2019), see the [replication instructions](REPLICATION.md).
 
 ### Installation
 
