@@ -13,12 +13,13 @@ Description: Estimate average treatment effects in panel data.
 Depends:
     R (>= 3.4)
 Imports:
+    abind,
     mvtnorm
 License: GPL (>= 2) | BSD_3_clause + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Suggests:
     testthat,
     ggplot2,

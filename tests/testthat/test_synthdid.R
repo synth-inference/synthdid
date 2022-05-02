@@ -12,6 +12,20 @@ test_that("a simple workflow doesn't error", {
   expect_equal(1, 1)
 })
 
+test_that("a simple workflow doesn't error when estimating multiple outcomes", {
+  data(CPS)
+  # No controls
+  formula_1 <- c(urate, hours) ~ min_wage | state + year
+  # Controlling for log wage
+  formula_2 <- c(urate, hours) ~ min_wage | state + year | ~ log_wage
+  # Estimate models
+  estimates_nocontrol <- synthdid(formula_1, CPS)
+  estimates_lwcontrol <- synthdid(formula_2, CPS)
+
+  expect_equal(1, 1)
+})
+
+
 test_that("plotting doesn't error with (i) dates as colnames (ii) spaghetti units", {
   data(california_prop99)
 
@@ -168,3 +182,6 @@ test_that("treated effect shifts correctly with scalar shifts to the 4 blocks", 
     }
   }
 })
+
+
+
