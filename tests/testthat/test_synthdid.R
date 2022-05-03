@@ -25,6 +25,34 @@ test_that("a simple workflow doesn't error when estimating multiple outcomes", {
   expect_equal(1, 1)
 })
 
+test_that("synthdid wrapper gives same results as synthdid_estimate", {
+  data(CPS)
+  # Controlling for hours
+  formula <- urate ~ min_wage | state + year | ~ hours
+  # Estimate using wrapper function
+  estimates_wrap <- synthdid(formula, CPS)
+
+  # Estimate using synthdid_estimate directly
+  # Create panel matrix
+  setup <- panel.matrices(CPS,
+                          unit = "state",
+                          time = "year",
+                          outcome = "urate",
+                          treatment = "min_wage")
+
+  # Create control array
+  control_df <- reshape(CPS[, c("state", "year", "hours")],
+                        direction = "wide", idvar = "state", timevar = "year")
+
+  control_array <- array(as.matrix(control_df[, -1]), c(50, 40, 1))
+  estimates_direct <- synthdid_estimate(setup$Y, setup$N0, setup$T0,
+                                        X = control_array)
+
+  expect_equal(estimates_wrap$urate[1, 1], estimates_direct[1, 1])
+})
+
+
+
 
 test_that("plotting doesn't error with (i) dates as colnames (ii) spaghetti units", {
   data(california_prop99)
