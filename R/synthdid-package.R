@@ -29,4 +29,5 @@
 #'}
 #'
 #' @keywords internal
+#' @aliases synthdid-package
 "_PACKAGE"

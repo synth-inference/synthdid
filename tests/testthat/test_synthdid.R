@@ -1,3 +1,5 @@
+
+
 test_that("a simple workflow doesn't error", {
   setup = random.low.rank()
   tau.hat = synthdid_estimate(setup$Y,setup$N0,setup$T0)
@@ -18,9 +20,12 @@ test_that("a simple workflow doesn't error when estimating multiple outcomes", {
   formula_1 <- c(urate, hours) ~ min_wage | state + year
   # Controlling for log wage
   formula_2 <- c(urate, hours) ~ min_wage | state + year | ~ log_wage
+  # Controlling for multiple variables
+  formula_3 <- c(urate, hours) ~ min_wage | state + year | ~ log_wage + open_carry + abort_ban
   # Estimate models
   estimates_nocontrol <- synthdid(formula_1, CPS)
   estimates_lwcontrol <- synthdid(formula_2, CPS)
+  estimates_3control  <- synthdid(formula_3, CPS)
 
   expect_equal(1, 1)
 })
@@ -41,17 +46,26 @@ test_that("synthdid wrapper gives same results as synthdid_estimate", {
                           treatment = "min_wage")
 
   # Create control array
-  control_df <- reshape(CPS[, c("state", "year", "hours")],
+  covariate_df <- reshape(CPS[, c("state", "year", "hours")],
                         direction = "wide", idvar = "state", timevar = "year")
 
-  control_array <- array(as.matrix(control_df[, -1]), c(50, 40, 1))
+  covariate_array <- array(as.matrix(covariate_df[, -1]), c(50, 40, 1))
   estimates_direct <- synthdid_estimate(setup$Y, setup$N0, setup$T0,
-                                        X = control_array)
+                                        X = covariate_array)
 
-  expect_equal(estimates_wrap$urate[1, 1], estimates_direct[1, 1])
+  expect_equal(as.numeric(estimates_wrap$urate), as.numeric(estimates_direct))
 })
 
 
+test_that("estimating SC and DID works with synthdid wrapper", {
+  data(CPS)
+  formula <- c(urate, hours) ~ min_wage | state + year | ~ log_wage
+  estimates_sc       <- synthdid(formula, CPS, method = sc_estimate)
+  estimates_did      <- synthdid(formula, CPS, method = did_estimate)
+  estimates_synthdid <- synthdid(formula, CPS, method = synthdid_estimate)
+
+  expect_equal(1, 1)
+})
 
 
 test_that("plotting doesn't error with (i) dates as colnames (ii) spaghetti units", {

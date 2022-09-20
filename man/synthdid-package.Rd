@@ -2,8 +2,8 @@
 % Please edit documentation in R/synthdid-package.R
 \docType{package}
 \name{synthdid-package}
-\alias{synthdid}
 \alias{synthdid-package}
+\alias{_PACKAGE}
 \title{synthdid: Synthetic Difference-in-Difference Estimation}
 \description{
 This package implements the synthetic difference in difference estimator (SDID) for the average treatment effect in panel data,

@@ -5,7 +5,7 @@
 \title{A wrapper function for estimating one or more synthetic diff-in-diffs given a model
 formula and a data frame.}
 \usage{
-synthdid(formula, data, ...)
+synthdid(formula, data, method = synthdid_estimate, ...)
 }
 \arguments{
 \item{formula}{a formula representing the relationship to be estimated. For example,
@@ -18,6 +18,9 @@ Additionally, you can estimate models of multiple outcomes by expressing the
 left hand side as a vector of multiple variables \code{c(y1, y2, y3)}.}
 
 \item{data}{a data.frame object including each variable in formula.}
+
+\item{method}{the estimator to use. One of \code{did_estimate}, \code{sc_estimate}, or \code{synthdid_estimate}.
+Default is \code{synthdid_estimate}.}
 
 \item{...}{optional parameters to pass on to synthdid_estimate.}
 }

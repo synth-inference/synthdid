@@ -2,8 +2,8 @@
 % Please edit documentation in R/synthdid.R
 \name{sparsify_function}
 \alias{sparsify_function}
-\title{A wraper for synthdid_estimate that allows using formula notation and data frames to
-estimate synthetic difference in differences.}
+\title{A function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape to
+be passed onto synthdid_estimate.}
 \usage{
 sparsify_function(v)
 }
@@ -11,6 +11,6 @@ sparsify_function(v)
 \item{v}{a vector}
 }
 \description{
-A wraper for synthdid_estimate that allows using formula notation and data frames to
-estimate synthetic difference in differences.
+A function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape to
+be passed onto synthdid_estimate.
 }
