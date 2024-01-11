@@ -84,7 +84,7 @@ sc.weight.fw.covariates = function(Y, X = array(0, dim = c(dim(Y), 0)), zeta.lam
   Y.beta = Y - contract3(X, beta)
   weights = update.weights(Y.beta, lambda, omega)
   # state is kept in weights$lambda, weights$omega, beta
-  while (t < max.iter && (t < 2 || vals[t - 1] - vals[t] > min.decrease^2)) {
+  while (t < max.iter && (t < 2 || abs(vals[t - 1] - vals[t]) > min.decrease^2)) {
     t = t + 1
     grad.beta = -if (dim(X)[3] == 0) { c() } else {
       apply(X, 3, function(Xi) {
