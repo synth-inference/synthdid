@@ -66,6 +66,10 @@ panel.matrices = function(panel, unit = 1, time = 2, outcome = 3, treatment = 4,
   if (!is.data.frame(panel)){
     stop("Unsupported input type `panel.`")
   }
+  ## ensure the data is data frame and not tibble, see https://github.com/synth-inference/synthdid/issues/75
+  if(inherits(panel, "tbl_df")){
+    panel <- as.data.frame(panel)
+  }
   if (anyNA(panel)) {
     stop("Missing values in `panel`.")
   }
