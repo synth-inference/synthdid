@@ -3,6 +3,7 @@
 #' @param v a vector
 sparsify_function = function(v) { v[v <= max(v)/4] = 0; v/sum(v) }
 
+
 #' Computes the synthetic diff-in-diff estimate for an average treatment effect on a treated block.
 #'
 #' See 'Synthetic Difference in Differences' by Arkhangelsky et al. This implements Algorithm 1.
@@ -43,11 +44,11 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
                               weights = list(omega = NULL, lambda = NULL),
                               update.omega = is.null(weights$omega), update.lambda = is.null(weights$lambda),
                               min.decrease = 1e-5 * noise.level, max.iter = 1e4,
-			      sparsify = sparsify_function,
-			      max.iter.pre.sparsify = 100) {
+                              sparsify = sparsify_function,
+                              max.iter.pre.sparsify = 100) {
   stopifnot(nrow(Y) > N0, ncol(Y) > T0, length(dim(X)) %in% c(2, 3), dim(X)[1:2] == dim(Y), is.list(weights),
-    is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0,
-    !is.null(weights$lambda) || update.lambda, !is.null(weights$omega) || update.omega)
+            is.null(weights$lambda) || length(weights$lambda) == T0, is.null(weights$omega) || length(weights$omega) == N0,
+            !is.null(weights$lambda) || update.lambda, !is.null(weights$omega) || update.omega)
   if (length(dim(X)) == 2) { dim(X) = c(dim(X), 1) }
   if (is.null(sparsify)) { max.iter.pre.sparsify = max.iter }
   N1 = nrow(Y) - N0
@@ -60,10 +61,10 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
     if (update.lambda) {
       Yc = collapsed.form(Y, N0, T0)
       lambda.opt = sc.weight.fw(Yc[1:N0, ], zeta = zeta.lambda, intercept = lambda.intercept, lambda=weights$lambda,
-				min.decrease = min.decrease, max.iter = max.iter.pre.sparsify)
+                                min.decrease = min.decrease, max.iter = max.iter.pre.sparsify)
       if(!is.null(sparsify)) {
-	lambda.opt = sc.weight.fw(Yc[1:N0, ], zeta = zeta.lambda, intercept = lambda.intercept, lambda=sparsify(lambda.opt$lambda),
-				  min.decrease = min.decrease, max.iter = max.iter)
+        lambda.opt = sc.weight.fw(Yc[1:N0, ], zeta = zeta.lambda, intercept = lambda.intercept, lambda=sparsify(lambda.opt$lambda),
+                                  min.decrease = min.decrease, max.iter = max.iter)
       }
       weights$lambda = lambda.opt$lambda
       weights$lambda.vals = lambda.opt$vals
@@ -72,10 +73,10 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
     if (update.omega) {
       Yc = collapsed.form(Y, N0, T0)
       omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, lambda=weights$omega,
-			       min.decrease = min.decrease, max.iter = max.iter.pre.sparsify)
+                               min.decrease = min.decrease, max.iter = max.iter.pre.sparsify)
       if(!is.null(sparsify)) {
-	omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, lambda=sparsify(omega.opt$lambda),
-			         min.decrease = min.decrease, max.iter = max.iter)
+        omega.opt = sc.weight.fw(t(Yc[, 1:T0]), zeta = zeta.omega, intercept = omega.intercept, lambda=sparsify(omega.opt$lambda),
+                                 min.decrease = min.decrease, max.iter = max.iter)
       }
       weights$omega = omega.opt$lambda
       weights$omega.vals = omega.opt$vals
@@ -87,9 +88,9 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
     Xc = apply(X, 3, function(Xi) { collapsed.form(Xi, N0, T0) })
     dim(Xc) = c(dim(Yc), dim(X)[3])
     weights = sc.weight.fw.covariates(Yc, Xc, zeta.lambda = zeta.lambda, zeta.omega = zeta.omega,
-      lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,
-      min.decrease = min.decrease, max.iter = max.iter,
-      lambda = weights$lambda, omega = weights$omega, update.lambda = update.lambda, update.omega = update.omega)
+                                      lambda.intercept = lambda.intercept, omega.intercept = omega.intercept,
+                                      min.decrease = min.decrease, max.iter = max.iter,
+                                      lambda = weights$lambda, omega = weights$omega, update.lambda = update.lambda, update.omega = update.omega)
   }
 
   X.beta = contract3(X, weights$beta)
@@ -106,6 +107,102 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
   return(estimate)
 }
 
+#' A wrapper function for estimating one or more synthetic diff-in-diffs given a model
+#' formula and a data frame.
+#' @param formula a formula representing the relationship to be estimated. For example,
+#'                \code{formula = y ~ d | unit + time} where y is the dependent variable,
+#'                d is the time-and-unit-varying treatment variable, and unit and time are
+#'                unit and time identifiers, respectively. The unit identifier must precede
+#'                the time identifier. Optional control variables \code{x1} and \code{x2} may
+#'                be added by appending \code{| ~ x1 + x2} to the end of the formula.
+#'                Additionally, you can estimate models of multiple outcomes by expressing the
+#'                left hand side as a vector of multiple variables \code{c(y1, y2, y3)}.
+#' @param data a data.frame object including each variable in formula.
+#' @param method the estimator to use. One of `did_estimate`, `sc_estimate`, or `synthdid_estimate`.
+#' Default is `synthdid_estimate`.
+#' @param ... optional parameters to pass on to synthdid_estimate.
+#' @return A list of average treatment effect estimates with 'weights' and 'setup' attached as attributes.
+#'         'weights' contains the estimated weights lambda and omega and corresponding intercepts,
+#'         as well as regression coefficients beta if X is passed.
+#'         'setup' is a list describing the problem passed in: Y, N0, T0, X.
+#' @examples
+#' data(CPS)
+#' # No controls
+#' formula_1 <- c(urate, hours) ~ min_wage | state + year
+#' # Controlling for log wage
+#' formula_2 <- c(urate, hours) ~ min_wage | state + year | ~ log_wage
+#' # Estimate models
+#' estimates_nocontrol <- synthdid(formula_1, CPS)
+#' estimates_lwcontrol <- synthdid(formula_2, CPS)
+#'
+#' @export synthdid
+synthdid <- function(formula,
+                     data,
+                     method = synthdid_estimate,
+                     ...){
+
+  # Flag whether controls are included
+  has_controls <- length(formula[[3]][[2]]) == 3
+
+  # Define panel dimensions
+  if(has_controls){
+    panel_dims <- formula[[3]][[2]][[3]]
+  } else {
+    panel_dims <- formula[[3]][[3]]
+  }
+  unit_var <- as.character(panel_dims[[2]])
+  time_var <- as.character(panel_dims[[3]])
+
+  # Define all dependent variables
+  dep_vars <- as.character(formula[[2]])
+  if(length(dep_vars) > 1){
+    n_dep_vars <- length(dep_vars) - 1
+    dep_vars <- tail(dep_vars, n_dep_vars)
+  }
+
+  # Define treatment variable
+  if(has_controls){
+    treat_var <- as.character(formula[[3]][[2]][[2]])
+  } else {
+    treat_var <- as.character(formula[[3]][[2]])
+  }
+
+  # Extract controls
+  if(has_controls){
+    control_formula <- update(as.formula(formula[[3]][[3]]), ~ . -1)
+    control_matrix <- model.matrix(control_formula, data)
+
+    # Create N x t matrix for each variable
+    control_matlist <- apply(control_matrix, 2, function(x){
+      d <- data.frame(unit = data[[unit_var]],
+                      time = data[[time_var]],
+                      x)
+      reshape(d, direction = "wide", idvar = "unit", timevar = "time")[, -1]
+    })
+
+    # Bind matrices into array
+    X <- abind::abind(control_matlist, along = 3)
+  }
+
+  # Data can't be a tibble
+  data <- data.frame(data)
+
+  # Estimate multiple models
+  estimates <- lapply(dep_vars, function(dep_var) {
+    setup <- panel.matrices(data, unit_var, time_var, dep_var, treat_var)
+
+    if(!has_controls) X <- array(dim = c(dim(setup$Y), 0))
+    estimate <- method(setup$Y, setup$N0, setup$T0, X = X, ...)
+    estimate
+  })
+
+  # Rename list elements with model names
+  names(estimates) <- dep_vars
+  return(estimates)
+}
+
+
+
 #' synthdid_estimate for synthetic control estimates.
 #' Takes all the same parameters, but by default, passes options to use the synthetic control estimator
 #' By default, this uses only 'infinitesimal' ridge regularization when estimating the weights.
@@ -118,7 +215,7 @@ synthdid_estimate <- function(Y, N0, T0, X = array(dim = c(dim(Y), 0)),
 #' @export sc_estimate
 sc_estimate = function(Y, N0, T0, eta.omega = 1e-6, ...) {
   estimate = synthdid_estimate(Y, N0, T0, eta.omega = eta.omega,
-			       weights = list(lambda = rep(0, T0)), omega.intercept = FALSE, ...)
+                               weights = list(lambda = rep(0, T0)), omega.intercept = FALSE, ...)
   attr(estimate, 'estimator') = "sc_estimate"
   estimate
 }
