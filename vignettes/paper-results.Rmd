@@ -7,6 +7,9 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+### Set display options
+
+
 <!--html_preserve-->
 <style>
 pre, pre code, .sourceCode {
@@ -20,17 +23,18 @@ pre, pre code, .sourceCode {
 
 ```{r knitr-opts, echo=FALSE, purl=FALSE}
 options(width=999)
+
+if(Sys.getenv('HTML_DOCS') != "") {
+    ragg_png = function(..., res = 192) {
+      ragg::agg_png(..., res = res, units = "in")
+    }
+    knitr::opts_chunk$set(dev = "ragg_png", fig.ext = "png")
+}
 ```
 
-```{r, echo=FALSE}
-ragg_png = function(..., res = 192) {
-  ragg::agg_png(..., res = res, units = "in")
-}
-knitr::opts_chunk$set(dev = "ragg_png", fig.ext = "png")
-```
+### Load required packages, installing if necessary
 
 ```{r setup, echo=FALSE}
-# Install packages from "session-info" file:
 install.packages(c('doFuture', 'future.batchtools', 'rngtools'))
 install.packages(c('dplyr', 'tidyr', 'tibble', 'ggplot2', 'devtools', 'xtable'))
 
@@ -155,7 +159,7 @@ synthdid_units_plot(rev(estimates[1:3]), se.method='none') +
 
 ### Table 7 and 8: Unit and Time weights
 
-```{r}
+```{r california-weights-tables, purl=FALSE}
 unit.weights = synthdid_controls(estimates[1:3], weight.type='omega', mass=1)
 time.weights = synthdid_controls(estimates[1:3], weight.type='lambda', mass=1)
 
@@ -274,8 +278,10 @@ simulators = list(
 * Do fewer standard error estimates, as these are slow, for coverage for Table 4.
 * Save results in simulations/simulations*.rds. Assumes the directory simulations exists.
 
+To auto-generate documentation, we'll want to rerun this notebook having already run the simulations. We'll save the results we need in 'all-simulations.rds', so if it's present we skip this step.
+
 ### Details
-This is a long-running computation, taking roughly 3 days on a recent macbook air. It is written to save data as it runs, one file per simulation, so it can be continued if interrupted. To continue, just rerun the loop: only simulation for which these files are missing are run.
+This is a long-running computation, taking roughly 3 days on a 2021 macbook air. It is written to save data as it runs, one file per simulation, so it can be continued if interrupted. To continue, just rerun the loop: only simulation for which these files are missing are run.
 It can also be run on a slurm cluster, and will do so if a correctly configured template file batchtools.slurm.tmpl is present.
 We include the one we use in the paper-results-details directory.
 
@@ -349,7 +355,7 @@ run.simulation = function(row) {
 ```{r create-workers-for-simulations}
 # kill warning that the futures library can't determine that we're
 # using and deterministically seeding the L'Ecuyer RNG
-options('future.options.rng.onMisuse', 'ignore')
+options('future.rng.onMisuse', 'ignore')
 registerDoFuture()
 
 # set up worker processes
@@ -363,44 +369,43 @@ if(cluster) {
 ```
 
 ```{r run-simulations, echo=FALSE}
-# uncomment to run sims
-# foreach(ii = which(!rows.finished())) %dopar% {
-#     row = grid[ii,]
-#     start.time = Sys.time()
-#     
-#     library(rngtools)
-#     library(synthdid)
-#     library(MCPanel)
-#         
-#     output.row = run.simulation(row)
-#     saveRDS(output.row, file=output.file(row))
-#         
-#     end.time = Sys.time()
-#     cat(sprintf('simulation %d/%d=%0.2f ran for %1.1f, from %s to %s, outputting to %s\n',
-#                   ii, nrow(grid), ii/nrow(grid),
-#                   end.time-start.time, start.time, end.time,
-#                   output.file(row)), file='simulations.log')
-#     NULL
-# }
+if(!file.exists('all-simulations.rds')) 
+foreach(ii = which(!rows.finished())) %dopar% {
+    row = grid[ii,]
+    start.time = Sys.time()
+     
+    library(rngtools)
+    library(synthdid)
+    library(MCPanel)
+         
+    output.row = run.simulation(row)
+    saveRDS(output.row, file=output.file(row))
+         
+     end.time = Sys.time()
+     cat(sprintf('simulation %d/%d=%0.2f ran for %1.1f, from %s to %s, outputting to %s\n',
+                   ii, nrow(grid), ii/nrow(grid),
+                   end.time-start.time, start.time, end.time,
+                   output.file(row)), file='simulations.log')
+     NULL
+}
 ```
 
 ## Load output from disk and concatenate into a data frame
+To share data, check that simulations are complete and save concatenated data frame as one file. 
 
 ```{r load-estimates, purl=FALSE}
-# uncomment to run sims
-# estimates = foreach(ii = which(rows.finished()), .combine=rbind) %do% {
-#   readRDS(output.file(grid[ii,]))
-# }
-# estimates$simulation = factor(estimates$simulation,  levels=names(simulators))
-# estimates$estimator  = factor(estimates$estimator,   levels=names(estimators))
-```
+if(!file.exists('all-simulations.rds')) {
+    
+estimates = foreach(ii = which(rows.finished()), .combine=rbind) %do% {
+    readRDS(output.file(grid[ii,]))
+}
+estimates$simulation = factor(estimates$simulation,  levels=names(simulators))
+estimates$estimator  = factor(estimates$estimator,   levels=names(estimators))
 
-To share data, check that simulations are complete and save concatenated data frame as one file.
+stopifnot(all(rows.finished()))
+saveRDS(estimates, 'all-simulations.rds')
 
-```{r purl=FALSE}
-# uncomment to run sims
-# stopifnot(all(rows.finished()))
-# saveRDS(estimates, 'all-simulations.rds')
+}
 ```
 
 To use shared data, load concatenated data frame from file.
@@ -422,15 +427,6 @@ summaries = estimates %>%
                   coverage.count     = sum(!(is.na(placebo) | is.na(bootstrap) | is.na(jackknife))))
 point.columns = c('rmse', 'bias')
 coverage.columns = c('bootstrap.coverage', 'jackknife.coverage', 'placebo.coverage')
-```
-
-Our standard error estimators can be undefined in some instances, returning NA.
-This happens to the bootstrap and jacknife if there is only one treated unit and to the jackknife
-if there is only one control with nonzero weight. As we see in the table below, this happens in one replication of the urate simulation. We compute coverage over the replications for which each standard error estimator is defined passing na.rm=TRUE to mean above.
-
-```{r summary-stats-check, purl=FALSE}
-summaries[!(summaries$coverage.count %in% c(0, coverage.replications)),
-           c('simulation', 'estimator', 'coverage.count')]
 ```
 
 ## Point Estimation: Tables 2 and 3
@@ -456,9 +452,16 @@ point.summaries = summaries[,c('simulation', 'estimator', point.columns)] %>%
 point.table = cbind(sim.info, point.summaries)
 
 # display table, leaving out non-default regularization choices
-round(point.table, digits=3)[, -c(11,12,18,19)]
+display.point.table = round(point.table[, c(1:5,8:6,10,9,15:13,17,16)], digits=3) 
+display.point.table
 # display table comparing default and non-default regularization choices
-round(point.table, digits=3)[,c(7,11,9,12)]
+reg.comparison.table = round(point.table[, c(7,11,9,12)], digits=3)
+reg.comparison.table 
+
+# write tables as latex
+print(xtable(display.point.table[1:14,], digits=3), type='latex', file='figures/cps-table.tex')
+print(xtable(display.point.table[17:19,], digits=3), type='latex', file='figures/penn-table.tex')
+print(xtable(reg.comparison.table, digits=3), type='latex', file='figures/reg-comparison-table.tex')
 ```
 
 ## Display a coverage summary table.
@@ -468,9 +471,13 @@ A subset of these rows are in Table 4 of the paper.
 coverage.table = summaries[,c('simulation', 'estimator', coverage.columns)] %>%
     pivot_wider(names_from=estimator, values_from=all_of(coverage.columns)) %>%
         column_to_rownames('simulation')
-keep = !is.na(coverage.table[1,])
 
-round(coverage.table[rownames(coverage.table) %in% coverage.sims, keep], digits=2)
+display.coverage.table = round(coverage.table[c(1,7:19), c(3:1,10:8,17:15)], digits=2)
+display.coverage.table
+
+print(xtable(display.coverage.table, align='|l|rrr|rrr|rrr|'), 
+             hline.after = c(1,6,9,11,14) , NA.string = '---',
+      type='latex', file='figures/coverage-table.tex')
 ```
 
 ## Plot the error distribution of the estimates (Figure 2)

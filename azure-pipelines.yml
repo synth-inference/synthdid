@@ -22,6 +22,9 @@ variables:
   value: true
 - name: WARNINGS_ARE_ERRORS
   value: true
+- name: HTML_DOCS
+  value: true
+
 
 steps:
   - script: |

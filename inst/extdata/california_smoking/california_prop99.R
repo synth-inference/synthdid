@@ -25,11 +25,11 @@ library(reshape2)
 mY = melt(Y)
 colnames(mY) = c('State', 'Year', 'PacksPerCapita')
 mY$treated = as.numeric(mY$State == 'California' & mY$Year >= 1989)
-write.csv(mY, file='california_prop99.csv', row.names = FALSE)
+write.table(mY, file='california_prop99.csv', row.names = FALSE, sep=";", dec='.', quote=FALSE)
 
 ## read and compare
 devtools::load_all('.')
-setup = panel.matrices(read.csv('california_prop99.csv'))
+setup = panel.matrices(read.csv('california_prop99.csv', sep=";"))
 if(!  all(setup$Y == Y)
    &  all(rownames(setup$Y) ==  rownames(Y))
    &  all(colnames(setup$Y) ==  colnames(Y))
