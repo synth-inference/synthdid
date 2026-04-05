@@ -1,13 +1,14 @@
 #' Outputs a table of important synthetic controls and their corresponding weights, sorted by weight.
 #' The table is truncated to exclude synthetic controls that do not matter for any estimate ---
 #' for each estimate, the truncated controls may have total weight no larger that 1-mass.
+#' @importFrom stats vcov
 #' @param estimates, a list of estimates output by synthdid_estimate. Or a single estimate.
 #' @param sort.by, the index of the estimate to sort by. Defaults to 1.
 #' @param mass, which controls the length of the table. Defaults to 0.9.
 #' @param weight.type, 'omega' for units, 'lambda' for time periods
 #' @export synthdid_controls
 synthdid_controls = function(estimates, sort.by = 1, mass = .9, weight.type = 'omega') {
-  if (class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
+  if (inherits(estimates, "synthdid_estimate")) { estimates = list(estimates) }
   if (is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
   if (!weight.type %in% c('omega', 'lambda')) { stop('weight.type must be "omega" or "lambda"') } 
   weights = do.call(cbind, lapply(estimates, function(est) { attr(est, 'weights')[[weight.type]] }))

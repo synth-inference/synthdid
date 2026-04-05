@@ -1,5 +1,5 @@
 #' Calculate Variance-Covariance Matrix for a Fitted Model Object
-#'
+#' @importFrom stats sd
 #' Provides variance estimates based on the following three options
 #' \itemize{
 #'   \item The bootstrap, Algorithm 2 in Arkhangelsky et al.

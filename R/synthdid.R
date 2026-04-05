@@ -1,10 +1,10 @@
 #' A function mapping a numeric vector to a (presumably sparser) numeric vector of the same shape to
 #' be passed onto synthdid_estimate.
+#' @importFrom stats sd
 #' @param v a vector
 sparsify_function = function(v) { v[v <= max(v)/4] = 0; v/sum(v) }
 
 #' Computes the synthetic diff-in-diff estimate for an average treatment effect on a treated block.
-#'
 #' See 'Synthetic Difference in Differences' by Arkhangelsky et al. This implements Algorithm 1.
 #' @param Y the observation matrix.
 #' @param N0 the number of control units (N_co in the paper). Rows 1-N0 of Y correspond to the control units.

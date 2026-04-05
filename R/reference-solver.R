@@ -1,4 +1,5 @@
-# return x minimizing ||Ax - b||^2 + zeta^2 n || x ||^2                   if intercept=FALSE
+#' @importFrom stats sd
+#' # return x minimizing ||Ax - b||^2 + zeta^2 n || x ||^2                   if intercept=FALSE
 #      | x minimizing min_x0 || + ||Ax + x0 - b||^2 + zeta^2 n || x ||^2  if intercept=TRUE
 # here n = length(b)
 simplex.least.squares =  function(A, b, zeta = 0, intercept = FALSE) {

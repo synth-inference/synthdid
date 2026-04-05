@@ -1,0 +1,291 @@
+---
+title: "Pre-Trends Wald Test with synthdid"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Pre-Trends Wald Test with synthdid}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+```
+
+## Overview
+
+This vignette demonstrates the full `synthdid` estimation workflow using the
+`california_prop99` dataset, then introduces `calculate_wald_pre_test()` — a
+joint Wald test of the no-pre-trends assumption.
+
+The vignette is structured in two parts:
+
+1. **Standard workflow** — point estimate, standard error, confidence interval,
+   and a diagnostic plot using `california_prop99`.
+2. **Pre-trends Wald test** — explanation of why a single-cohort dataset cannot
+   exercise the test, followed by a simulation of staggered adoption data that
+   can.
+
+---
+
+## Part 1: Standard Estimation Workflow
+
+### Data
+
+`california_prop99` records annual per-capita cigarette consumption (packs) for
+39 US states from 1970–2000. California imposed a tobacco tax in 1989, making
+it the single treated unit.
+
+```{r load-data}
+library(synthdid)
+
+data("california_prop99")
+head(california_prop99)
+```
+
+### Convert to matrix form
+
+`panel.matrices()` reshapes the long panel into the N × T outcome matrix `Y`
+required by the estimators, and returns `N0` (number of control units) and `T0`
+(number of pre-treatment periods).
+
+```{r panel-matrices}
+setup <- panel.matrices(california_prop99)
+
+cat("Units (N)       :", nrow(setup$Y), "\n")
+cat("Control units   :", setup$N0, "\n")
+cat("Time periods (T):", ncol(setup$Y), "\n")
+cat("Pre-treatment   :", setup$T0, "\n")
+```
+
+### Estimate the treatment effect
+
+```{r estimate}
+tau.hat <- synthdid_estimate(setup$Y, setup$N0, setup$T0)
+tau.hat
+```
+
+### Standard error and confidence interval
+
+We use the placebo variance estimator (the only option available when there is
+a single treated unit).
+
+```{r se-ci}
+vcov_mat <- vcov(tau.hat, method = "placebo")
+se       <- sqrt(vcov_mat)
+
+sprintf("Point estimate : %1.2f", tau.hat)
+sprintf("95%% CI         : (%1.2f, %1.2f)",
+        tau.hat - 1.96 * se,
+        tau.hat + 1.96 * se)
+```
+
+The estimate suggests that Proposition 99 reduced cigarette consumption by
+roughly `r round(abs(c(tau.hat)), 1)` packs per capita per year.
+
+### Diagnostic plot
+
+```{r plot, fig.alt="synthdid estimate plot for California Prop 99"}
+plot(tau.hat)
+```
+
+---
+
+## Part 2: Pre-Trends Wald Test
+
+### Why `california_prop99` cannot be used here
+
+`calculate_wald_pre_test()` tests the null hypothesis that all pre-treatment
+ATT(g, t) estimates are jointly zero — i.e. the parallel-trends assumption
+holds before treatment begins. This requires **multiple (cohort, calendar-time)
+pairs** where `t < g`.
+
+`california_prop99` has only one treated cohort (California, `g = 1989`) and
+one treatment period. There are therefore no pre-treatment ATT(g, t) cells at
+all: the index set `{(g, t) : t < g}` is empty. Running the test on this
+dataset would return immediately with the message *"No pre-treatment periods
+found to test."*
+
+The function is designed for **staggered adoption** settings — multiple cohorts
+each treated at different times — as studied in Callaway & Sant'Anna (2021).
+
+### Simulating staggered adoption data
+
+We simulate a balanced panel with three treatment cohorts to produce a dataset
+where the Wald test is meaningful.
+
+```{r simulate}
+set.seed(42)
+
+# Panel dimensions
+N_ctrl <- 50   # control units
+T_total <- 10  # total time periods
+
+# Three cohorts treated at periods 4, 6, and 8 respectively
+cohort_specs <- list(
+  list(g = 4, n = 10),
+  list(g = 6, n = 10),
+  list(g = 8, n = 10)
+)
+N_treated <- sum(sapply(cohort_specs, `[[`, "n"))
+N_total   <- N_ctrl + N_treated
+
+# True treatment effect (zero in pre-period by construction)
+tau_true <- 2
+
+# Generate outcome matrix: unit fixed effect + time trend + noise
+unit_fe <- rnorm(N_total, mean = 0, sd = 1)
+time_fe <- seq(0, 1, length.out = T_total)
+
+Y <- outer(unit_fe, rep(1, T_total)) +
+     outer(rep(1, N_total), time_fe) +
+     matrix(rnorm(N_total * T_total, sd = 0.5), N_total, T_total)
+
+# Build (cohort, time, ATT, SE) structure manually to mimic
+# what a DiD package would return for all (g, t) pairs
+cohort_g <- c()
+period_t <- c()
+
+row <- N_ctrl + 1
+for (spec in cohort_specs) {
+  g  <- spec$g
+  n1 <- spec$n
+
+  # Add treatment effect in post-period rows
+  post_cols <- g:T_total
+  Y[row:(row + n1 - 1), post_cols] <-
+    Y[row:(row + n1 - 1), post_cols] + tau_true
+
+  # Record all (g, t) pairs for this cohort
+  cohort_g <- c(cohort_g, rep(g, T_total))
+  period_t <- c(period_t, 1:T_total)
+
+  row <- row + n1
+}
+
+cat("(cohort, time) pairs recorded:", length(cohort_g), "\n")
+cat("Pre-treatment pairs (t < g)  :",
+    sum(cohort_g > period_t), "\n")
+```
+
+### Simulate ATT estimates and a covariance matrix
+
+In practice these come from a DiD estimator (e.g. `att_gt()` in the `did`
+package). Here we generate plausible values directly.
+
+```{r att-vcov}
+n_pairs <- length(cohort_g)
+
+# Simulate ATT(g, t) estimates:
+#   - Pre-treatment (t < g):  mean 0, small noise  => should pass the test
+#   - Post-treatment (t >= g): mean tau_true
+is_pre  <- cohort_g > period_t
+att_est <- ifelse(is_pre,
+                  rnorm(n_pairs, mean = 0,        sd = 0.15),
+                  rnorm(n_pairs, mean = tau_true,  sd = 0.20))
+
+# Diagonal covariance with small, realistic variances
+se_vals  <- ifelse(is_pre, 0.15, 0.20)
+vcov_mat_sim <- diag(se_vals^2)
+```
+
+### Run the pre-trends Wald test
+
+`vcov_is_normalized = TRUE` tells the function that `vcov_mat_sim` is the
+**normalized** asymptotic covariance Cov(att), so the statistic is multiplied
+by `n_scaling_factor` to reach the chi-squared scale. Set
+`vcov_is_normalized = FALSE` if your DiD package returns an already n-scaled
+matrix.
+
+```{r wald-test}
+result <- calculate_wald_pre_test(
+  att_estimates         = att_est,
+  cohort_treatment_time = cohort_g,
+  calendar_time_period  = period_t,
+  vcov_matrix_all_atts  = vcov_mat_sim,
+  std_errors_all_atts   = se_vals,
+  n_scaling_factor      = N_total,
+  vcov_is_normalized    = TRUE,
+  verbose               = TRUE
+)
+```
+
+```{r wald-results}
+cat("Wald statistic :", round(result$W,     4), "\n")
+cat("Degrees of freedom:", result$q,            "\n")
+cat("p-value        :", round(result$Wpval, 6), "\n")
+```
+
+A large p-value (typically > 0.05) indicates no evidence against the
+no-pre-trends null — the parallel-trends assumption is supported in the
+pre-treatment periods.
+
+### Testing a linear contrast
+
+Rather than testing every pre-treatment period individually, you may want to
+test a specific restriction — for example, that the average pre-treatment
+effect across all cohort-period pairs is zero. Supply a single-row contrast
+matrix `R`:
+
+```{r wald-contrast}
+n_pre <- sum(cohort_g > period_t)
+R_avg <- matrix(rep(1 / n_pre, n_pre), nrow = 1)
+
+result_avg <- calculate_wald_pre_test(
+  att_estimates         = att_est,
+  cohort_treatment_time = cohort_g,
+  calendar_time_period  = period_t,
+  vcov_matrix_all_atts  = vcov_mat_sim,
+  std_errors_all_atts   = se_vals,
+  n_scaling_factor      = N_total,
+  vcov_is_normalized    = TRUE,
+  R                     = R_avg,
+  verbose               = FALSE
+)
+
+sprintf("Average pre-trend test: W = %.4f, df = %d, p-value = %.4f",
+        result_avg$W, result_avg$q, result_avg$Wpval)
+```
+
+---
+
+## Summary
+
+| Step | Function |
+|---|---|
+| Reshape panel data | `panel.matrices()` |
+| Estimate ATT | `synthdid_estimate()`, `sc_estimate()`, `did_estimate()` |
+| Variance / SE | `vcov()`, `synthdid_se()` |
+| Confidence interval | Manual: `tau.hat ± 1.96 * se` |
+| Diagnostic plot | `plot()` |
+| Pre-trends Wald test | `calculate_wald_pre_test()` |
+
+### Key argument: `vcov_is_normalized`
+
+| Your covariance matrix | Correct setting |
+|---|---|
+| `Cov(att)` — normalized (e.g. from most DiD packages) | `vcov_is_normalized = TRUE` + supply `n_scaling_factor` |
+| `n * Cov(att)` — already n-scaled (e.g. internal C&S format) | `vcov_is_normalized = FALSE` |
+
+Passing the wrong convention inflates or deflates the Wald statistic by a
+factor of n, so it is important to check how your DiD estimator scales its
+output covariance matrix.
+
+---
+
+## References
+
+- Arkhangelsky, D., Athey, S., Hirshberg, D.A., Imbens, G.W., and Wager, S.
+  (2021). "Synthetic Difference in Differences." *American Economic Review*,
+  111(12), 4088–4118.
+
+- Callaway, B. and Sant'Anna, P.H.C. (2021). "Difference-in-Differences with
+  Multiple Time Periods." *Journal of Econometrics*, 225(2), 200–230.
+
+- Abadie, A., Diamond, A., and Hainmueller, J. (2010). "Synthetic Control
+  Methods for Comparative Case Studies." *Journal of the American Statistical
+  Association*, 105(490), 493–505.

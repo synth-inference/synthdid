@@ -1,3 +1,9 @@
+utils::globalVariables(c(
+  "x", "y", "color", "xend", "yend", "estimate",
+  "xintercept", "ymin", "ymax", "frame", "show",
+  "iteration", "method", "weight", "se", "unit"
+))
+
 #' Plots treated and synthetic control trajectories and overlays a 2x2 diff-in-diff diagram of our estimator.
 #' In this overlay, the treatment effect is indicated by an arrow.
 #' The weights lambda defining our synthetic pre-treatment time period are plotted below.
@@ -8,6 +14,11 @@
 #'
 #' Requires ggplot2
 #' Due to differences between ggplot and ggplotly, this will warn about an unknown aesthetic frame.
+#' @importFrom stats vcov
+#' @importFrom utils modifyList
+#' @importFrom methods show
+#' @importFrom graphics frame
+#' @import ggplot2
 #'
 #' @param estimates, a list of estimates output by synthdid_estimate. Or a single estimate.
 #' @param treated.name, the name of the treated curve that appears in the legend. Defaults to 'treated'
@@ -50,7 +61,7 @@
 #' @param alpha.multiplier, a vector of the same length as estimates, is useful for comparing multiple estimates in
 #'        one facet but highlighting one or several. All plot elements associated with the estimate are displayed
 #'        with alpha multiplied by the corresponding element of alpha.multiplier. Defaults to a vector of ones.
-#' @export synthdid_plot
+#' @export
 synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'synthetic control', 
 			 spaghetti.units = c(), spaghetti.matrices = NULL,
                          facet = NULL, facet.vertical = TRUE, lambda.comparable = !is.null(facet), overlay = 0,
@@ -64,7 +75,7 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
   } else {
     stop("Plotting requires the package `ggplot2`. Install it to use this function.")
   }
-  if (class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
+  if (inherits(estimates, "synthdid_estimate")) { estimates = list(estimates) }
   if (is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
   if (is.null(alpha.multiplier)) { alpha.multiplier = rep(1, length(estimates)) }
   if (!is.null(spaghetti.matrices) && length(spaghetti.matrices) != length(estimates)) { stop('spaghetti.matrices must be the same length as estimates') }
@@ -277,7 +288,7 @@ synthdid_plot = function(estimates, treated.name = 'treated', control.name = 'sy
 #' @param estimate, as output by synthdid_estimate.
 #' @param overlay, binary, indicates whether plots should be overlaid or shown in different facets. Defaults to FALSE.
 #' @param treated.fraction as in synthdid_placebo
-#' @export synthdid_placebo_plot
+#' @export
 synthdid_placebo_plot = function(estimate, overlay = FALSE, treated.fraction = NULL) {
   if (requireNamespace("ggplot2", quietly = TRUE)) {
     .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
@@ -298,14 +309,14 @@ synthdid_placebo_plot = function(estimate, overlay = FALSE, treated.fraction = N
 #' @param se.method the method used to calculate standard errors for the CI. See vcov.synthdid_estimate. 
 #'        Defaults to 'jackknife' for speed. If 'none', don't plot a CI.
 #' @param units a list of control units --- elements of rownames(Y) --- to plot differences for. Defaults to NULL, meaning all of them.
-#' @export synthdid_units_plot
+#' @export
 synthdid_units_plot = function(estimates, negligible.threshold = .001, negligible.alpha = .3, se.method='jackknife', units=NULL) {
   if (requireNamespace("ggplot2", quietly = TRUE)) {
     .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
   } else {
     stop("Plotting requires the package `ggplot2`. Install it to use this function.")
   }
-  if (class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
+  if (inherits(estimates, "synthdid_estimate")) { estimates = list(estimates) }
   if (is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
   plot.data = do.call(rbind, lapply(1:length(estimates), function(ee) {
     estimate = estimates[[ee]]
@@ -342,14 +353,14 @@ synthdid_units_plot = function(estimates, negligible.threshold = .001, negligibl
 #' as a function of the number of Frank-Wolfe / Gradient steps taken.
 #' Requires ggplot2
 #' @param estimates, a list of estimates output by synthdid_estimate. Or a single estimate.
-#' @export synthdid_rmse_plot
+#' @export
 synthdid_rmse_plot = function(estimates) { # pass an estimate or list of estimates
   if (requireNamespace("ggplot2", quietly = TRUE)) {
     .ignore <- tryCatch(attachNamespace("ggplot2"), error = function(e) e)
   } else {
     stop("Plotting requires the package `ggplot2`. Install it to use this function.")
   }
-  if (class(estimates) == 'synthdid_estimate') { estimates = list(estimates) }
+  if (inherits(estimates, "synthdid_estimate")) { estimates = list(estimates) }
   if (is.null(names(estimates))) { names(estimates) = sprintf('estimate %d', 1:length(estimates)) }
   rmse = lapply(estimates, function(est) { sqrt(attr(est, 'weights')$vals) })
   plot.data = data.frame(rmse = unlist(rmse),

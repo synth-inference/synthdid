@@ -23,16 +23,7 @@ for SC).}
 \item{...}{Additional arguments (currently ignored).}
 }
 \description{
-Provides variance estimates based on the following three options
-\itemize{
-\item The bootstrap, Algorithm 2 in Arkhangelsky et al.
-\item The jackknife, Algorithm 3 in Arkhangelsky et al.
-\item Placebo, Algorithm 4 in Arkhangelsky et al.
-}
-}
-\details{
-The jackknife is not recommended for SC, see section 5 in Arkhangelsky et al.
-"placebo" is the only option that works for only one treated unit.
+Calculate Variance-Covariance Matrix for a Fitted Model Object
 }
 \references{
 Dmitry Arkhangelsky, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager.

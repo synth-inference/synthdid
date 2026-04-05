@@ -1,3 +1,4 @@
+#' @importFrom stats rpois
 # collapse Y to an N0+1 x T0+1 vector by averaging the last N1=nrow(Y)-N0 rows and T1=ncol(Y)-T0 columns
 collapsed.form = function(Y, N0, T0) {
   N = nrow(Y); T = ncol(Y)

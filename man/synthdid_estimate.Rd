@@ -2,7 +2,8 @@
 % Please edit documentation in R/synthdid.R
 \name{synthdid_estimate}
 \alias{synthdid_estimate}
-\title{Computes the synthetic diff-in-diff estimate for an average treatment effect on a treated block.}
+\title{Computes the synthetic diff-in-diff estimate for an average treatment effect on a treated block.
+See 'Synthetic Difference in Differences' by Arkhangelsky et al. This implements Algorithm 1.}
 \usage{
 synthdid_estimate(
   Y,
@@ -75,5 +76,6 @@ as well as regression coefficients beta if X is passed.
 'setup' is a list describing the problem passed in: Y, N0, T0, X.
 }
 \description{
+Computes the synthetic diff-in-diff estimate for an average treatment effect on a treated block.
 See 'Synthetic Difference in Differences' by Arkhangelsky et al. This implements Algorithm 1.
 }

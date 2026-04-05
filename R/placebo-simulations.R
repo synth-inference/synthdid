@@ -1,6 +1,6 @@
 #' Estimates the DGP parameters used in the placebo studies in Sections 3 and 5 
 #' of the synthetic difference in differences paper. Described there in Section 3.1.1.
-#' 
+#' @importFrom stats glm rbinom
 #' @param Y, an NxT matrix of outcomes
 #' @param assignment_vector, an Nx1 vector of treatment assignments
 #' @param rank, the rank of the estimated signal component L
