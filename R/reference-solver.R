@@ -11,8 +11,16 @@ simplex.least.squares =  function(A, b, zeta = 0, intercept = FALSE) {
 	objective = sum((A %*% x - b)^2) + zeta^2 * length(b) * sum(x^2)
     }
     cvx.problem = CVXR::Problem(CVXR::Minimize(objective), constraints)
-    cvx.output = CVXR::solve(cvx.problem, solver = 'ECOS')
-    as.numeric(cvx.output$getValue(x))
+    # CVXR 1.8 replaced the exported solve() and the $getValue() accessor
+    # by psolve() and value(). Support both interfaces.
+    if ("psolve" %in% getNamespaceExports("CVXR")) {
+	CVXR::psolve(cvx.problem, solver = 'ECOS')
+	as.numeric(CVXR::value(x))
+    } else {
+	cvx.solve = getExportedValue("CVXR", "solve")
+	cvx.output = cvx.solve(cvx.problem, solver = 'ECOS')
+	as.numeric(cvx.output$getValue(x))
+    }
 }
 
 
